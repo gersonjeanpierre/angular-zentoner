@@ -8,3 +8,7 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 - Node.js >= 22.11.0
 - Bun
 - Git
+- TailwindCSS
+- DaisyUI
+- Prettier
+- ESLint
