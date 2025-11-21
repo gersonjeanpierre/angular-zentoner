@@ -32,6 +32,8 @@
     "@angular/build": "^21.0.0",
     "@angular/cli": "^21.0.0",
     "@angular/compiler-cli": "^21.0.0",
+    "@iconify/json": "^2.2.409",
+    "@iconify/tailwind4": "^1.1.0",
     "angular-eslint": "20.6.0",
     "eslint": "^9.39.1",
     "eslint-config-prettier": "^10.1.8",

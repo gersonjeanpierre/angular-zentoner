@@ -1,2 +1,58 @@
 @import 'tailwindcss';
 @plugin "daisyui";
+@plugin "@iconify/tailwind4";
+
+@theme {
+  --font-sans: 'OpenSans';
+}
+
+@plugin "daisyui/theme" {
+  name: 'corporate';
+  default: true;
+  prefersdark: true;
+  color-scheme: 'light';
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(98% 0 0);
+  --color-base-300: oklch(97% 0 0);
+
+  /* Primary: Laser Blue - Technology and precision */
+  --color-primary: oklch(55% 0.25 250);
+  --color-primary-content: oklch(100% 0 0);
+
+  /* Secondary: Professional Green - Quality and trust */
+  --color-secondary: oklch(65% 0.2 145);
+  --color-secondary-content: oklch(100% 0 0);
+
+  /* Accent: Energy Orange - Creativity and innovation */
+  --color-accent: oklch(75% 0.22 45);
+  --color-accent-content: oklch(100% 0 0);
+
+  /* Neutral: Keep black as requested */
+  --color-neutral: oklch(0% 0 0);
+  --color-neutral-content: oklch(100% 0 0);
+
+  /* Info: Technical Blue - Information and data */
+  --color-info: oklch(65% 0.15 240);
+  --color-info-content: oklch(100% 0 0);
+
+  /* Success: Quality Green - Successful operations */
+  --color-success: oklch(70% 0.2 145);
+  --color-success-content: oklch(100% 0 0);
+
+  /* Warning: Alert Yellow - Important notices */
+  --color-warning: oklch(85% 0.2 85);
+  --color-warning-content: oklch(20% 0.05 85);
+
+  /* Error: Critical Red - Errors and problems */
+  --color-error: oklch(65% 0.25 25);
+  --color-error-content: oklch(100% 0 0);
+
+  --radius-selector: 1rem;
+  --radius-field: 2rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.3125rem;
+  --size-field: 0.25rem;
+  --border: 2px;
+  --depth: 1;
+  --noise: 0;
+}
