@@ -1,0 +1,42 @@
+.laser-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.laser {
+  display: flex;
+  justify-content: center;
+  font-style: italic;
+  letter-spacing: -0.05em;
+  gap: 0.25em;
+  width: 10.3em;
+  height: auto;
+  font-weight: bold;
+  color: #fff;
+  background-color: #ff0000;
+  border-radius: 5px;
+}
+
+.laser-color {
+  color: yellow;
+}
+
+.laser-veloz {
+  font-weight: bold;
+  background: repeating-linear-gradient(#fff, #fff 2px, #ff0000 1px, #ff0000 3px);
+  background-size: 100% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: moveGradient 2s linear infinite;
+}
+
+@keyframes moveGradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 100% 50%;
+  }
+}
