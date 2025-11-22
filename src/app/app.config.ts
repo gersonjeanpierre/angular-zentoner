@@ -7,7 +7,7 @@ import {
 import { provideRouter } from '@angular/router';
 
 import { routes } from './app.routes';
-import { FontLoaderService } from './core/services/font-loader';
+import { FontLoaderService } from './core/services/font-loader-service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
