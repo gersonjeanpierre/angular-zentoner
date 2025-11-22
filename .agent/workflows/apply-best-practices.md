@@ -1,42 +1,65 @@
 ---
-description: Refactoriza el código siguiendo las mejores prácticas de Angular y TypeScript del proyecto.
+description: Guía de estilo y mejores prácticas para Angular (Optimized)
 ---
 
-Sigue estos pasos para refactorizar el código actual y asegurar que cumpla con los estándares del proyecto:
+Sigue este checklist para asegurar que tu código cumpla con los estándares de Angular y las mejores prácticas del proyecto.
 
-1.  **TypeScript:**
-    *   Asegura el tipado estricto.
-    *   Reemplaza `any` por `unknown` o tipos específicos.
-    *   Usa inferencia de tipos donde sea obvio.
+## 1. Naming & Archivos
 
-2.  **Angular Core:**
-    *   Verifica que los componentes sean `standalone` (sin `standalone: true` explícito si es v19+ default, pero el documento dice v20+, asumiré la regla del documento).
-    *   Usa `signals` para el manejo de estado.
-    *   Reemplaza `@HostBinding` y `@HostListener` con la propiedad `host` en el decorador `@Component`.
-    *   Usa `NgOptimizedImage` para imágenes estáticas.
+- [ ] **Archivos:** Usa `kebab-case` (ej: `user-profile.ts`).
+- [ ] **Tests:** Usa `.spec.ts` (ej: `user-profile.spec.ts`).
+- [ ] **Coherencia:** El nombre del archivo debe coincidir con la clase (`UserProfile` -> `user-profile.ts`).
+- [ ] **Agrupación:** Componente (`.ts`), template (`.html`) y estilos (`.css`) en la misma carpeta.
+- [ ] **Sufijos:** Si hay múltiples archivos de estilo, usa sufijos descriptivos (`user-profile-settings.css`).
 
-3.  **Componentes:**
-    *   Usa `input()` y `output()` (funciones) en lugar de decoradores `@Input`/`@Output`.
-    *   Usa `computed()` para estado derivado.
-    *   Configura `changeDetection: ChangeDetectionStrategy.OnPush`.
-    *   Usa formularios reactivos (`ReactiveFormsModule`).
-    *   Reemplaza `ngClass` y `ngStyle` con bindings nativos `[class.x]` o `[style.x]`.
+## 2. Estructura del Proyecto
 
-4.  **Templates:**
-    *   Usa la sintaxis de control de flujo moderna (`@if`, `@for`, `@switch`).
-    *   Evita lógica compleja en el template.
-    *   No uses funciones flecha ni RegExp en el template.
+- [ ] **src:** Todo el código UI debe estar dentro de `src/`.
+- [ ] **main.ts:** El bootstrap debe estar en `src/main.ts`.
+- [ ] **Features:** Organiza por funcionalidad (ej: `movie-reel/show-times`), NO por tipo (`components/`, `services/`).
+- [ ] **Un concepto por archivo:** Un componente/servicio por archivo (salvo excepciones pequeñas).
 
-5.  **Servicios e Inyección:**
-    *   Usa `inject()` en lugar de inyección por constructor.
-    *   Asegura `providedIn: 'root'` para servicios singleton.
+## 3. Inyección de Dependencias
 
-6.  **Accesibilidad:**
-    *   Verifica contrastes de color y atributos ARIA.
-    *   Asegura que pase chequeos básicos de AXE/WCAG AA.
+- [ ] **Usa `inject()`:** Prefiere `inject()` sobre la inyección por constructor.
+  ```typescript
+  private service = inject(MyService);
+  ```
+- [ ] **Tipado:** Aprovecha la inferencia de tipos de `inject()`.
 
-7.  **Estilos y UI (Tailwind CSS + DaisyUI):**
-    *   **Prioriza clases de utilidad:** Usa Tailwind CSS para layout, espaciado, tipografía y colores. Evita escribir CSS personalizado en archivos `.css` o `.scss` a menos que sea estrictamente necesario.
-    *   **Usa componentes de DaisyUI:** Aprovecha las clases de componentes de DaisyUI (ej. `btn`, `input`, `card`, `modal`) para mantener una UI consistente y reducir la cantidad de clases de utilidad.
-    *   **Diseño Responsivo:** Usa los prefijos de breakpoints de Tailwind (ej. `md:`, `lg:`) para asegurar que la interfaz se adapte a diferentes tamaños de pantalla.
-    *   **Temas:** Utiliza las variables CSS de DaisyUI (ej. `bg-base-100`, `text-primary`) para asegurar compatibilidad con temas (light/dark mode).
+## 4. Componentes y Directivas
+
+- [ ] **Selectores:** Usa prefijos consistentes (`app-`, `ui-`).
+- [ ] **Orden:** Propiedades Angular (inputs, outputs, injects) -> Propiedades públicas -> Métodos.
+- [ ] **Presentación:** Mantén los componentes enfocados en la UI. Mueve lógica compleja a servicios/utils.
+- [ ] **Protected:** Usa `protected` para miembros que SOLO se usan en el template.
+  ```typescript
+  protected fullName = computed(() => ...);
+  ```
+- [ ] **Readonly:** Usa `readonly` para Inputs, Outputs y Models.
+  ```typescript
+  readonly userId = input<string>();
+  readonly onSave = output<void>();
+  ```
+
+## 5. Templates
+
+- [ ] **Simplicidad:** Evita lógica compleja en el HTML. Usa `computed` signals.
+- [ ] **Bindings:** Prefiere `[class.x]` y `[style.x]` sobre `ngClass` y `ngStyle`.
+  ```html
+  <!-- Prefer -->
+  <div [class.active]="isActive"></div>
+  ```
+- [ ] **Event Handlers:** Nómbralos por lo que _hacen_ (`saveData()`), no por el evento (`handleClick()`).
+
+## 6. Ciclo de Vida
+
+- [ ] **Interfaces:** Implementa siempre la interfaz (ej: `implements OnInit`).
+- [ ] **Simplicidad:** No pongas lógica en `ngOnInit`. Llama a métodos descriptivos (`this.loadData()`).
+
+## 7. Modern Angular (Core)
+
+- [ ] **Standalone:** Verifica que los componentes sean `standalone: true`.
+- [ ] **Signals:** Usa Signals para el manejo de estado y reactividad.
+- [ ] **Control Flow:** Usa `@if`, `@for`, `@switch` en lugar de `*ngIf`, `*ngFor`.
+- [ ] **Imágenes:** Usa `NgOptimizedImage` para imágenes estáticas.
