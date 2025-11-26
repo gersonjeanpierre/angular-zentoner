@@ -10,7 +10,7 @@ import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-v
   templateUrl: './sidebar.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class SidebarComponent {
+export class Sidebar {
   protected readonly activeMenu = signal('Dashboard');
   protected readonly fontSize = signal('1.2em');
 
