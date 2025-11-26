@@ -5,17 +5,31 @@
         <h2 class="card-title text-2xl mb-4">Editar Cliente</h2>
         <form (submit)="onSubmit()" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-            <label class="select select-neutral cursor-pointer disabled">
-              <span class="icon-[material-symbols--person-search-rounded] h-6 w-6 z-10 shadow-none"></span>
-              <select class="select shadow-none" [field]="customerForm.personType" disabled>
+            <label class="select select-neutral cursor-not-allowed bg-base-200">
+              <span
+                class="icon-[material-symbols--person-search-rounded] h-6 w-6 z-10 shadow-none"
+              ></span>
+              <select class="select shadow-none" disabled>
                 <option value="" disabled>Tipo de persona</option>
-                <option value="NATURAL">Natural</option>
-                <option value="JURIDICA">Jurídica</option>
+                <option
+                  [value]="'NATURAL'"
+                  [selected]="customerForm.personType().value() === 'NATURAL'"
+                >
+                  Natural
+                </option>
+                <option
+                  [value]="'JURIDICA'"
+                  [selected]="customerForm.personType().value() === 'JURIDICA'"
+                >
+                  Jurídica
+                </option>
               </select>
             </label>
 
             <label class="select select-neutral cursor-pointer">
-              <span class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"></span>
+              <span
+                class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"
+              ></span>
               <select class="select grow shadow-none" [field]="customerForm.customerType">
                 <option value="" disabled>Tipo de cliente</option>
                 <option value="NUEVO">Nuevo</option>
@@ -30,34 +44,80 @@
             <fieldset class="fieldset">
               <legend class="fieldset-legend text-lg">Datos Personales</legend>
 
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.firstName" placeholder="Nombres" 
-                       [disabled]="customerForm.personType().value() === 'JURIDICA'" />
-              </label>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.lastName" placeholder="Apellidos"
-                       [disabled]="customerForm.personType().value() === 'JURIDICA'" />
-              </label>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.legalName" placeholder="Razón social"
-                       [disabled]="customerForm.personType().value() === 'NATURAL'" />
-              </label>
+              @if (customerForm.personType().value() === 'NATURAL') {
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                  <input class="grow" [field]="customerForm.firstName" placeholder="Nombres" />
+                </label>
+              } @else {
+                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                  <input
+                    type="text"
+                    class="grow"
+                    [value]="customerForm.firstName().value()"
+                    placeholder="Nombres"
+                    readonly
+                    tabindex="-1"
+                  />
+                </label>
+              }
+              @if (customerForm.personType().value() === 'NATURAL') {
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                  <input class="grow" [field]="customerForm.lastName" placeholder="Apellidos" />
+                </label>
+              } @else {
+                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                  <input
+                    type="text"
+                    class="grow"
+                    [value]="customerForm.lastName().value()"
+                    placeholder="Apellidos"
+                    readonly
+                    tabindex="-1"
+                  />
+                </label>
+              }
+              @if (customerForm.personType().value() === 'JURIDICA') {
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
+                  <input class="grow" [field]="customerForm.legalName" placeholder="Razón social" />
+                </label>
+              } @else {
+                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                  <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
+                  <input
+                    type="text"
+                    class="grow"
+                    [value]="customerForm.legalName().value()"
+                    placeholder="Razón social"
+                    readonly
+                    tabindex="-1"
+                  />
+                </label>
+              }
               <label class="input input-neutral mb-2">
                 <span class="icon-[material-symbols--phone-iphone] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.phone" placeholder="Teléfono" />
+                <input
+                  class="grow"
+                  [field]="customerForm.phone"
+                  placeholder="Teléfono"
+                  [class.input-error]="
+                    customerForm.phone().touched() && customerForm.phone().invalid()
+                  "
+                />
               </label>
-               @if (customerForm.phone().touched() && customerForm.phone().invalid()) {
-                  <div class="text-error text-xs">
-                    @for (error of customerForm.phone().errors(); track error) {
-                      <span>{{ error.message }}</span>
-                    }
-                  </div>
-                }
+              @if (customerForm.phone().touched() && customerForm.phone().invalid()) {
+                <div class="label">
+                  @for (error of customerForm.phone().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
             </fieldset>
-            
+
             <fieldset class="fieldset">
               <legend class="fieldset-legend text-lg">Documentos</legend>
               <label class="input input-neutral mb-2">
@@ -76,9 +136,16 @@
                 <span class="icon-[material-symbols--mail-rounded] h-7 w-7"></span>
                 <input class="grow" [field]="customerForm.email" placeholder="Email" type="email" />
               </label>
-              <label class="input input-neutral grow">
+              <label class="input input-neutral grow bg-base-200">
                 <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.customerCode" placeholder="Código de Cliente" disabled />
+                <input
+                  type="text"
+                  class="grow cursor-not-allowed"
+                  [value]="customerForm.customerCode().value()"
+                  placeholder="Código de Cliente"
+                  readonly
+                  tabindex="-1"
+                />
               </label>
             </fieldset>
           </div>
@@ -122,7 +189,9 @@
             <button
               type="submit"
               class="btn btn-neutral flex-1"
-              [disabled]="customerForm.invalid() || saving()"
+              [disabled]="
+                customerForm.phone().invalid() || customerForm.customerType().invalid() || saving()
+              "
             >
               @if (saving()) {
                 <span class="loading loading-spinner"></span>
@@ -149,7 +218,7 @@
       </div>
     </div>
   </div>
-  
+
   @if (showAlert) {
     <app-alert-modal
       [title]="alertTitle"

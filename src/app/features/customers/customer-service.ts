@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
-import { SupabaseService } from '@shared/data-acces/supabase-service';
-import { CustomerPayload, CustomerView } from '@core/customer/customer-model';
+import { CustomerPayload, CustomerView } from '@core/customers/customer.model';
+import { Supabase } from '@core/supabase/supabase';
 
 export interface GetCustomersParams {
   status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
@@ -36,14 +36,14 @@ export interface GetCustomersResponse {
 
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
-  private supabase = inject(SupabaseService).supabaseClient;
+  private supabaseClient = inject(Supabase).client;
 
   async createCustomer(payload: CustomerPayload) {
     if (payload.dni && payload.ce) {
       throw new Error("No se puede tener ambos campos 'dni' y 'ce' al mismo tiempo.");
     }
 
-    const { data, error } = await this.supabase.schema('sales').rpc('create_customer', {
+    const { data, error } = await this.supabaseClient.schema('sales').rpc('create_customer', {
       p_user_id: payload.id,
       p_first_name: payload.firstName,
       p_last_name: payload.lastName,
@@ -67,7 +67,7 @@ export class CustomerService {
   async getCustomers(params: GetCustomersParams = {}): Promise<GetCustomersResponse> {
     const { status = 'ACTIVE', customerType, personType, search, page = 1, pageSize = 20 } = params;
 
-    let query = this.supabase
+    let query = this.supabaseClient
       .schema('sales')
       .from('active_customers')
       .select('*', { count: 'exact', head: false });
@@ -121,7 +121,7 @@ export class CustomerService {
   }
 
   async getCustomerById(customerId: string): Promise<CustomerView> {
-    const { data, error } = await this.supabase
+    const { data, error } = await this.supabaseClient
       .schema('sales')
       .from('active_customers')
       .select('*')
@@ -141,7 +141,7 @@ export class CustomerService {
       throw new Error("No se puede tener ambos campos 'dni' y 'ce' al mismo tiempo.");
     }
 
-    const { error } = await this.supabase.schema('sales').rpc('update_customer', {
+    const { error } = await this.supabaseClient.schema('sales').rpc('update_customer', {
       p_customer_id: customerId,
       p_first_name: payload.firstName,
       p_last_name: payload.lastName,
@@ -155,7 +155,7 @@ export class CustomerService {
       p_customer_type_code: payload.customerType,
       p_notes: payload.notes,
     });
-
+    console.log('Update customer error:', error);
     if (error) throw error;
 
     // Return the updated customer

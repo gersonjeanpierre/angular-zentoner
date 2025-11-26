@@ -11,6 +11,29 @@ export const routes: Routes = [
     canActivate: [authGuard],
     // loadComponent: () => import('./layout/main-layout/main-layout'),
     loadComponent: () => import('./layout/layout'),
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () => import('./features/dashboard/dashboard'),
+      },
+      {
+        path: 'clientes',
+        children: [
+          {
+            path: '',
+            loadComponent: () => import('./features/customers/list/customers-list'),
+          },
+          {
+            path: 'create',
+            loadComponent: () => import('./features/customers/create/customers-create'),
+          },
+          {
+            path: 'edit/:id',
+            loadComponent: () => import('./features/customers/edit/customers-edit'),
+          },
+        ],
+      },
+    ],
   },
   {
     path: '**',

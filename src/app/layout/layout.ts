@@ -61,7 +61,9 @@ export default class Layout implements OnInit {
     },
   ];
 
-  ngOnInit() {}
+  ngOnInit() {
+    return 'Hello';
+  }
 
   setActiveMenuByRoute(url: string) {
     // Find the menu item whose routeLink matches the start of the url

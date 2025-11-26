@@ -2,7 +2,7 @@ import { Component, inject, signal, OnInit, effect, ChangeDetectionStrategy } fr
 
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
 import { CustomerService } from '../customer-service';
-import { CustomerView } from '../../../core/customer/customer-model';
+import { CustomerView } from '@core/customers/customer.model';
 import camelCase from 'camelcase-keys';
 import { generateCustomerCode } from '../utils/customer-utils';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
@@ -19,39 +19,37 @@ interface CustomerFormModel {
   ce: string;
   ruc: string;
   customerCode: string;
-  customerType: string;
+  customerType: 'NUEVO' | 'FRECUENTE' | 'IMPRENTERO_NUEVO' | 'IMPRENTERO_FRECUENTE';
 }
 
 @Component({
   selector: 'app-customers-edit',
-  standalone: true,
   imports: [RouterModule, AlertModal, Field],
   templateUrl: './customers-edit.html',
   styleUrls: ['./customers-edit.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class CustomersEditComponent implements OnInit {
+export default class CustomersEditComponent implements OnInit {
+  // Inyección de dependencias
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly customerService = inject(CustomerService);
 
-  // Alert State
-  showAlert = false;
-  alertTitle = '';
-  alertMessage = '';
-  alertType: 'info' | 'warning' | 'error' | 'success' = 'info';
+  // Signals - Estado del componente
+  protected readonly customer = signal<CustomerView | null>(null);
+  protected readonly loading = signal(true);
+  protected readonly saving = signal(false);
+  protected readonly deleting = signal(false);
+  protected readonly notesList = signal<{ key: string; value: string }[]>([]);
 
-  // Signals
-  customer = signal<CustomerView | null>(null);
-  loading = signal(true);
-  saving = signal(false);
-  deleting = signal(false);
+  // Alert State - Protected para uso en template
+  protected showAlert = false;
+  protected alertTitle = '';
+  protected alertMessage = '';
+  protected alertType: 'info' | 'warning' | 'error' | 'success' = 'info';
 
-  // Notes handled as a separate signal array
-  notesList = signal<{ key: string; value: string }[]>([]);
-
-  // Form Model
-  customerModel = signal<CustomerFormModel>({
+  // Form Model Signal
+  protected readonly customerModel = signal<CustomerFormModel>({
     personType: '',
     firstName: '',
     lastName: '',
@@ -65,8 +63,8 @@ export class CustomersEditComponent implements OnInit {
     customerType: 'NUEVO',
   });
 
-  // Form
-  customerForm = form(this.customerModel, (schema) => {
+  // Form con validadores
+  protected readonly customerForm = form(this.customerModel, (schema) => {
     required(schema.phone, { message: 'Teléfono es requerido' });
     required(schema.customerType, { message: 'Tipo de cliente es requerido' });
   });
@@ -85,6 +83,10 @@ export class CustomersEditComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this.initializeCustomer();
+  }
+
+  private initializeCustomer(): void {
     const id = this.route.snapshot.params['id'];
     if (id) {
       this.loadCustomer(id);
@@ -115,7 +117,7 @@ export class CustomersEditComponent implements OnInit {
     const notes: { key: string; value: string }[] = [];
     if (customer.notes && typeof customer.notes === 'object') {
       Object.entries(customer.notes).forEach(([key, value]) => {
-        notes.push({ key, value });
+        notes.push({ key, value: String(value) });
       });
     }
     this.notesList.set(notes);
@@ -132,24 +134,45 @@ export class CustomersEditComponent implements OnInit {
       ce: customer.ce || '',
       ruc: customer.ruc || '',
       customerCode: customer.customerCode || '',
-      customerType: customer.customerTypeCode || 'NUEVO',
+      customerType:
+        (customer.customerTypeCode as
+          | 'NUEVO'
+          | 'FRECUENTE'
+          | 'IMPRENTERO_NUEVO'
+          | 'IMPRENTERO_FRECUENTE') || 'NUEVO',
     });
   }
 
-  addNote() {
+  protected addNote(): void {
     this.notesList.update((notes) => [...notes, { key: '', value: '' }]);
   }
 
-  removeNote(index: number) {
+  protected removeNote(index: number): void {
     this.notesList.update((notes) => notes.filter((_, i) => i !== index));
   }
 
-  updateNote(index: number, field: 'key' | 'value', value: string) {
+  protected updateNote(index: number, field: 'key' | 'value', value: string): void {
     this.notesList.update((notes) => {
       const newNotes = [...notes];
       newNotes[index] = { ...newNotes[index], [field]: value };
       return newNotes;
     });
+  }
+
+  private validateConditionalFields(): boolean {
+    const model = this.customerModel();
+    if (model.personType === 'NATURAL') {
+      if (!model.firstName || !model.lastName) {
+        this.showError('Nombres y Apellidos son requeridos para persona natural');
+        return false;
+      }
+    } else {
+      if (!model.legalName) {
+        this.showError('Razón social es requerida para persona jurídica');
+        return false;
+      }
+    }
+    return true;
   }
 
   private serializeNotes(): Record<string, string> | null {
@@ -161,24 +184,15 @@ export class CustomersEditComponent implements OnInit {
     return Object.keys(notesObj).length ? notesObj : null;
   }
 
-  async onSubmit(): Promise<void> {
-    if (this.customerForm.invalid()) {
+  protected async onSubmit(): Promise<void> {
+    // Validar campos requeridos
+    if (this.customerForm.phone().invalid() || this.customerForm.customerType().invalid()) {
       this.showError('Por favor complete los campos requeridos');
       return;
     }
 
-    // Manual validation for conditional fields
-    const model = this.customerModel();
-    if (model.personType === 'NATURAL') {
-      if (!model.firstName || !model.lastName) {
-        this.showError('Nombres y Apellidos son requeridos para persona natural');
-        return;
-      }
-    } else {
-      if (!model.legalName) {
-        this.showError('Razón social es requerida para persona jurídica');
-        return;
-      }
+    if (!this.validateConditionalFields()) {
+      return;
     }
 
     this.saving.set(true);
@@ -191,21 +205,20 @@ export class CustomersEditComponent implements OnInit {
       return;
     }
 
+    const model = this.customerModel();
     const updateData = {
-      firstName: model.firstName || null,
-      lastName: model.lastName || null,
-      legalName: model.legalName || null,
+      firstName: model.firstName || undefined,
+      lastName: model.lastName || undefined,
+      legalName: model.legalName || undefined,
       phone: model.phone,
-      email: model.email || null,
-      dni: model.dni || null,
-      ce: model.ce || null,
-      ruc: model.ruc || null,
-      customerCode: model.customerCode || null,
+      email: model.email || undefined,
+      dni: model.dni || undefined,
+      ce: model.ce || undefined,
+      ruc: model.ruc || undefined,
+      customerCode: model.customerCode || undefined,
       customerType: model.customerType,
-      notes: this.serializeNotes(),
+      notes: this.serializeNotes() || undefined,
     };
-
-    console.log('Update data:', updateData);
 
     try {
       const updatedCustomer = await this.customerService.updateCustomer(customerId, updateData);
@@ -219,7 +232,7 @@ export class CustomersEditComponent implements OnInit {
     }
   }
 
-  async onDelete(): Promise<void> {
+  protected async onDelete(): Promise<void> {
     const customer = this.customer();
     if (!customer) return;
 
@@ -251,18 +264,18 @@ export class CustomersEditComponent implements OnInit {
   }
 
   // Alert Modal Methods
-  closeAlert() {
+  protected closeAlert(): void {
     this.showAlert = false;
   }
 
-  showError(message: string) {
+  private showError(message: string): void {
     this.alertTitle = 'Error';
     this.alertMessage = message;
     this.alertType = 'error';
     this.showAlert = true;
   }
 
-  showSuccess(message: string) {
+  private showSuccess(message: string): void {
     this.alertTitle = 'Éxito';
     this.alertMessage = message;
     this.alertType = 'success';
