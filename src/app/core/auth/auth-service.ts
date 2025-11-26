@@ -19,6 +19,7 @@ export class AuthService {
       data: { session },
       error,
     } = await this.getSession();
+
     if (error || !session) {
       throw new Error('Autenticación requerida.');
     }
@@ -29,7 +30,6 @@ export class AuthService {
       'Content-Type': 'application/json',
     };
 
-    // Implementar try catch finally
     try {
       const response = await firstValueFrom(
         this.http.post<EdgeFunctionResponse>(this.edgeFunctionUrl, payload, {
@@ -52,6 +52,7 @@ export class AuthService {
   signOut() {
     return this.authSupabase.signOut();
   }
+
   getUser() {
     return this.authSupabase.getUser();
   }

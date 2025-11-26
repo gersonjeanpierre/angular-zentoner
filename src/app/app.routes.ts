@@ -9,7 +9,8 @@ export const routes: Routes = [
   {
     path: '',
     canActivate: [authGuard],
-    loadComponent: () => import('./layout/main-layout/main-layout'),
+    // loadComponent: () => import('./layout/main-layout/main-layout'),
+    loadComponent: () => import('./layout/layout'),
   },
   {
     path: '**',

@@ -1,0 +1,18 @@
+<div class="drawer drawer-open min-h-screen">
+  <input id="zen-drawer" type="checkbox" class="drawer-toggle" />
+  <!-- Sidebar -->
+  <div
+    class="drawer-side is-drawer-close:overflow-visible bg-base-200 card card-compact py-3 pl-3 pr-1.5"
+  >
+    <app-sidebar></app-sidebar>
+  </div>
+  <!-- Main content -->
+  <div class="drawer-content flex flex-col">
+    <app-header></app-header>
+    <!-- Main Content -->
+    <div id="main-content" class="pt-1.5 pb-3 flex-1 bg-neutral-100">
+      <router-outlet></router-outlet>
+      <app-footer></app-footer>
+    </div>
+  </div>
+</div>

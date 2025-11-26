@@ -1,0 +1,77 @@
+<div class="card-body bg-base-100 shadow-lg rounded-lg p-0 h-[calc(100vh-1rem)] ml-2 mt-2">
+  <ul class="menu grow">
+    <app-logo-laser-veloz class="mb-4 mt-2 is-drawer-close:hidden" [fontSize]="fontSize()" />
+    @for (item of menuItems(); track $index) {
+      @if (item.name !== 'Cerrar sesión') {
+        <li>
+          <span
+            class="group is-drawer-close:tooltip is-drawer-close:tooltip-right w-full is-drawer-close:flex is-drawer-close:justify-center transition-all duration-200 my-0.5 is-drawer-close:hover:bg-neutral is-drawer-close:text-primary-content rounded-full is-drawer-open:px-3 is-drawer-close:px-0 py-3 is-drawer-open:hover:bg-neutral"
+            [attr.data-tip]="item.name"
+            [class.menu-active]="activeMenu() === item.name"
+            (click)="activeMenu.set(item.name)"
+            routerLink="{{ item.routeLink }}"
+          >
+            <span
+              class="flex items-center justify-center transition-all duration-200 rounded-full is-drawer-close:size-9 size-7 group-hover:bg-neutral group-hover:text-primary-content group-hover:opacity-100 is-drawer-open:bg-transparent is-drawer-open:group-hover:bg-neutral"
+              [class.bg-gray-500]="activeMenu() !== item.name"
+              [class.opacity-80]="activeMenu() !== item.name"
+              [class.bg-neutral]="activeMenu() === item.name"
+              [class.text-primary-content]="activeMenu() === item.name"
+            >
+              <span class="{{ item.icon }} text-xl h-6 w-6 transition-all duration-200"></span>
+            </span>
+            <span
+              class="is-drawer-close:hidden font-semibold transition-all duration-200 group-hover:text-primary-content"
+              >{{ item.name }}</span
+            >
+          </span>
+        </li>
+      } @else {
+        <li>
+          <button
+            class="group is-drawer-close:tooltip is-drawer-close:tooltip-right w-full text-left flex items-center gap-2 px-2 py-2 transition-all duration-200 my-0.5 is-drawer-close:hover:bg-error is-drawer-close:text-primary-content is-drawer-open:px-3 is-drawer-open:hover:bg-error"
+            [attr.data-tip]="'Cerrar sesión'"
+            [class.menu-active]="activeMenu() === item.name"
+            (click)="logOut()"
+          >
+            <span
+              class="flex items-center justify-center transition-all duration-200 rounded-full is-drawer-close:size-11 size-7 group-hover:bg-error group-hover:text-primary-content group-hover:opacity-100 is-drawer-open:bg-transparent is-drawer-open:group-hover:bg-error"
+              [class.bg-red-300]="activeMenu() !== item.name"
+              [class.opacity-90]="activeMenu() !== item.name"
+              [class.bg-error]="activeMenu() === item.name"
+              [class.text-primary-content]="activeMenu() === item.name"
+            >
+              <span
+                class="{{
+                  item.icon
+                }} text-xl is-drawer-close:text-2xl transition-all duration-200 group-hover:text-primary-content"
+                [class.text-primary-content]="activeMenu() === item.name"
+              ></span>
+            </span>
+            <span
+              class="is-drawer-close:hidden font-semibold transition-all duration-200 group-hover:text-primary-content"
+            >
+              {{ item.name }}
+            </span>
+          </button>
+        </li>
+      }
+    }
+  </ul>
+  <!-- Botón para abrir/cerrar el menú Drawer al final -->
+  <div class="m-2 menu mt-auto">
+    <label
+      for="my-drawer-4"
+      aria-label="open sidebar"
+      class="btn btn-ghost btn-circle drawer-button is-drawer-open:rotate-y-180 flex items-center w-full"
+    >
+      <span
+        class="flex items-center justify-center transition-all duration-200 is-drawer-close:bg-success is-drawer-close:text-primary-content rounded-full size-11 bg-error text-primary-content"
+      >
+        <span
+          class="icon-[icon-park-outline--double-right] text-2xl transition-all duration-200"
+        ></span>
+      </span>
+    </label>
+  </div>
+</div>

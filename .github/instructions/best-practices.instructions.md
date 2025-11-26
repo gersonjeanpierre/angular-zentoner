@@ -1,5 +1,5 @@
 ---
-description: Guía de estilo y mejores prácticas para Angular (Optimized)
+applyTo: '**'
 ---
 
 Sigue este checklist para asegurar que tu código cumpla con los estándares de Angular y las mejores prácticas del proyecto.

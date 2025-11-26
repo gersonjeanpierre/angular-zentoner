@@ -1,0 +1,161 @@
+<div class="relative h-auto">
+  <div class="max-w-2xl mx-auto pr-0 overflow-y-auto h-auto pl-2 pb-10 pt-1">
+    <div class="card bg-base-100 shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title text-2xl mb-4">Editar Cliente</h2>
+        <form (submit)="onSubmit()" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <label class="select select-neutral cursor-pointer disabled">
+              <span class="icon-[material-symbols--person-search-rounded] h-6 w-6 z-10 shadow-none"></span>
+              <select class="select shadow-none" [field]="customerForm.personType" disabled>
+                <option value="" disabled>Tipo de persona</option>
+                <option value="NATURAL">Natural</option>
+                <option value="JURIDICA">Jurídica</option>
+              </select>
+            </label>
+
+            <label class="select select-neutral cursor-pointer">
+              <span class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"></span>
+              <select class="select grow shadow-none" [field]="customerForm.customerType">
+                <option value="" disabled>Tipo de cliente</option>
+                <option value="NUEVO">Nuevo</option>
+                <option value="FRECUENTE">Frecuente</option>
+                <option value="IMPRENTERO_NUEVO">Imprentero Nuevo</option>
+                <option value="IMPRENTERO_FRECUENTE">Imprentero Frecuente</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend text-lg">Datos Personales</legend>
+
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.firstName" placeholder="Nombres" 
+                       [disabled]="customerForm.personType().value() === 'JURIDICA'" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.lastName" placeholder="Apellidos"
+                       [disabled]="customerForm.personType().value() === 'JURIDICA'" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.legalName" placeholder="Razón social"
+                       [disabled]="customerForm.personType().value() === 'NATURAL'" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--phone-iphone] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.phone" placeholder="Teléfono" />
+              </label>
+               @if (customerForm.phone().touched() && customerForm.phone().invalid()) {
+                  <div class="text-error text-xs">
+                    @for (error of customerForm.phone().errors(); track error) {
+                      <span>{{ error.message }}</span>
+                    }
+                  </div>
+                }
+            </fieldset>
+            
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend text-lg">Documentos</legend>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--id-card-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.dni" placeholder="DNI" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--text-ad-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.ce" placeholder="Carnet extranjería" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--newsmode-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.ruc" placeholder="RUC" />
+              </label>
+              <label class="input input-neutral mb-2">
+                <span class="icon-[material-symbols--mail-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.email" placeholder="Email" type="email" />
+              </label>
+              <label class="input input-neutral grow">
+                <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>
+                <input class="grow" [field]="customerForm.customerCode" placeholder="Código de Cliente" disabled />
+              </label>
+            </fieldset>
+          </div>
+
+          <!-- Notes -->
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend text-lg">Notas (claves/valor)</legend>
+            <div class="card bg-base-100 p-4 mb-2">
+              <div>
+                @for (note of notesList(); track $index) {
+                  <div class="flex gap-2 mb-2 items-center">
+                    <input
+                      class="input input-bordered w-1/2"
+                      [value]="note.key"
+                      (input)="updateNote($index, 'key', $any($event.target).value)"
+                      placeholder="Clave"
+                    />
+                    <input
+                      class="input input-bordered w-1/2"
+                      [value]="note.value"
+                      (input)="updateNote($index, 'value', $any($event.target).value)"
+                      placeholder="Valor"
+                    />
+                    <button type="button" class="btn btn-error btn-xs" (click)="removeNote($index)">
+                      ✕
+                    </button>
+                  </div>
+                }
+              </div>
+              <button type="button" class="btn btn-success btn-sm mt-2" (click)="addNote()">
+                Agregar nota
+              </button>
+              <p class="label text-xs mt-1">
+                Agrega pares clave/valor para información adicional. Se enviarán como JSON.
+              </p>
+            </div>
+          </fieldset>
+
+          <!-- Buttons -->
+          <div class="mt-6 flex gap-2">
+            <button
+              type="submit"
+              class="btn btn-neutral flex-1"
+              [disabled]="customerForm.invalid() || saving()"
+            >
+              @if (saving()) {
+                <span class="loading loading-spinner"></span>
+                <span>Guardando...</span>
+              } @else {
+                Guardar Cambios
+              }
+            </button>
+            <button
+              type="button"
+              class="btn btn-error"
+              (click)="onDelete()"
+              [disabled]="deleting()"
+            >
+              @if (deleting()) {
+                <span class="loading loading-spinner"></span>
+                <span>Eliminando...</span>
+              } @else {
+                Eliminar
+              }
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  @if (showAlert) {
+    <app-alert-modal
+      [title]="alertTitle"
+      [message]="alertMessage"
+      [type]="alertType"
+      (closed)="closeAlert()"
+    />
+  }
+</div>

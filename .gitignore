@@ -18,6 +18,8 @@ yarn-error.log
 # environments
 /src/environments/environment*.ts
 
+.agent/summaries
+
 # IDEs and editors
 .idea/
 .project
