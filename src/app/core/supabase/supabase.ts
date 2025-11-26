@@ -9,10 +9,13 @@ export class Supabase {
   private readonly supabaseClient: SupabaseClient;
 
   constructor() {
-    if (!environment.SUPABASE_URL || !environment.SUPABASE_ANON_KEY) {
+    if (!environment.SUPABASE_URL || !environment.SUPABASE_PUBLISHABLE_DEFAULT_KEY) {
       throw new Error('Las claves de Supabase no están definidas en las variables de entorno.');
     }
-    this.supabaseClient = createClient(environment.SUPABASE_URL, environment.SUPABASE_ANON_KEY);
+    this.supabaseClient = createClient(
+      environment.SUPABASE_URL,
+      environment.SUPABASE_PUBLISHABLE_DEFAULT_KEY,
+    );
   }
 
   get client(): SupabaseClient {
