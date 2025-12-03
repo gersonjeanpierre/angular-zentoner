@@ -1,11 +1,10 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MenuItemModel } from '@core/layout/models/sidebar.model';
 import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-veloz';
 
 @Component({
   selector: 'app-sidebar',
-  standalone: true,
   imports: [RouterLink, LogoLaserVeloz],
   templateUrl: './sidebar.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -57,9 +56,9 @@ export class Sidebar {
     },
   ]);
 
-  protected logOut() {
-    this.activeMenu.set('Cerrar sesión');
-    // this.authService.signOut();
-    // this.router.navigateByUrl('/auth/log-in');
+  actionLogOut = output();
+
+  logOut() {
+    this.actionLogOut.emit();
   }
 }

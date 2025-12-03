@@ -60,4 +60,17 @@ export class AuthService {
   getSession() {
     return this.authSupabase.getSession();
   }
+
+  async getInforForHeader() {
+    const key = localStorage.key(0);
+    const value = localStorage.getItem(key!);
+    const session = value ? JSON.parse(value) : null;
+    const { user_metadata } = session['user'];
+    const response =
+      user_metadata.first_name && user_metadata.last_name
+        ? user_metadata.first_name + ' ' + user_metadata.last_name
+        : 'SuperAdmin';
+    const email = session['user'].email;
+    return { name: response, email };
+  }
 }

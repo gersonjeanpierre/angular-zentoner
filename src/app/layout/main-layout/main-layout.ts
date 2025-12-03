@@ -13,8 +13,8 @@ export default class MainLayout implements OnInit {
   private readonly authService = inject(AuthService);
   private router = inject(Router);
 
-  protected user = signal<any | null>(null);
-  protected session = signal<any | null>(null);
+  protected readonly userName = signal<string>('');
+  protected readonly authEmail = signal<string>('');
 
   protected activeMenu = signal('Dashboard');
   protected fontSize = signal('1.2em');
@@ -62,8 +62,10 @@ export default class MainLayout implements OnInit {
     },
   ];
 
-  ngOnInit() {
-    return 'Hello';
+  async ngOnInit() {
+    const response = await this.authService.getInforForHeader();
+    this.userName.set(response.name);
+    this.authEmail.set(response.email);
   }
 
   setActiveMenuByRoute(url: string) {
@@ -75,8 +77,10 @@ export default class MainLayout implements OnInit {
   }
 
   logOut() {
+    console.log('Cerrando sesión...');
     this.activeMenu.set('Cerrar sesión');
     this.authService.signOut();
     this.router.navigateByUrl('/auth/log-in');
+    console.log('Sesión cerrada. Redirigiendo a la página de inicio de sesión...');
   }
 }

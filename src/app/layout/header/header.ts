@@ -3,7 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 @Component({
   selector: 'app-header',
   template: `
-    <nav class="navbar w-full bg-base-100">
+    <nav class="navbar w-full bg-base-100 rounded-md">
       <div class="sm:flex lg:hidden flex justify-center">
         <label
           class="btn btn-circle btn-ghost flex justify-center items-center w-11 h-11 relative"
@@ -19,9 +19,11 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
         <a class="btn btn-ghost text-xl lg:hidden">Zentoner</a>
       </div>
       <div class="flex">
-        <div class="flex items-center">
-          <span class="text-sm font-semibold">{{ userName() }}</span>
-          <span class="text-sm font-semibold">{{ userEmail() }}</span>
+        <div class="flex items-center gap-4 mr-4">
+          <span
+            class=" badge hidden sm:flex sm:badge-md md:badge-lg badge-outline md:text-md text-sm font-semibold"
+            >{{ userName() }}</span
+          >
         </div>
         <div class="dropdown dropdown-end">
           <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar">
@@ -49,6 +51,6 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Header {
-  protected readonly userName = input<string>();
-  protected readonly userEmail = input<string>();
+  readonly userName = input<string>();
+  readonly userEmail = input<string>();
 }
