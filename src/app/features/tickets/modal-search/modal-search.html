@@ -1,27 +1,43 @@
 @if (open) {
   <dialog class="modal" [open]="open" (close)="onClose()">
-    <div class="modal-box w-full max-w-3xl h-full max-h-7/12">
+    <div class="modal-box w-full max-w-2xl px-8 py-3">
       <form method="dialog" class="absolute right-2 top-2">
         <button
           class="btn btn-sm btn-circle btn-ghost icon-[material-symbols--cancel-rounded] h-8 w-8"
         ></button>
       </form>
       <h3 class="font-bold text-lg mb-2">{{ title }}</h3>
-      <input
-        type="text"
-        class="input input-neutral w-full mb-4"
-        placeholder="Buscar..."
-        [(ngModel)]="search"
-        (input)="filterList()"
-        autofocus
-      />
-      <ul class="menu bg-base-100 w-full rounded-box max-h-96 overflow-y-auto">
-        @for (item of filteredList; track $index) {
-          <li>
-            <a (click)="select(item)" tabindex="0">{{ item }}</a>
-          </li>
-        }
-      </ul>
+      @if (title === 'Seleccionar Método de Pago') {
+        <div class="flex justify-center">
+          <div class="flex flex-col gap-4 my-4 w-1/2">
+            @for (item of list; track $index) {
+              <button
+                class="btn btn-lg btn-outline w-full flex items-center justify-center gap-2 text-lg transition-all duration-300 shadow-lg hover:scale-105 hover:bg-neutral hover:text-white border-2"
+                (click)="select(item)"
+                tabindex="0"
+              >
+                {{ item }}
+              </button>
+            }
+          </div>
+        </div>
+      } @else {
+        <input
+          type="text"
+          class="input input-neutral w-full mb-4"
+          placeholder="Buscar..."
+          [(ngModel)]="search"
+          (input)="filterList()"
+          autofocus
+        />
+        <ul class="menu bg-base-100 w-full rounded-box max-h-96 overflow-y-auto">
+          @for (item of filteredList; track $index) {
+            <li>
+              <a (click)="select(item)" tabindex="0">{{ item }}</a>
+            </li>
+          }
+        </ul>
+      }
     </div>
     <form method="dialog" class="modal-backdrop">
       <button>close</button>

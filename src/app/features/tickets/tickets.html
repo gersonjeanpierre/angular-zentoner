@@ -1,7 +1,7 @@
-<div class="relative h-auto">
-  <!-- Formulario de inputs - CON SCROLL INTERNO -->
-  <div class="pr-[356px] overflow-y-auto h-auto pl-2 pb-10 pt-1">
-    <div class="card bg-base-100 shadow-sm">
+<div class="flex flex-col lg:flex-row gap-2 w-full px-2 lg:pl-0 mb-2">
+  <!-- Formulario principal -->
+  <div class="w-full">
+    <div class="card bg-base-100 shadow-lg rounded-lg">
       <div class="card-body">
         <h2 class="card-title text-2xl mb-4">Generar Ticket</h2>
         <!-- Diseñador y Cliente en una fila mejorada -->
@@ -14,9 +14,8 @@
                 type="text"
                 class="grow cursor-pointer"
                 placeholder="Nombre del diseñador"
-                [(ngModel)]="ticketData.designer"
+                [field]="ticketForm.designer"
                 autocomplete="off"
-                (input)="updateDesigner($event.target.value)"
               />
             </label>
           </fieldset>
@@ -28,9 +27,28 @@
                 type="text"
                 class="grow cursor-pointer"
                 placeholder="Nombre del cliente"
-                [(ngModel)]="ticketData.client"
+                [field]="ticketForm.client"
                 autocomplete="off"
-                (input)="updateClient($event.target.value)"
+              />
+            </label>
+          </fieldset>
+        </div>
+
+        <!-- Método de Pago -->
+        <div class="form-control w-full mb-4">
+          <fieldset class="fieldset">
+            <legend class="fieldset-legend text-lg">Método de Pago</legend>
+            <label class="input input-neutral cursor-pointer">
+              <span class="icon-[noto--credit-card] h-7 w-7"></span>
+              <input
+                type="text"
+                class="grow cursor-pointer"
+                placeholder="Seleccionar método de pago"
+                readonly
+                [value]="ticketForm.methodOfPayment().value()"
+                (focus)="openModalForMethodPayment()"
+                (click)="openModalForMethodPayment()"
+                autocomplete="off"
               />
             </label>
           </fieldset>
@@ -41,8 +59,11 @@
           <label class="label">
             <span class="text-xl font-semibold">Detalle de Venta:</span>
           </label>
-          <div>
-            <div class="grid grid-cols-6 gap-2 text-lg mb-1">
+          <!-- Items a agregar -->
+          <div class="w-full overflow-x-auto md:overflow-visible">
+            <div
+              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 text-lg mb-1 min-w-[500px] md:min-w-0"
+            >
               <span class="text-left">Tamaño</span>
               <span class="text-left">Tipo</span>
               <span class="text-left">Maquina</span>
@@ -52,11 +73,11 @@
             </div>
             <div class="space-y-2">
               @for (item of ticketData.saleDetails; track $index) {
-                <div class="grid grid-cols-6 gap-2 mt-3 mb-3">
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mt-3 mb-3">
                   <!-- Tamaño -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
                     placeholder="Tamaño"
                     readonly
                     [value]="item.size"
@@ -66,7 +87,7 @@
                   <!-- Tipo -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
                     placeholder="Tipo"
                     readonly
                     [value]="item.type"
@@ -76,7 +97,7 @@
                   <!-- Maquina -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
                     placeholder="Maquina"
                     readonly
                     [value]="item.machine"
@@ -87,7 +108,7 @@
                   <!-- Cantidad -->
                   <input
                     type="number"
-                    class="input input-bordered input-md text-center"
+                    class="input input-bordered input-md text-center w-full min-w-20"
                     placeholder="Cantidad"
                     [value]="item.quantity"
                     min="1"
@@ -96,7 +117,7 @@
                   <!-- Precio Unitario -->
                   <input
                     type="number"
-                    class="input input-bordered input-md text-center"
+                    class="input input-bordered input-md text-center w-full min-w-20"
                     placeholder="Precio"
                     [value]="item.price"
                     min="0"
@@ -104,8 +125,8 @@
                     (input)="updateSaleItem($index, 'price', $event.target.value)"
                   />
                   <!-- Importe -->
-                  <div class="flex justify-end w-40">
-                    <div class="badge badge-success badge-md whitespace-nowrap">
+                  <div class="flex lg:justify-end justify-center items-center">
+                    <div class="badge badge-success badge-lg whitespace-nowrap">
                       S/ {{ item.total.toFixed(2) }}
                     </div>
                     <button
@@ -121,7 +142,7 @@
                 </div>
               }
             </div>
-            <button (click)="addSaleItem()" class="btn btn-success btn-md mt-2">
+            <button (click)="addSaleItem()" class="btn btn-success btn-md mt-2 w-full md:w-auto">
               <span class="icon-[material-symbols--add-circle-rounded] w-6 h-6"></span>
               <span class="text-lg">Agregar</span>
             </button>
@@ -137,12 +158,10 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese adelanto"
-                  [(ngModel)]="ticketData.advance"
+                  [field]="ticketForm.advance"
                   autocomplete="off"
-                  (ngModelChange)="updateAdvance($event)"
                   step="0.01"
-                  min="0"
-                  placeholder="0.00"
+                  (input)="calculateTotals()"
                 />
               </label>
             </fieldset>
@@ -155,12 +174,10 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese descuento"
-                  [(ngModel)]="ticketData.discount"
+                  [field]="ticketForm.discount"
                   autocomplete="off"
-                  (ngModelChange)="updateDiscount($event)"
                   step="0.01"
-                  min="0"
-                  placeholder="0.00"
+                  (input)="calculateTotals()"
                 />
               </label>
             </fieldset>
@@ -171,8 +188,8 @@
             <label class="label cursor-pointer justify-start gap-2">
               <input
                 type="checkbox"
-                [(ngModel)]="includeIGV"
-                (ngModelChange)="calculateTotals()"
+                [checked]="includeIGV()"
+                (change)="includeIGV.set($any($event.target).checked); calculateTotals()"
                 class="checkbox checkbox-primary"
               />
               <span class="label-text font-semibold">Incluir IGV (18%)</span>
@@ -189,7 +206,7 @@
               <span class="font-semibold">Saldo:</span>
               <span class="text-error font-bold"> S/ {{ ticketData.saldo.toFixed(2) }} </span>
             </div>
-            @if (includeIGV) {
+            @if (includeIGV()) {
               <div class="flex justify-between text-md">
                 <span class="font-semibold">IGV (18%):</span>
                 <span>S/ {{ ticketData.igv.toFixed(2) }}</span>
@@ -203,7 +220,7 @@
 
           <!-- Botón Imprimir -->
           <div class="card-actions justify-end mt-4">
-            <button class="btn btn-primary btn-wide" (click)="printTicket()">
+            <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printTicket()">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="h-5 w-5"
@@ -224,26 +241,25 @@
         </div>
       </div>
     </div>
-
-    <!-- Vista previa del ticket - FIJO A LA DERECHA SIN SCROLL -->
-    <div class="fixed top-18.5 right-2 w-[340px] overflow-hidden px-[6px] pb-10">
-      <div class="card bg-white shadow-lg">
-        <div class="card-body h-full w-full px-0">
-          <app-ticket-preview
-            [ticketData]="ticketData"
-            [printDate]="ticketData.printDate"
-            [includeIGV]="includeIGV"
-          ></app-ticket-preview>
-        </div>
+  </div>
+  <!-- Vista previa del ticket -->
+  <div class="w-full md:w-[100mm]">
+    <div class="card bg-white shadow-lg rounded-lg">
+      <div class="card-body h-full w-full px-0">
+        <app-ticket-preview
+          [ticketData]="ticketData"
+          [printDate]="ticketData.printDate"
+          [includeIGV]="includeIGV()"
+        ></app-ticket-preview>
       </div>
     </div>
   </div>
 </div>
 <!-- Modal de búsqueda reutilizable -->
 <modal-search
-  [open]="modalOpen"
-  [list]="modalList"
-  [title]="modalTitle"
+  [open]="modalOpen()"
+  [list]="modalList()"
+  [title]="modalTitle()"
   (selectItem)="onModalSelect($event)"
   (closed)="onModalClosed()"
 ></modal-search>

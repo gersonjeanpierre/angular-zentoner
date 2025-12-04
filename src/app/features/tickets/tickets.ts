@@ -1,69 +1,34 @@
-import { Component, HostListener } from '@angular/core';
-
-import { FormsModule } from '@angular/forms';
+import { ChangeDetectionStrategy, Component, computed, HostListener, signal } from '@angular/core';
+import { form, Field } from '@angular/forms/signals';
 import { TicketDataModel, TicketItemModel } from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
-import { ViewChild } from '@angular/core';
 import { ModalSearch } from './modal-search/modal-search';
-import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE } from '@data/constants';
+import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE, METHOD_PAYMENT } from '@data/constants';
 
 @Component({
   selector: 'app-tickets',
-  imports: [FormsModule, TicketPreview, ModalSearch],
+  imports: [Field, TicketPreview, ModalSearch],
   templateUrl: './tickets.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Tickets {
-  // Modal search state
-  modalOpen = false;
-  modalList: string[] = [];
-  modalTitle = '';
-  modalTarget: { index: number; field: 'size' | 'type' | 'machine' } | null = null;
-  sizes: string[] = ITEM_SIZE;
-  types: string[] = ITEM_TYPE;
-  machines: string[] = ITEM_MACHINE;
+  // Constants
+  protected readonly sizes: string[] = ITEM_SIZE;
+  protected readonly types: string[] = ITEM_TYPE;
+  protected readonly machines: string[] = ITEM_MACHINE;
+  protected readonly methodsPayment: string[] = METHOD_PAYMENT;
 
-  // Abrir modal para seleccionar campo
-  openModalForField(index: number, field: 'size' | 'type' | 'machine') {
-    this.modalTarget = { index, field };
-    if (field === 'size') {
-      this.modalList = this.sizes;
-      this.modalTitle = 'Seleccionar Tamaño';
-    } else if (field === 'type') {
-      this.modalList = this.types;
-      this.modalTitle = 'Seleccionar Tipo';
-    } else if (field === 'machine') {
-      this.modalList = this.machines;
-      this.modalTitle = 'Seleccionar Máquina';
-    }
-    this.modalOpen = true;
-  }
+  // Modal state
+  protected modalOpen = signal(false);
+  protected modalList = signal<string[]>([]);
+  protected modalTitle = signal('');
+  private modalTarget:
+    | { index: number; field: 'size' | 'type' | 'machine' }
+    | { field: 'methodOfPayment' }
+    | null = null;
 
-  // Manejar selección del modal
-  onModalSelect(value: string) {
-    if (this.modalTarget) {
-      const { index, field } = this.modalTarget;
-      this.ticketData.saleDetails[index][field] = value;
-      this.modalOpen = false;
-      this.modalTarget = null;
-    }
-  }
-
-  // Cerrar modal
-  onModalClosed() {
-    this.modalOpen = false;
-    this.modalTarget = null;
-  }
-
-  @HostListener('document:keydown', ['$event'])
-  handleF1(event: KeyboardEvent) {
-    if (event.key === 'F1') {
-      event.preventDefault();
-    }
-  }
-
-  includeIGV = true; // Checkbox para incluir IGV
-
-  ticketData: TicketDataModel = {
+  // Form model
+  ticketModel = signal<TicketDataModel>({
     companyName: 'LASER COLOR VELOZ',
     address: 'JR. ORBEGOSO 243 PISO 1 STAND 243',
     socialReason: 'ASESORIAS GLOBALES EMPRESARIALES E.I.R.L.',
@@ -81,33 +46,191 @@ export default class Tickets {
     saldo: 0,
     finalAmount: 0,
     printDate: new Date(),
-  };
+  });
+
+  // Form instance
+  ticketForm = form(this.ticketModel);
+
+  // IGV checkbox
+  includeIGV = signal(true);
+
+  // Computed values for totals
+  protected totalPrice = computed(() => {
+    const details = this.ticketForm.saleDetails().value();
+    return details.reduce((sum, item) => sum + (item.total || 0), 0);
+  });
+
+  protected igvAmount = computed(() => {
+    return this.includeIGV() ? this.totalPrice() * 0.18 : 0;
+  });
+
+  protected saldoAmount = computed(() => {
+    const advance = this.ticketForm.advance().value();
+    return this.totalPrice() - advance;
+  });
+
+  protected finalAmount = computed(() => {
+    const discount = this.ticketForm.discount().value();
+    const advance = this.ticketForm.advance().value();
+    return this.totalPrice() - discount + this.igvAmount() - advance;
+  });
+
+  // Access to ticketData for template compatibility
+  get ticketData(): TicketDataModel {
+    return {
+      ...this.ticketModel(),
+      totalPrice: this.totalPrice(),
+      igv: this.igvAmount(),
+      saldo: this.saldoAmount(),
+      finalAmount: this.finalAmount(),
+    };
+  }
 
   constructor() {
-    this.calculateTotals();
+    this.updateTotalsInModel();
   }
 
-  onMaterialInputKeydown(event: KeyboardEvent) {
+  private updateTotalsInModel(): void {
+    this.ticketModel.update((data) => ({
+      ...data,
+      totalPrice: this.totalPrice(),
+      igv: this.igvAmount(),
+      saldo: this.saldoAmount(),
+      finalAmount: this.finalAmount(),
+    }));
+  }
+
+  // Modal management
+  protected openModalForField(index: number, field: 'size' | 'type' | 'machine'): void {
+    this.modalTarget = { index, field };
+    if (field === 'size') {
+      this.modalList.set(this.sizes);
+      this.modalTitle.set('Seleccionar Tamaño');
+    } else if (field === 'type') {
+      this.modalList.set(this.types);
+      this.modalTitle.set('Seleccionar Tipo');
+    } else if (field === 'machine') {
+      this.modalList.set(this.machines);
+      this.modalTitle.set('Seleccionar Máquina');
+    }
+    this.modalOpen.set(true);
+  }
+
+  protected openModalForMethodPayment(): void {
+    this.modalTarget = { field: 'methodOfPayment' };
+    this.modalList.set(this.methodsPayment);
+    this.modalTitle.set('Seleccionar Método de Pago');
+    this.modalOpen.set(true);
+  }
+
+  protected onModalSelect(value: string): void {
+    if (this.modalTarget) {
+      if ('index' in this.modalTarget) {
+        const { index, field } = this.modalTarget;
+        const saleDetails = [...this.ticketForm.saleDetails().value()];
+        saleDetails[index][field] = value;
+        this.ticketForm.saleDetails().value.set(saleDetails);
+        this.updateTotalsInModel();
+      } else if (this.modalTarget.field === 'methodOfPayment') {
+        this.ticketForm.methodOfPayment().value.set(value);
+      }
+      this.modalOpen.set(false);
+      this.modalTarget = null;
+    }
+  }
+
+  protected onModalClosed(): void {
+    this.modalOpen.set(false);
+    this.modalTarget = null;
+  }
+
+  @HostListener('document:keydown', ['$event'])
+  handleF1(event: KeyboardEvent): void {
     if (event.key === 'F1') {
       event.preventDefault();
     }
   }
 
-  @HostListener('window:keydown', ['$event'])
-  onKeydownGlobal(event: KeyboardEvent) {
-    if (event.key === 'F1') {
-      event.preventDefault();
-    }
+  // Sale items management
+  protected addSaleItem(): void {
+    const currentDetails = this.ticketForm.saleDetails().value();
+    const newItem: TicketItemModel = {
+      size: '',
+      type: '',
+      machine: '',
+      quantity: 1,
+      price: 0,
+      total: 0,
+    };
+    this.ticketForm.saleDetails().value.set([...currentDetails, newItem]);
+    this.updateTotalsInModel();
   }
 
-  printTicket(): void {
-    this.ticketData.printDate = new Date();
+  protected removeSaleItem(index: number): void {
+    const currentDetails = this.ticketForm.saleDetails().value();
+    const updated = currentDetails.filter((_, i) => i !== index);
+    this.ticketForm.saleDetails().value.set(updated);
+    this.updateTotalsInModel();
+  }
+
+  protected updateSaleItem(
+    index: number,
+    field: keyof TicketItemModel,
+    value: string | number,
+  ): void {
+    const saleDetails = [...this.ticketForm.saleDetails().value()];
+    const item = saleDetails[index];
+
+    if (field === 'size' || field === 'type' || field === 'machine') {
+      item[field] = value as string;
+    } else if (field === 'quantity' || field === 'price') {
+      const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
+      item[field] = numValue;
+      item.total = item.quantity * item.price;
+    } else if (field === 'total') {
+      item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
+    }
+
+    this.ticketForm.saleDetails().value.set(saleDetails);
+    this.updateTotalsInModel();
+  }
+
+  protected calculateTotals(): void {
+    this.updateTotalsInModel();
+  }
+
+  // Form field updates
+  protected updateDesigner(value: string): void {
+    this.ticketForm.designer().value.set(value);
+  }
+
+  protected updateClient(value: string): void {
+    this.ticketForm.client().value.set(value);
+  }
+
+  protected updateAdvance(value: number): void {
+    this.ticketForm.advance().value.set(value || 0);
+    this.updateTotalsInModel();
+  }
+
+  protected updateDiscount(value: number): void {
+    this.ticketForm.discount().value.set(value || 0);
+    this.updateTotalsInModel();
+  }
+
+  // Print functionality
+  protected printTicket(): void {
+    this.ticketModel.update((data) => ({ ...data, printDate: new Date() }));
     const preview = document.querySelector('.ticket-preview');
     if (!preview) return;
 
     const printWindow = window.open('', '_blank', 'width=450,height=650');
     if (!printWindow) return;
 
+    this.setupPrintWindow(printWindow, preview);
+  }
+
+  private setupPrintWindow(printWindow: Window, preview: Element): void {
     const doc = printWindow.document;
     doc.head.innerHTML = '';
     doc.body.innerHTML = '';
@@ -116,15 +239,9 @@ export default class Tickets {
     title.textContent = `Ticket - ${this.ticketData.companyName}`;
     doc.head.appendChild(title);
 
-    const styleLink = document.querySelector(
-      'link[rel="stylesheet"][href*="styles-"]',
-    ) as HTMLLinkElement;
-    const cssHref = styleLink ? styleLink.href : '/zentoner/browser/styles.css';
-
     const link = doc.createElement('link');
     link.rel = 'stylesheet';
     link.href = 'styles.css';
-    // link.href = cssHref;
     doc.head.appendChild(link);
 
     const style = doc.createElement('style');
@@ -143,7 +260,7 @@ export default class Tickets {
     });
   }
 
-  formatDate(date: Date): string {
+  protected formatDate(date: Date): string {
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
       month: '2-digit',
@@ -151,84 +268,5 @@ export default class Tickets {
       hour: '2-digit',
       minute: '2-digit',
     });
-  }
-
-  // Method to update ticket data (for demo purposes)
-  updateTicketData(data: Partial<TicketDataModel>): void {
-    this.ticketData = { ...this.ticketData, ...data };
-  }
-
-  // Methods for managing sale details
-  addSaleItem(): void {
-    this.ticketData.saleDetails.push({
-      size: '',
-      type: '',
-      machine: '',
-      quantity: 1,
-      price: 0,
-      total: 0,
-    });
-  }
-
-  removeSaleItem(index: number): void {
-    this.ticketData.saleDetails.splice(index, 1);
-    this.calculateTotals();
-  }
-
-  updateSaleItem(index: number, field: keyof TicketItemModel, value: string | number): void {
-    const item = this.ticketData.saleDetails[index];
-    if (field === 'size' || field === 'type' || field === 'machine') {
-      item[field] = value as string;
-    } else if (field === 'quantity' || field === 'price') {
-      const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
-      item[field] = numValue;
-      item.total = item.quantity * item.price;
-    } else if (field === 'total') {
-      item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
-    }
-    this.calculateTotals();
-  }
-  calculateTotals(): void {
-    // Calculate total price from sale details
-    this.ticketData.totalPrice = this.ticketData.saleDetails.reduce(
-      (sum, item) => sum + item.total,
-      0,
-    );
-
-    // Calculate IGV (18%) only if includeIGV is true
-    this.ticketData.igv = this.includeIGV ? this.ticketData.totalPrice * 0.18 : 0;
-
-    // Calculate final amount (total - discount + IGV - advance)
-    this.ticketData.finalAmount =
-      this.ticketData.totalPrice -
-      this.ticketData.discount +
-      this.ticketData.igv -
-      this.ticketData.advance;
-
-    // Calculate saldo (monto pendiente a pagar)
-    this.ticketData.saldo = this.ticketData.totalPrice - this.ticketData.advance;
-  }
-
-  // Update methods for form fields
-  updateDesigner(value: string): void {
-    this.ticketData.designer = value;
-  }
-
-  updateClient(value: string): void {
-    this.ticketData.client = value;
-  }
-
-  updateCreationDate(value: string): void {
-    this.ticketData.creationDate = new Date(value);
-  }
-
-  updateAdvance(value: number): void {
-    this.ticketData.advance = value || 0;
-    this.calculateTotals();
-  }
-
-  updateDiscount(value: number): void {
-    this.ticketData.discount = value || 0;
-    this.calculateTotals();
   }
 }
