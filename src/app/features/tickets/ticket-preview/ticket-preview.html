@@ -1,0 +1,82 @@
+<div
+  class="ticket-preview w-full max-w-xs mx-auto text-center pl-[7mm] pr-[6mm]"
+  style="font-family: 'OpenSans', monospace"
+>
+  <div class="header font-bold text-[15px] mb-1">
+    {{ ticketData.companyName }}
+  </div>
+  <div class="sub-header flex flex-col mb-1">
+    <div class="flex flex-col text-[11px]">
+      <span>{{ ticketData.socialReason }}</span>
+      <span> RUC: {{ ticketData.ruc }} </span>
+      <span> {{ ticketData.address }} </span>
+    </div>
+    <div class="mt-2"></div>
+
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">TICKET N°:</span>
+      <span class="font-semibold">{{ ticketData.correlative || '000' }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">DISEÑADOR:</span>
+      <span class="font-semibold">{{ ticketData.designer || 'N/A' }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">CLIENTE:</span>
+      <span class="font-semibold">{{ ticketData.client || 'N/A' }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">MÉTODO DE PAGO:</span>
+      <span class="font-semibold">{{ ticketData.methodOfPayment || 'N/A' }}</span>
+    </div>
+
+    <div class="font-bold text-xs my-1">DETALLE DE VENTA</div>
+    <div class="grid grid-cols-4 gap-1 text-xs font-semibold">
+      <span class="text-left">DESCRIPCIÓN</span>
+      <span class="text-right">CANT</span>
+      <span class="text-right">P. UNIT</span>
+      <span class="text-right">IMPORTE</span>
+    </div>
+    @for (item of ticketData.saleDetails; track $index) {
+      <div class="grid grid-cols-4 text-xs">
+        <span class="col-span-4 text-left">{{
+          item.size ? item.size.toUpperCase() : 'Sin descripción'
+        }}</span>
+        <span class="col-start-2 text-right">x{{ item.quantity }}</span>
+        <span class="col-start-3 text-right">{{ item.price.toFixed(2) }}</span>
+        <span class="col-start-4 text-right">{{ item.total.toFixed(2) }}</span>
+      </div>
+    }
+
+    <div class="mb-1"></div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">PRECIO TOTAL:</span>
+      <span class="font-bold">S/ {{ ticketData.totalPrice.toFixed(2) }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">ADELANTO:</span>
+      <span class="font-bold">S/ {{ ticketData.advance.toFixed(2) }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">DESCUENTO:</span>
+      <span class="font-bold">S/ {{ ticketData.discount.toFixed(2) }}</span>
+    </div>
+    <div class="flex justify-between text-xs">
+      <span class="font-bold">SALDO:</span>
+      <span class="font-bold"> S/ {{ ticketData.saldo.toFixed(2) }} </span>
+    </div>
+    @if (includeIGV) {
+      <div class="flex justify-between text-xs">
+        <span class="font-bold">IGV (18%):</span>
+        <span class="font-bold">S/ {{ ticketData.igv.toFixed(2) }}</span>
+      </div>
+    }
+    <div class="flex justify-between text-xs font-bold mt-2">
+      <span>MONTO FINAL:</span>
+      <span class="font-bold">S/ {{ ticketData.finalAmount.toFixed(2) }}</span>
+    </div>
+    <div class="footer text-[11px] mt-1">
+      Fecha de Impresión: {{ formatDate(printDate || ticketData.printDate) }}
+    </div>
+  </div>
+</div>

@@ -1,4 +1,4 @@
-import { Component, inject, signal, OnInit } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '@core/auth/auth-service';
 import { Sidebar } from '../sidebar/sidebar';
@@ -8,18 +8,21 @@ import { Header } from '../header/header';
   selector: 'app-main-layout',
   imports: [Sidebar, RouterOutlet, Header],
   templateUrl: './main-layout.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class MainLayout implements OnInit {
+  // Dependency Injection
   private readonly authService = inject(AuthService);
-  private router = inject(Router);
+  private readonly router = inject(Router);
 
+  // State Signals (protected readonly - used in template)
   protected readonly userName = signal<string>('');
   protected readonly authEmail = signal<string>('');
+  protected readonly activeMenu = signal('Dashboard');
+  protected readonly fontSize = signal('1.2em');
 
-  protected activeMenu = signal('Dashboard');
-  protected fontSize = signal('1.2em');
-
-  menuItems = [
+  // Menu Configuration
+  protected readonly menuItems = [
     {
       name: 'Dashboard',
       icon: 'icon-[fa7-solid--layer-group]',
@@ -60,27 +63,28 @@ export default class MainLayout implements OnInit {
       icon: 'icon-[fa7-solid--sign-out-alt]',
       routeLink: '/auth/log-in',
     },
-  ];
+  ] as const;
 
-  async ngOnInit() {
+  ngOnInit(): void {
+    this.loadUserInfo();
+  }
+
+  private async loadUserInfo(): Promise<void> {
     const response = await this.authService.getInforForHeader();
     this.userName.set(response.name);
     this.authEmail.set(response.email);
   }
 
-  setActiveMenuByRoute(url: string) {
-    // Find the menu item whose routeLink matches the start of the url
+  protected setActiveMenuByRoute(url: string): void {
     const found = this.menuItems.find((item) => url.startsWith(item.routeLink));
     if (found) {
       this.activeMenu.set(found.name);
     }
   }
 
-  logOut() {
-    console.log('Cerrando sesión...');
+  protected logOut(): void {
     this.activeMenu.set('Cerrar sesión');
     this.authService.signOut();
     this.router.navigateByUrl('/auth/log-in');
-    console.log('Sesión cerrada. Redirigiendo a la página de inicio de sesión...');
   }
 }

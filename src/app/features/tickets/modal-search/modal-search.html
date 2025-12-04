@@ -1,0 +1,30 @@
+@if (open) {
+  <dialog class="modal" [open]="open" (close)="onClose()">
+    <div class="modal-box w-full max-w-3xl h-full max-h-7/12">
+      <form method="dialog" class="absolute right-2 top-2">
+        <button
+          class="btn btn-sm btn-circle btn-ghost icon-[material-symbols--cancel-rounded] h-8 w-8"
+        ></button>
+      </form>
+      <h3 class="font-bold text-lg mb-2">{{ title }}</h3>
+      <input
+        type="text"
+        class="input input-neutral w-full mb-4"
+        placeholder="Buscar..."
+        [(ngModel)]="search"
+        (input)="filterList()"
+        autofocus
+      />
+      <ul class="menu bg-base-100 w-full rounded-box max-h-96 overflow-y-auto">
+        @for (item of filteredList; track $index) {
+          <li>
+            <a (click)="select(item)" tabindex="0">{{ item }}</a>
+          </li>
+        }
+      </ul>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+}
