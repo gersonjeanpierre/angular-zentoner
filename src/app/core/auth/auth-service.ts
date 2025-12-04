@@ -39,6 +39,7 @@ export class AuthService {
 
       return response;
     } catch (httpError: unknown) {
+      console.error('error real', httpError);
       const serverError = { error: 'Error en la red o Edge function no disponible' };
       console.error(serverError);
       throw new Error(serverError.error || 'GENERIC');

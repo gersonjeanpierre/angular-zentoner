@@ -3,7 +3,15 @@ import { Router } from '@angular/router';
 import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-veloz';
 import { AuthService } from '@core/auth/auth-service';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
-import { form, Field, required, email, minLength, maxLength } from '@angular/forms/signals';
+import {
+  form,
+  Field,
+  required,
+  email,
+  minLength,
+  maxLength,
+  debounce,
+} from '@angular/forms/signals';
 
 interface LoginData {
   email: string;
@@ -17,31 +25,32 @@ interface LoginData {
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class LogIn {
-  private authService = inject(AuthService);
-  private router = inject(Router);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
-  showAlert = signal(false);
-  alertTitle = signal('');
-  alertMessage = signal('');
-  alertType = signal<'info' | 'warning' | 'error' | 'success'>('info');
+  protected readonly showAlert = signal(false);
+  protected readonly alertTitle = signal('');
+  protected readonly alertMessage = signal('');
+  protected readonly alertType = signal<'info' | 'warning' | 'error' | 'success'>('info');
 
-  loginModel = signal<LoginData>({
+  protected readonly loginModel = signal<LoginData>({
     email: '',
     password: '',
   });
 
-  loginForm = form(this.loginModel, (schemaPath) => {
+  protected readonly loginForm = form(this.loginModel, (schemaPath) => {
     required(schemaPath.email, { message: 'El email es requerido' });
     email(schemaPath.email, { message: 'Ingrese un email válido' });
     minLength(schemaPath.email, 6, { message: 'Mínimo 6 caracteres' });
     maxLength(schemaPath.email, 40, { message: 'Máximo 40 caracteres' });
+    debounce(schemaPath.email, 500);
 
     required(schemaPath.password, { message: 'La contraseña es requerida' });
     minLength(schemaPath.password, 6, { message: 'Mínimo 6 caracteres' });
     maxLength(schemaPath.password, 20, { message: 'Máximo 20 caracteres' });
   });
 
-  async onSubmit(event: Event) {
+  protected async onSubmit(event: Event) {
     event.preventDefault();
     if (this.loginForm.email().invalid() || this.loginForm.password().invalid()) return;
 
@@ -64,7 +73,7 @@ export default class LogIn {
     this.router.navigateByUrl('/');
   }
 
-  closeAlert() {
+  protected closeAlert() {
     this.showAlert.set(false);
   }
 }

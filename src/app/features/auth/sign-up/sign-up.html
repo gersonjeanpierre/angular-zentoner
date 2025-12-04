@@ -1,1 +1,180 @@
-<p>sign-up works!</p>
+<div class="flex flex-col items-center justify-center h-full bg-base-200 p-4">
+  <app-logo-laser-veloz class="mb-8"></app-logo-laser-veloz>
+
+  <div class="card w-full max-w-lg bg-base-100 shadow-xl p-8">
+    <h2 class="text-2xl font-bold text-center mb-6">Registro de Nuevo Empleado</h2>
+    <form (submit)="onSubmit($event)" autocomplete="off">
+      <!-- Email -->
+      <div class="form-control w-full mb-4">
+        <label class="label">
+          <span class="label-text">Email de Autenticación</span>
+        </label>
+        <input
+          type="email"
+          placeholder="ejemplo@zentoner.com"
+          class="input input-bordered w-full"
+          [field]="signUpForm.email"
+          [class.input-error]="signUpForm.email().touched() && signUpForm.email().invalid()"
+          autocomplete="username"
+        />
+        @if (signUpForm.email().touched() && signUpForm.email().invalid()) {
+          <div class="label">
+            @for (error of signUpForm.email().errors(); track error) {
+              <span class="label-text-alt text-error">{{ error.message }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Contraseña -->
+      <div class="form-control w-full mb-4">
+        <label class="label">
+          <span class="label-text">Contraseña</span>
+        </label>
+        <input
+          type="password"
+          placeholder="Mínimo 6 caracteres"
+          class="input input-bordered w-full"
+          [field]="signUpForm.password"
+          [class.input-error]="signUpForm.password().touched() && signUpForm.password().invalid()"
+          autocomplete="new-password"
+        />
+        @if (signUpForm.password().touched() && signUpForm.password().invalid()) {
+          <div class="label">
+            @for (error of signUpForm.password().errors(); track error) {
+              <span class="label-text-alt text-error">{{ error.message }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Nombre -->
+      <div class="form-control w-full mb-4">
+        <label class="label">
+          <span class="label-text">Nombre</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Nombre"
+          class="input input-bordered w-full"
+          [field]="signUpForm.firstName"
+          [class.input-error]="signUpForm.firstName().touched() && signUpForm.firstName().invalid()"
+          autocomplete="given-name"
+        />
+        @if (signUpForm.firstName().touched() && signUpForm.firstName().invalid()) {
+          <div class="label">
+            @for (error of signUpForm.firstName().errors(); track error) {
+              <span class="label-text-alt text-error">{{ error.message }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Apellido -->
+      <div class="form-control w-full mb-4">
+        <label class="label">
+          <span class="label-text">Apellido</span>
+        </label>
+        <input
+          type="text"
+          placeholder="Apellido"
+          class="input input-bordered w-full"
+          [field]="signUpForm.lastName"
+          [class.input-error]="signUpForm.lastName().touched() && signUpForm.lastName().invalid()"
+          autocomplete="family-name"
+        />
+        @if (signUpForm.lastName().touched() && signUpForm.lastName().invalid()) {
+          <div class="label">
+            @for (error of signUpForm.lastName().errors(); track error) {
+              <span class="label-text-alt text-error">{{ error.message }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Tienda a asignar -->
+      <div class="form-control w-full mb-4">
+        <label class="label">
+          <span class="label-text font-bold">Tienda a Asignar</span>
+        </label>
+        <select
+          class="select select-bordered w-full"
+          [field]="signUpForm.shopId"
+          [class.select-error]="signUpForm.shopId().touched() && signUpForm.shopId().invalid()"
+        >
+          <option value="" disabled>Seleccione una tienda</option>
+          @for (shop of availableShops(); track shop.id) {
+            <option [value]="shop.id">{{ shop.name }}</option>
+          }
+        </select>
+        @if (signUpForm.shopId().touched() && signUpForm.shopId().invalid()) {
+          <div class="label">
+            @for (error of signUpForm.shopId().errors(); track error) {
+              <span class="label-text-alt text-error">{{ error.message }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Roles a Asignar -->
+      <div class="form-control w-full mt-2">
+        <label class="label">
+          <span class="label-text font-bold">Roles a Asignar</span>
+        </label>
+        <div class="grid grid-cols-2 gap-4 p-4 border rounded-box bg-base-200">
+          @if (isLoading()) {
+            <div class="col-span-2 text-center text-info">
+              <span class="loading loading-spinner loading-sm mr-2"></span>
+              Cargando roles...
+            </div>
+          } @else if (availableRoles().length === 0) {
+            <div class="col-span-2 text-center text-warning">No hay roles disponibles.</div>
+          } @else {
+            @for (role of availableRoles(); track role.name) {
+              <label class="form-control cursor-pointer flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  [value]="role.name"
+                  (change)="onRoleChange(role.name, $event)"
+                  class="checkbox checkbox-primary"
+                  [checked]="isRoleSelected(role.name)"
+                />
+                <span class="label-text">{{ role.label }}</span>
+              </label>
+            }
+          }
+        </div>
+        @if (!hasSelectedRoles()) {
+          <div class="label">
+            <span class="label-text-alt text-error">Debe seleccionar al menos un rol.</span>
+          </div>
+        }
+      </div>
+
+      <!-- Botón de envío -->
+      <div class="form-control mt-6">
+        <button
+          type="submit"
+          class="btn btn-primary btn-block"
+          [disabled]="!isFormValid() || isLoading()"
+        >
+          @if (isLoading()) {
+            <span class="loading loading-spinner"></span>
+            Creando Empleado...
+          } @else {
+            Crear Empleado
+          }
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+@if (showModal()) {
+  <app-alert-modal
+    [title]="alertTitle()"
+    [message]="alertMessage()"
+    [type]="alertType()"
+    (closed)="showModal.set(false)"
+  />
+}
