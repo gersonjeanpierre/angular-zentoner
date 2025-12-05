@@ -271,21 +271,24 @@ export default class Tickets {
     title.textContent = `Ticket - ${this.ticketData.companyName}`;
     doc.head.appendChild(title);
 
-    // Produccion
-    const styleLink = document.querySelector(
-      'link[rel="stylesheet"][href*="styles-"]',
-    ) as HTMLLinkElement;
-    const cssHref = styleLink ? styleLink.href : '/zentoner/browser/styles.css';
-    const link = doc.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = cssHref;
+    // Copiar todos los estilos inline desde el documento actual
+    const allStylesheets = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+    allStylesheets.forEach((stylesheet) => {
+      const link = doc.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = (stylesheet as HTMLLinkElement).href;
+      doc.head.appendChild(link);
+    });
 
-    // Desarrollo
-    // const link = doc.createElement('link');
-    // link.rel = 'stylesheet';
-    // link.href = 'styles.css';
-    // doc.head.appendChild(link);
+    // Copiar estilos inline del head
+    const allStyles = Array.from(document.querySelectorAll('style'));
+    allStyles.forEach((style) => {
+      const newStyle = doc.createElement('style');
+      newStyle.textContent = style.textContent;
+      doc.head.appendChild(newStyle);
+    });
 
+    // Agregar estilos específicos para impresión
     const style = doc.createElement('style');
     style.textContent = `
       @media print {
