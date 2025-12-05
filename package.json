@@ -10,7 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "deploy:cf": "node generate-env.js && npm run build"
+    "deploy:cf": "node generate-env.js && npm run build && npx wrangler deploy --assets=./dist/angular-zentoner"
   },
   "private": true,
   "packageManager": "npm@11.6.3",
