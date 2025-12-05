@@ -17,7 +17,7 @@ const envContent = `
 export const environment = {
   production: true,
   SUPABASE_URL: "${SUPABASE_URL}",
-  SUPABASE_KEY: "${SUPABASE_PUBLISHABLE_DEFAULT_KEY}"
+  SUPABASE_PUBLISHABLE_DEFAULT_KEY: "${SUPABASE_PUBLISHABLE_DEFAULT_KEY}"
 };
 `;
 
