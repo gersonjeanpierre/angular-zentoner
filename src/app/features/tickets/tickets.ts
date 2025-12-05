@@ -237,10 +237,29 @@ export default class Tickets {
     const preview = document.querySelector('.ticket-preview');
     if (!preview) return;
 
+    // Convertir canvas QR a imagen antes de clonar
+    const canvas = preview.querySelector('canvas');
+    if (canvas) {
+      const img = document.createElement('img');
+      img.src = canvas.toDataURL('image/png');
+      img.width = canvas.width;
+      img.height = canvas.height;
+      img.className = canvas.className;
+      canvas.parentElement?.replaceChild(img, canvas);
+    }
+
     const printWindow = window.open('', '_blank', 'width=450,height=650');
     if (!printWindow) return;
 
     this.setupPrintWindow(printWindow, preview);
+
+    // Restaurar canvas original después de un breve delay
+    if (canvas) {
+      const img = preview.querySelector('img[src^="data:image/png"]');
+      if (img && img.parentElement) {
+        img.parentElement.replaceChild(canvas, img);
+      }
+    }
   }
 
   private setupPrintWindow(printWindow: Window, preview: Element): void {
@@ -252,10 +271,20 @@ export default class Tickets {
     title.textContent = `Ticket - ${this.ticketData.companyName}`;
     doc.head.appendChild(title);
 
+    // Produccion
+    const styleLink = document.querySelector(
+      'link[rel="stylesheet"][href*="styles-"]',
+    ) as HTMLLinkElement;
+    const cssHref = styleLink ? styleLink.href : '/zentoner/browser/styles.css';
     const link = doc.createElement('link');
     link.rel = 'stylesheet';
-    link.href = 'styles.css';
-    doc.head.appendChild(link);
+    link.href = cssHref;
+
+    // Desarrollo
+    // const link = doc.createElement('link');
+    // link.rel = 'stylesheet';
+    // link.href = 'styles.css';
+    // doc.head.appendChild(link);
 
     const style = doc.createElement('style');
     style.textContent = `

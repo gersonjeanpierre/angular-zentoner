@@ -75,14 +75,9 @@
     </div>
     @if (ticketUuid) {
       <div class="flex justify-center mt-3 mb-2">
-        <canvas
-          #qrCanvas
-          width="150"
-          height="150"
-          class="border border-gray-300 w-[150px] h-[150px]"
-        ></canvas>
+        <canvas #qrCanvas width="150" height="150" class="w-[150px] h-[150px]"></canvas>
       </div>
-      <div class="text-[9px] text-center mb-1">ID: {{ ticketUuid }}</div>
+      <div class="text-[12px] text-center mb-1">ID: {{ ticketUuid }}</div>
     }
     <div class="footer text-[11px] mt-1">
       Fecha de Impresión: {{ formatDate(printDate || ticketData.printDate) }}
