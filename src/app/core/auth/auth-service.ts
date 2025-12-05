@@ -4,7 +4,7 @@ import { SignUpWithPasswordCredentials } from '@supabase/supabase-js';
 import { EdgeFunctionPayload, EdgeFunctionResponse } from './models/edge-function.model';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { environment } from '@env/environment.development';
+import { environment } from '@env/environment';
 
 @Injectable({
   providedIn: 'root',
