@@ -10,7 +10,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
-    "deploy:cf": "node generate-env.js && bun run build --prod"
+    "deploy:cf": "node generate-env.js && npm run build"
   },
   "private": true,
   "packageManager": "npm@11.6.3",
