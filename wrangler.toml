@@ -1,0 +1,6 @@
+name = "angular-zentoner"
+main = "worker.js" 
+compatibility_date = "2025-12-05"
+
+[site]
+bucket = "./dist/angular-zentoner"
