@@ -218,8 +218,12 @@
             </div>
           </div>
 
-          <!-- Botón Imprimir -->
-          <div class="card-actions justify-end mt-4">
+          <!-- Botón Generar QR y Botón Imprimir -->
+          <div class="card-actions justify-end mt-4 gap-2">
+            <button class="btn btn-secondary w-full md:w-auto" (click)="generateTicketQR()">
+              <span class="icon-[mdi--qrcode] w-5 h-5"></span>
+              Generar QR
+            </button>
             <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printTicket()">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -250,11 +254,13 @@
           [ticketData]="ticketData"
           [printDate]="ticketData.printDate"
           [includeIGV]="includeIGV()"
+          [ticketUuid]="ticketUuid()"
         ></app-ticket-preview>
       </div>
     </div>
   </div>
 </div>
+<app-uuid-qr></app-uuid-qr>
 <!-- Modal de búsqueda reutilizable -->
 <modal-search
   [open]="modalOpen()"

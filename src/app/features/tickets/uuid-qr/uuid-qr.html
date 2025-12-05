@@ -1,0 +1,212 @@
+<!-- Encabezado -->
+<div class="max-w-6xl mx-auto">
+  <header class="text-center mb-10">
+    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-3">
+      <i class="fas fa-qrcode text-indigo-600 mr-3"></i>
+      Generador y Lector de UUID v7
+    </h1>
+    <p class="text-gray-600 max-w-2xl mx-auto">
+      Genera identificadores únicos UUID v7 con códigos QR y escanéalos con la cámara de tu
+      dispositivo móvil.
+    </p>
+  </header>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <!-- Columna izquierda: Generador de UUID -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+      <div class="flex items-center mb-6">
+        <div class="bg-indigo-100 p-3 rounded-xl mr-4">
+          <i class="fas fa-plus-circle text-indigo-600 text-2xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Generar UUID v7</h2>
+      </div>
+      <p class="text-gray-600 mb-6">
+        UUID v7 es un identificador único basado en la marca de tiempo actual, ideal para bases de
+        datos ordenadas por tiempo.
+      </p>
+      <div class="mb-8">
+        <button
+          class="w-full py-4 bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg transition duration-300 transform hover:-translate-y-1"
+          (click)="generateUuid()"
+        >
+          <i class="fas fa-bolt mr-2"></i> Generar Nuevo UUID v7
+        </button>
+      </div>
+      @if (uuid()) {
+        <div
+          class="bg-linear-to-r from-blue-50 to-indigo-50 rounded-xl p-5 mb-6 border border-blue-100 uuid-card"
+        >
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="font-semibold text-gray-700">
+              <i class="fas fa-fingerprint mr-2"></i> UUID Generado:
+            </h3>
+            <button
+              class="text-sm bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1 rounded-lg transition-colors"
+              (click)="copyUuid(uuid()!)"
+            >
+              <i class="fas fa-copy mr-1"></i> Copiar
+            </button>
+          </div>
+          <div class="font-mono text-lg bg-white p-4 rounded-lg border break-all select-all">
+            {{ uuid() }}
+          </div>
+          <div class="mt-4 text-sm text-gray-500">
+            <i class="fas fa-info-circle mr-1"></i>
+            <span>{{ timestampInfo() }}</span>
+          </div>
+        </div>
+        <div class="bg-linear-to-r from-gray-50 to-blue-50 rounded-xl p-5 border border-gray-200">
+          <h3 class="font-semibold text-gray-700 mb-4">
+            <i class="fas fa-qrcode mr-2"></i> Código QR del UUID:
+          </h3>
+          <div class="flex justify-center p-4 bg-white rounded-lg border">
+            <canvas #qrCanvas></canvas>
+          </div>
+          <p class="text-sm text-gray-500 text-center mt-4">
+            Escanea este código QR con la cámara de otro dispositivo
+          </p>
+        </div>
+      } @else {
+        <div class="text-center py-10 text-gray-500">
+          <i class="fas fa-qrcode text-4xl mb-4 text-gray-300"></i>
+          <p class="text-lg">Presiona el botón para generar tu primer UUID v7</p>
+        </div>
+      }
+    </div>
+    <!-- Columna derecha: Lector de QR -->
+    <div class="bg-white rounded-2xl shadow-xl p-6">
+      <div class="flex items-center mb-6">
+        <div class="bg-green-100 p-3 rounded-xl mr-4">
+          <i class="fas fa-camera text-green-600 text-2xl"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-gray-800">Leer Código QR</h2>
+      </div>
+      <p class="text-gray-600 mb-6">
+        Escanea un código QR que contenga un UUID v7 usando la cámara de tu dispositivo móvil.
+      </p>
+      <div class="mb-6">
+        <button
+          class="w-full py-4 bg-linear-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 text-white font-bold rounded-xl shadow-lg transition duration-300 transform hover:-translate-y-1"
+          (click)="startScanner()"
+        >
+          <i class="fas fa-camera mr-2"></i> Activar Cámara y Escanear QR
+        </button>
+      </div>
+      @if (scannerActive()) {
+        <div class="relative" id="qr-reader"></div>
+        <div class="flex justify-center mt-4">
+          <button
+            class="py-3 px-6 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow transition duration-300"
+            (click)="stopScanner()"
+          >
+            <i class="fas fa-stop-circle mr-2"></i> Detener Escáner
+          </button>
+        </div>
+      } @else {
+        <div class="text-center py-10 text-gray-500">
+          <i class="fas fa-mobile-alt text-4xl mb-4 text-gray-300"></i>
+          <p class="text-lg mb-2">Presiona el botón para activar la cámara</p>
+          <p class="text-sm">Permite el acceso a la cámara cuando tu navegador lo solicite</p>
+        </div>
+      }
+      @if (scannedUuid()) {
+        <div
+          class="bg-linear-to-r from-green-50 to-teal-50 rounded-xl p-5 border border-green-200 mt-8"
+        >
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="font-semibold text-gray-700">
+              <i class="fas fa-check-circle text-green-600 mr-2"></i> UUID Escaneado:
+            </h3>
+            <span
+              class="text-sm font-semibold px-3 py-1 rounded-full"
+              [class.bg-green-100]="isValidUuid(scannedUuid())"
+              [class.text-green-800]="isValidUuid(scannedUuid())"
+              [class.bg-amber-100]="!isValidUuid(scannedUuid())"
+              [class.text-amber-800]="!isValidUuid(scannedUuid())"
+            >
+              <i
+                class="fas mr-1"
+                [class.fa-check]="isValidUuid(scannedUuid())"
+                [class.fa-exclamation-triangle]="!isValidUuid(scannedUuid())"
+              ></i>
+              {{ validBadgeText() }}
+            </span>
+          </div>
+          <div class="font-mono text-lg bg-white p-4 rounded-lg border break-all select-all mb-4">
+            {{ scannedUuid() }}
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button
+              class="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg transition-colors"
+              (click)="useScannedUuid()"
+            >
+              <i class="fas fa-clipboard-check mr-1"></i> Usar este UUID
+            </button>
+            <button
+              class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg transition-colors"
+              (click)="copyScannedUuid()"
+            >
+              <i class="fas fa-copy mr-1"></i> Copiar
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+  <!-- Historial de UUIDs -->
+  <div class="bg-white rounded-2xl shadow-xl p-6 mt-8">
+    <div class="flex items-center mb-6">
+      <div class="bg-amber-100 p-3 rounded-xl mr-4">
+        <i class="fas fa-history text-amber-600 text-2xl"></i>
+      </div>
+      <h2 class="text-2xl font-bold text-gray-800">Historial de UUIDs</h2>
+    </div>
+    <div class="space-y-4 max-h-60 overflow-y-auto p-2">
+      @if (uuidHistory().length) {
+        @for (item of uuidHistory(); track item.id) {
+          <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border">
+            <div class="flex items-center">
+              <div class="mr-4">
+                <span class="font-mono font-bold">{{
+                  item.uuid.substring(0, 8) + '...' + item.uuid.substring(36)
+                }}</span>
+              </div>
+              <span
+                class="text-xs px-2 py-1 rounded-full"
+                [class.bg-indigo-100]="item.type === 'generated'"
+                [class.text-indigo-800]="item.type === 'generated'"
+                [class.bg-green-100]="item.type === 'scanned'"
+                [class.text-green-800]="item.type === 'scanned'"
+              >
+                <i
+                  class="fas mr-1"
+                  [class.fa-plus-circle]="item.type === 'generated'"
+                  [class.fa-camera]="item.type === 'scanned'"
+                ></i>
+                {{ item.type === 'generated' ? 'Generado' : 'Escaneado' }}
+              </span>
+            </div>
+            <div class="text-xs text-gray-500">
+              {{ formatDate(item.timestamp) }}
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="text-center text-gray-500 py-4">
+          <i class="fas fa-clock text-2xl mb-2"></i>
+          <p>Los UUIDs generados y escaneados aparecerán aquí</p>
+        </div>
+      }
+    </div>
+  </div>
+  <!-- Pie de página -->
+  <footer class="mt-10 text-center text-gray-500 text-sm">
+    <p class="mb-2">
+      Esta aplicación utiliza UUID v7 basado en marcas de tiempo y códigos QR para transferencia de
+      datos.
+    </p>
+    <p>
+      <i class="fas fa-code mr-1"></i> Desarrollado con Angular, Tailwind CSS, uuid y html5-qrcode
+    </p>
+  </footer>
+</div>

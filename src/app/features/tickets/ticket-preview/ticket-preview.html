@@ -39,9 +39,7 @@
     </div>
     @for (item of ticketData.saleDetails; track $index) {
       <div class="grid grid-cols-4 text-xs">
-        <span class="col-span-4 text-left">{{
-          item.size ? item.size.toUpperCase() : 'Sin descripción'
-        }}</span>
+        <span class="col-span-4 text-left">{{ getItemDescription(item) }}</span>
         <span class="col-start-2 text-right">x{{ item.quantity }}</span>
         <span class="col-start-3 text-right">{{ item.price.toFixed(2) }}</span>
         <span class="col-start-4 text-right">{{ item.total.toFixed(2) }}</span>
@@ -75,6 +73,17 @@
       <span>MONTO FINAL:</span>
       <span class="font-bold">S/ {{ ticketData.finalAmount.toFixed(2) }}</span>
     </div>
+    @if (ticketUuid) {
+      <div class="flex justify-center mt-3 mb-2">
+        <canvas
+          #qrCanvas
+          width="150"
+          height="150"
+          class="border border-gray-300 w-[150px] h-[150px]"
+        ></canvas>
+      </div>
+      <div class="text-[9px] text-center mb-1">ID: {{ ticketUuid }}</div>
+    }
     <div class="footer text-[11px] mt-1">
       Fecha de Impresión: {{ formatDate(printDate || ticketData.printDate) }}
     </div>

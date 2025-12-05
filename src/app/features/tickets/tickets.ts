@@ -4,10 +4,12 @@ import { TicketDataModel, TicketItemModel } from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
 import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE, METHOD_PAYMENT } from '@data/constants';
+import { UuidQr } from './uuid-qr/uuid-qr';
+import { v4 as uuidv4 } from 'uuid';
 
 @Component({
   selector: 'app-tickets',
-  imports: [Field, TicketPreview, ModalSearch],
+  imports: [Field, TicketPreview, ModalSearch, UuidQr],
   templateUrl: './tickets.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -54,6 +56,9 @@ export default class Tickets {
   // IGV checkbox
   includeIGV = signal(true);
 
+  // Ticket UUID for QR code
+  protected ticketUuid = signal<string | null>(null);
+
   // Computed values for totals
   protected totalPrice = computed(() => {
     const details = this.ticketForm.saleDetails().value();
@@ -88,6 +93,14 @@ export default class Tickets {
 
   constructor() {
     this.updateTotalsInModel();
+  }
+
+  protected generateTicketQR(): void {
+    const uuidV4 = uuidv4();
+    const timestamp = Date.now();
+    const timestampHex = timestamp.toString(16).padStart(12, '0');
+    const uuidV7 = `${timestampHex.substring(0, 8)}-${timestampHex.substring(8, 12)}-7${uuidV4.substring(14, 18)}-${uuidV4.substring(19, 23)}-${uuidV4.substring(24)}`;
+    this.ticketUuid.set(uuidV7);
   }
 
   private updateTotalsInModel(): void {
