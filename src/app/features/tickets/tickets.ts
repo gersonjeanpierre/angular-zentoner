@@ -4,12 +4,12 @@ import { TicketDataModel, TicketItemModel } from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
 import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE, METHOD_PAYMENT } from '@data/constants';
-import { UuidQr } from './uuid-qr/uuid-qr';
 import { v4 as uuidv4 } from 'uuid';
+import { PRINTING_CATEGORIES } from '@data/constants/categories';
 
 @Component({
   selector: 'app-tickets',
-  imports: [Field, TicketPreview, ModalSearch, UuidQr],
+  imports: [Field, TicketPreview, ModalSearch],
   templateUrl: './tickets.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -24,10 +24,15 @@ export default class Tickets {
   protected modalOpen = signal(false);
   protected modalList = signal<string[]>([]);
   protected modalTitle = signal('');
+  protected isCustomSize = signal(false);
   private modalTarget:
-    | { index: number; field: 'size' | 'type' | 'machine' }
+    | { index: number; field: 'category' | 'size' | 'type' | 'machine' }
     | { field: 'methodOfPayment' }
     | null = null;
+
+  protected category = PRINTING_CATEGORIES
+
+  protected categories = this.category.map(c => c.name);
 
   // Form model
   ticketModel = signal<TicketDataModel>({
@@ -93,6 +98,7 @@ export default class Tickets {
 
   constructor() {
     this.updateTotalsInModel();
+    console.log(this.category)
   }
 
   protected generateTicketQR(): void {
@@ -114,17 +120,43 @@ export default class Tickets {
   }
 
   // Modal management
-  protected openModalForField(index: number, field: 'size' | 'type' | 'machine'): void {
+  protected openModalForField(index: number, field: 'category' | 'size' | 'type' | 'machine'): void {
     this.modalTarget = { index, field };
-    if (field === 'size') {
-      this.modalList.set(this.sizes);
-      this.modalTitle.set('Seleccionar Tamaño');
-    } else if (field === 'type') {
-      this.modalList.set(this.types);
+    if (field === 'category') {
+      this.modalList.set(this.categories);
+      this.modalTitle.set('Seleccionar Categoría');
+      this.isCustomSize.set(false);
+    }
+    else if (field === 'type') {
+      const item = this.ticketForm.saleDetails().value()[index];
+      const category = this.category.find(c => c.name === item.category);
+      this.modalList.set(category ? category.itemTypes : this.types);
       this.modalTitle.set('Seleccionar Tipo');
-    } else if (field === 'machine') {
-      this.modalList.set(this.machines);
+      this.isCustomSize.set(false);
+    }
+    else if (field === 'size') {
+      const item = this.ticketForm.saleDetails().value()[index];
+      const category = this.category.find(c => c.name === item.category);
+      if (category && category.id === 2) {
+        if (item.type && item.type.toUpperCase().includes('VINIL')) {
+          this.modalList.set(['1.5']);
+        } else {
+          this.modalList.set(['3.2', '2.2', '2.5', '1.8', '1.6', '1.1']);
+        }
+        this.modalTitle.set('Seleccionar Tamaño');
+        this.isCustomSize.set(true);
+      } else {
+        this.modalList.set(category ? category.allowedSizes : this.sizes);
+        this.modalTitle.set('Seleccionar Tamaño');
+        this.isCustomSize.set(false);
+      }
+    }
+    else if (field === 'machine') {
+      const item = this.ticketForm.saleDetails().value()[index];
+      const category = this.category.find(c => c.name === item.category);
+      this.modalList.set(category ? category.compatibleMachines : this.machines);
       this.modalTitle.set('Seleccionar Máquina');
+      this.isCustomSize.set(false);
     }
     this.modalOpen.set(true);
   }
@@ -141,7 +173,14 @@ export default class Tickets {
       if ('index' in this.modalTarget) {
         const { index, field } = this.modalTarget;
         const saleDetails = [...this.ticketForm.saleDetails().value()];
-        saleDetails[index][field] = value;
+        if (field === 'category') {
+          saleDetails[index].category = value;
+          saleDetails[index].size = '';
+          saleDetails[index].type = '';
+          saleDetails[index].machine = '';
+        } else {
+          saleDetails[index][field] = value;
+        }
         this.ticketForm.saleDetails().value.set(saleDetails);
         this.updateTotalsInModel();
       } else if (this.modalTarget.field === 'methodOfPayment') {
@@ -155,6 +194,7 @@ export default class Tickets {
   protected onModalClosed(): void {
     this.modalOpen.set(false);
     this.modalTarget = null;
+    this.isCustomSize.set(false);
   }
 
   @HostListener('document:keydown', ['$event'])
@@ -168,6 +208,7 @@ export default class Tickets {
   protected addSaleItem(): void {
     const currentDetails = this.ticketForm.saleDetails().value();
     const newItem: TicketItemModel = {
+      category: '',
       size: '',
       type: '',
       machine: '',

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
 import { LogoLaserVeloz } from '../../../shared/components/logo-laser-veloz/logo-laser-veloz';
 import {
   form,
@@ -25,7 +25,7 @@ interface SignUpData {
   shopId: string;
 }
 
-type RoleType = { name: string; label: string };
+interface RoleType { name: string; label: string }
 
 @Component({
   selector: 'app-sign-up',
@@ -33,7 +33,7 @@ type RoleType = { name: string; label: string };
   templateUrl: './sign-up.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class SignUp {
+export default class SignUp implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly translate = inject(TranslateService);
   private readonly shopService = inject(ShopService);

@@ -9,7 +9,7 @@ export function generateCustomerCode(firstName: string, lastName: string): strin
   // Helper to pad or slice. 
   // Note: Original logic used 'X' padding. New requirements mention 'Z' for strange cases.
   // We will use 'Z' for padding in new cases to be safe/consistent with "strange cases".
-  const pad = (str: string, len: number, char: string = 'Z') => str.padEnd(len, char).slice(0, len);
+  const pad = (str: string, len: number, char = 'Z') => str.padEnd(len, char).slice(0, len);
 
   const fWords = getWords(firstName);
   const lWords = getWords(lastName);

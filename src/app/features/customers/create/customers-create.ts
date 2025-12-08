@@ -51,7 +51,7 @@ export default class CustomersCreate {
   }
 
   private serializeNotes(): Record<string, string> | null {
-    const notesArr = this.notesArray.value as Array<{ key: string; value: string }>;
+    const notesArr = this.notesArray.value as { key: string; value: string }[];
     const notesObj: Record<string, string> = {};
     for (const { key, value } of notesArr) {
       if (key && key.trim()) notesObj[key.trim()] = value;

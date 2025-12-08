@@ -1,4 +1,5 @@
 export interface TicketItemModel {
+  category?: string;
   size?: string;
   type?: string;
   machine?: string;

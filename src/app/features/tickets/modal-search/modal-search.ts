@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, HostListener } from '@angular/core';
+import { Component, Input, Output, EventEmitter, HostListener, OnChanges } from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
@@ -7,15 +7,20 @@ import { FormsModule } from '@angular/forms';
   imports: [FormsModule],
   templateUrl: 'modal-search.html'
 })
-export class ModalSearch {
+export class ModalSearch implements OnChanges {
   @Input() open = false;
   @Input() list: string[] = [];
   @Input() title = 'Seleccionar';
+  @Input() isCustomSize = false;
   @Output() selectItem = new EventEmitter<string>();
   @Output() closed = new EventEmitter<void>();
 
   search = '';
   filteredList: string[] = [];
+
+  // For custom size
+  selectedWidth = '';
+  height = '';
 
   ngOnChanges() {
     this.filterList();
@@ -31,8 +36,18 @@ export class ModalSearch {
     this.onClose();
   }
 
+  selectCustomSize() {
+    if (this.selectedWidth && this.height) {
+      const size = `${this.selectedWidth} x ${this.height} m`;
+      this.selectItem.emit(size);
+      this.onClose();
+    }
+  }
+
   onClose() {
     this.search = '';
+    this.selectedWidth = '';
+    this.height = '';
     this.closed.emit();
   }
 

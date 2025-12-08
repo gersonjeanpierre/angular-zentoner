@@ -62,10 +62,11 @@
           <!-- Items a agregar -->
           <div class="w-full overflow-x-auto md:overflow-visible">
             <div
-              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-2 text-lg mb-1 min-w-[500px] md:min-w-0"
+              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-[500px] md:min-w-0"
             >
-              <span class="text-left">Tamaño</span>
+              <span class="text-left">Categoría</span>
               <span class="text-left">Tipo</span>
+              <span class="text-left">Tamaño</span>
               <span class="text-left">Maquina</span>
               <span class="text-left">Cantidad</span>
               <span class="text-left">P.Unitario</span>
@@ -73,18 +74,18 @@
             </div>
             <div class="space-y-2">
               @for (item of ticketData.saleDetails; track $index) {
-                <div class="grid grid-cols-2 md:grid-cols-6 gap-2 mt-3 mb-3">
-                  <!-- Tamaño -->
+                <div class="grid grid-cols-2 md:grid-cols-7 gap-2 mt-3 mb-3">
+                  <!-- Categoría -->
                   <input
                     type="text"
                     class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
-                    placeholder="Tamaño"
+                    placeholder="Categoría"
                     readonly
-                    [value]="item.size"
-                    (focus)="openModalForField($index, 'size')"
-                    (click)="openModalForField($index, 'size')"
+                    [value]="item.category"
+                    (focus)="openModalForField($index, 'category')"
+                    (click)="openModalForField($index, 'category')"
                   />
-                  <!-- Tipo -->
+                  <!-- Tamaño -->
                   <input
                     type="text"
                     class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
@@ -93,6 +94,16 @@
                     [value]="item.type"
                     (focus)="openModalForField($index, 'type')"
                     (click)="openModalForField($index, 'type')"
+                  />
+                  <!-- Tipo -->
+                  <input
+                    type="text"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
+                    placeholder="Tamaño"
+                    readonly
+                    [value]="item.size"
+                    (focus)="openModalForField($index, 'size')"
+                    (click)="openModalForField($index, 'size')"
                   />
                   <!-- Maquina -->
                   <input
@@ -260,12 +271,12 @@
     </div>
   </div>
 </div>
-<app-uuid-qr></app-uuid-qr>
 <!-- Modal de búsqueda reutilizable -->
 <modal-search
   [open]="modalOpen()"
   [list]="modalList()"
   [title]="modalTitle()"
+  [isCustomSize]="isCustomSize()"
   (selectItem)="onModalSelect($event)"
   (closed)="onModalClosed()"
 ></modal-search>
