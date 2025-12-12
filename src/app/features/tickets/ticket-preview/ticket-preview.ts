@@ -1,11 +1,10 @@
 import {
   Component,
-  Input,
-  ViewChild,
-  ElementRef,
-  AfterViewInit,
+  input,
+  viewChild,
   effect,
-  signal,
+  ElementRef,
+  ChangeDetectionStrategy,
 } from '@angular/core';
 import { TicketDataModel } from '@data/models/tickets';
 import { TicketItemModel } from '@data/models/tickets/ticket-item-model';
@@ -15,36 +14,24 @@ import QRCode from 'qrcode';
   selector: 'app-ticket-preview',
   imports: [],
   templateUrl: './ticket-preview.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class TicketPreview implements AfterViewInit {
-  @Input() ticketData!: TicketDataModel;
-  @Input() printDate!: Date;
-  @Input() includeIGV = true;
-  @Input() set ticketUuid(value: string | null) {
-    this._ticketUuid = value;
-    // Usar setTimeout para asegurar que el DOM se haya actualizado
-    if (value) {
-      setTimeout(() => {
-        if (this.qrCanvas) {
-          this.renderQrCode();
-        }
-      }, 0);
-    }
-  }
-  get ticketUuid(): string | null {
-    return this._ticketUuid;
-  }
-  private _ticketUuid: string | null = null;
+export class TicketPreview {
+  readonly ticketData = input.required<TicketDataModel>();
+  readonly printDate = input.required<Date>();
+  readonly includeIGV = input<boolean>(true);
+  readonly ticketUuid = input<string | null>();
 
-  @ViewChild('qrCanvas', { static: false }) qrCanvas?: ElementRef<HTMLCanvasElement>;
+  readonly qrCanvas = viewChild<ElementRef<HTMLCanvasElement>>('qrCanvas');
 
-  constructor() {}
-
-  ngAfterViewInit(): void {
-    // Si hay un UUID pendiente y el setter no lo manejó, renderizarlo ahora
-    if (this.ticketUuid && this.qrCanvas) {
-      setTimeout(() => this.renderQrCode(), 0);
-    }
+  constructor() {
+    effect(() => {
+      const uuid = this.ticketUuid();
+      const canvas = this.qrCanvas();
+      if (uuid && canvas) {
+        this.renderQrCode();
+      }
+    });
   }
 
   formatDate(date: Date): string {
@@ -67,13 +54,13 @@ export class TicketPreview implements AfterViewInit {
   }
 
   private renderQrCode(): void {
-    if (!this.qrCanvas || !this.ticketUuid) return;
-    const canvas = this.qrCanvas.nativeElement;
+    const canvas = this.qrCanvas()!.nativeElement;
+    const uuid = this.ticketUuid()!;
     QRCode.toCanvas(
       canvas,
-      this.ticketUuid,
+      uuid,
       {
-        width: 150,
+        width: 125,
         margin: 1,
         color: {
           dark: '#000000',

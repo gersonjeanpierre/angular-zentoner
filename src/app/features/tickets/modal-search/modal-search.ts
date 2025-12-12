@@ -1,35 +1,38 @@
-import { Component, Input, Output, EventEmitter, HostListener, OnChanges } from '@angular/core';
+import {
+  Component,
+  input,
+  output,
+  computed,
+  signal,
+  HostListener,
+  ChangeDetectionStrategy,
+} from '@angular/core';
 
 import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'modal-search',
   imports: [FormsModule],
-  templateUrl: 'modal-search.html'
+  templateUrl: 'modal-search.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ModalSearch implements OnChanges {
-  @Input() open = false;
-  @Input() list: string[] = [];
-  @Input() title = 'Seleccionar';
-  @Input() isCustomSize = false;
-  @Output() selectItem = new EventEmitter<string>();
-  @Output() closed = new EventEmitter<void>();
+export class ModalSearch {
+  readonly open = input<boolean>(false);
+  readonly list = input<string[]>([]);
+  readonly title = input<string>('Seleccionar');
+  readonly isCustomSize = input<boolean>(false);
+  readonly selectItem = output<string>();
+  readonly closed = output<void>();
 
-  search = '';
-  filteredList: string[] = [];
+  protected search = signal('');
+  protected readonly filteredList = computed(() => {
+    const searching = this.search().toLowerCase();
+    return this.list().filter((list) => list.toLowerCase().includes(searching));
+  });
 
   // For custom size
-  selectedWidth = '';
-  height = '';
-
-  ngOnChanges() {
-    this.filterList();
-  }
-
-  filterList() {
-    const searching = this.search.toLowerCase();
-    this.filteredList = this.list.filter(x => x.toLowerCase().includes(searching));
-  }
+  protected selectedWidth = '';
+  protected height = '';
 
   select(item: string) {
     this.selectItem.emit(item);
@@ -45,7 +48,7 @@ export class ModalSearch implements OnChanges {
   }
 
   onClose() {
-    this.search = '';
+    this.search.set('');
     this.selectedWidth = '';
     this.height = '';
     this.closed.emit();
@@ -53,7 +56,7 @@ export class ModalSearch implements OnChanges {
 
   @HostListener('document:keydown', ['$event'])
   handleEsc(event: KeyboardEvent) {
-    if (this.open && event.key === 'Escape') {
+    if (this.open() && event.key === 'Escape') {
       event.preventDefault();
       this.onClose();
     }
