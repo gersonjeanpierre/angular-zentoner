@@ -177,7 +177,7 @@ ADD CONSTRAINT chk_employee_statuses_code_length CHECK (char_length(code) <= 30)
   ADD CONSTRAINT chk_employee_statuses_name_length CHECK (char_length(name) <= 50);
 -- =  =  = HR.ROLES =  =  =
 CREATE TABLE hr.roles (
-  id BIGSERIAL PRIMARY KEY,
+  id SMALLSERIAL PRIMARY KEY,
   name TEXT UNIQUE NOT NULL,
   description TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -289,7 +289,30 @@ CREATE INDEX IF NOT EXISTS idx_sales_customers_id_deleted_at ON sales.customers 
 -- ######################################################################
 -- # 5. FUNCIONES DE UTILIDAD Y AUTENTICACIÓN (INCLUYENDO AUDITORÍA)
 -- ######################################################################
+-- Funcion para slug
+CREATE OR REPLACE FUNCTION core.handle_slug()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.slug = LOWER(
+    REGEXP_REPLACE(
+      translate(unaccent(NEW.name), 'ñü', 'nu'),  -- Transliterate ñ->n, ü->u (add more if needed)
+      '[^a-zA-Z0-9]+',
+      '-',
+      'g'
+    )
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Función set_updated_at
+CREATE OR REPLACE FUNCTION core.set_updated_at() 
+RETURNS TRIGGER LANGUAGE plpgsql
+AS $$ BEGIN NEW.updated_at = now();
+RETURN NEW;
+END;
+$$;
+
 CREATE OR REPLACE FUNCTION public.set_updated_at() 
 RETURNS TRIGGER LANGUAGE plpgsql 
 AS $$ BEGIN NEW.updated_at = now();
