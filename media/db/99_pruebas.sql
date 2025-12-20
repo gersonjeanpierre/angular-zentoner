@@ -52,4 +52,4 @@ WITH RECURSIVE cat_path AS (
   FROM inventory.categories c
   JOIN cat_path cp ON c.parent_id = cp.id
 )
-SELECT * FROM cat_path ;
+SELECT * FROM cat_path ORDER BY full_path;
