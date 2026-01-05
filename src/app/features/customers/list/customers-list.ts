@@ -9,8 +9,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { CommonModule, NgClass } from '@angular/common';
-import { CustomerService, GetCustomersParams } from '../customer-service';
-import { CustomerView } from '@core/customers/customer.model';
+import { CustomerService, GetCustomersParams } from '../../../core/services/customer-service';
+import { CustomerView } from '@data/models/customer/customer.model';
 import { Router, RouterModule } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';

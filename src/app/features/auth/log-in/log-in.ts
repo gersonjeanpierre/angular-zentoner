@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-veloz';
-import { AuthService } from '@core/auth/auth-service';
+import { AuthService } from '@core/services/auth-service';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
 import {
   form,

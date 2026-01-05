@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal, OnInit } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  signal,
+  OnInit,
+} from '@angular/core';
 import { LogoLaserVeloz } from '../../../shared/components/logo-laser-veloz/logo-laser-veloz';
 import {
   form,
@@ -9,11 +16,11 @@ import {
   maxLength,
   debounce,
 } from '@angular/forms/signals';
-import { AuthService } from '@core/auth/auth-service';
+import { AuthService } from '@core/services/auth-service';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
 import { TranslateService } from '@ngx-translate/core';
 
-import { ShopService } from '@core/shop/shop-service';
+import { ShopService } from '@core/services/shop-service';
 import { ROLE_USER } from 'src/app/data/constants/role-user';
 
 interface SignUpData {
@@ -25,7 +32,10 @@ interface SignUpData {
   shopId: string;
 }
 
-interface RoleType { name: string; label: string }
+interface RoleType {
+  name: string;
+  label: string;
+}
 
 @Component({
   selector: 'app-sign-up',

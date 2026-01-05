@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, Validators, ReactiveFormsModule, FormGroup, FormArray } from '@angular/forms';
-import { CustomerService } from '../customer-service';
-import { CustomerPayload } from '@core/customers/customer.model';
+import { CustomerService } from '../../../core/services/customer-service';
+import { CustomerPayload } from '@data/models/customer/customer.model';
 import { v7 as uuidv7 } from 'uuid';
 import { Router } from '@angular/router';
 

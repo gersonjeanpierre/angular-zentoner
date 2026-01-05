@@ -1,8 +1,8 @@
 import { Component, inject, signal, OnInit, effect, ChangeDetectionStrategy } from '@angular/core';
 
 import { Router, ActivatedRoute, RouterModule } from '@angular/router';
-import { CustomerService } from '../customer-service';
-import { CustomerView } from '@core/customers/customer.model';
+import { CustomerService } from '../../../core/services/customer-service';
+import { CustomerView } from '@data/models/customer/customer.model';
 import camelCase from 'camelcase-keys';
 import { generateCustomerCode } from '../utils/customer-utils';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';

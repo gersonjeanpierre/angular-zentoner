@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { CustomerPayload, CustomerView } from '@core/customers/customer.model';
+import { CustomerPayload, CustomerView } from '@data/models/customer/customer.model';
 import { Supabase } from '@core/supabase/supabase';
 
 export interface GetCustomersParams {

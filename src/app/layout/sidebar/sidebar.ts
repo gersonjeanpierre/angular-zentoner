@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, output, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { MenuItemModel } from '@core/layout/models/sidebar.model';
+import { MenuItemModel } from '@data/models/layout/sidebar.model';
 import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-veloz';
 
 @Component({

@@ -1,7 +1,10 @@
 import { inject, Injectable } from '@angular/core';
 import { Supabase } from '@core/supabase/supabase';
 import { SignUpWithPasswordCredentials } from '@supabase/supabase-js';
-import { EdgeFunctionPayload, EdgeFunctionResponse } from './models/edge-function.model';
+import {
+  EdgeFunctionPayload,
+  EdgeFunctionResponse,
+} from '../../data/models/auth/edge-function.model';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';

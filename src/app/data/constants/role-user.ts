@@ -1,4 +1,7 @@
-import { RoleUserModel } from '../models/role-user-model';
+interface RoleUserModel {
+  id: number;
+  name: string;
+}
 
 export const ROLE_USER: RoleUserModel[] = [
   { id: 2, name: 'Manager' },

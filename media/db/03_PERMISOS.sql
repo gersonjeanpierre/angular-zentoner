@@ -43,3 +43,10 @@ GRANT SELECT,
   UPDATE ON ALL TABLES IN SCHEMA sales TO authenticated, service_role;
 select *
 from sales.active_customers;
+-- ***************************************************************
+-- PERMISOS PARA SCHEMA Y FUNCIONES DE INVENTORY ****************
+-- ***************************************************************
+GRANT USAGE ON SCHEMA inventory TO authenticated, service_role;
+GRANT SELECT,
+  INSERT,
+  UPDATE ON ALL TABLES IN SCHEMA inventory TO authenticated, service_role;

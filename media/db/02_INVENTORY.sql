@@ -505,7 +505,8 @@ ALTER TABLE inventory.items ENABLE ROW LEVEL SECURITY;
 -- ======================================================================
 -- K A R D E X   D E   I N V E N T A R I O
 -- ======================================================================
-
+DROP TABLE IF EXISTS inventory.movement_type CASCADE;
+DROP TABLE IF EXISTS inventory.movement_reason CASCADE;
 
 CREATE TABLE IF NOT EXISTS inventory.movement_type (
   id SMALLSERIAL PRIMARY KEY,
@@ -746,7 +747,7 @@ DECLARE
     v_item_id UUID;
     v_ent SMALLINT := (SELECT id FROM inventory.movement_type WHERE name = 'SALIDA');
     v_venta SMALLINT := (SELECT id FROM inventory.movement_reason WHERE name = 'VENTA');
-    v_current_balance DECIMAL;
+    v_current_balance DECIMAL := (SELECT previous_balance FROM inventory.kardex WHERE batch_code = '26-ENE-001' );
 BEGIN
     SELECT id INTO v_item_id FROM inventory.items WHERE sku = 'LONA-BACK-320' LIMIT 1;
 
@@ -764,3 +765,15 @@ BEGIN
     INSERT INTO inventory.kardex (id, item_id, movement_type_id, movement_reason_id, quantity, previous_balance, subsequent_balance, batch_code, notes)
     VALUES (gen_random_uuid(), v_item_id, v_ent, v_venta, 12.00, v_current_balance, v_current_balance - 12.00, '26-ENE-001', 'Venta a Cliente ABC');
 END $$;
+
+
+
+-- #######################################
+-- # RLS POLICIES INVENTORY
+-- #######################################
+DROP POLICY IF EXISTS "authenticated_can_select_categories" ON inventory.categories;
+CREATE POLICY "authenticated_can_select_categories"
+  ON inventory.categories
+  FOR SELECT
+  TO authenticated
+  USING (true);

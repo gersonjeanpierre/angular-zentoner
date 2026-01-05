@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal, OnInit } from '@angular/core';
 import { Router, RouterOutlet } from '@angular/router';
-import { AuthService } from '@core/auth/auth-service';
+import { AuthService } from '@core/services/auth-service';
 import { Sidebar } from '../sidebar/sidebar';
 import { Header } from '../header/header';
 
