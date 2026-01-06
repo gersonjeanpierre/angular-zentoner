@@ -274,20 +274,23 @@ BEGIN
 END $$;
 
 -- =====================================================================
--- M E R C H A N D I S I N G   Y   B L A N C O S
+-- M E R C H A N D I S I N G 
 -- =====================================================================
 DO $$
 DECLARE
     shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    -- IDs de Nivel 0
     id_merch INT;
+    -- IDs de Nivel 1 (para crear Nivel 2)
     sub_merch_textil INT;
     sub_merch_rigido INT;
+    -- Ids de Nivel 2 para textil
 BEGIN
     -- Insertar Nivel 0 si no existen
     INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
     (shop_uuid, 'Merchandising', 'Tazas para sublimar, lapiceros para UV, llaveros, bolsas, agendas, entre otros.', 4) ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_merch FROM inventory.categories WHERE name = 'Merchandising y Blancos' AND shop_id = shop_uuid;
+    SELECT id INTO id_merch FROM inventory.categories WHERE name = 'Merchandising' AND shop_id = shop_uuid;
     -- =================================================================================
     -- NIVEL 1 Y 2: MERCHANDISING (Tu impresora UV y sublimación)
     -- =================================================================================

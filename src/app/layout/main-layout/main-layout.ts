@@ -3,6 +3,7 @@ import { Router, RouterOutlet } from '@angular/router';
 import { AuthService } from '@core/services/auth-service';
 import { Sidebar } from '../sidebar/sidebar';
 import { Header } from '../header/header';
+import { CategoryService } from '@core/services/category-service';
 
 @Component({
   selector: 'app-main-layout',
@@ -14,6 +15,7 @@ export default class MainLayout implements OnInit {
   // Dependency Injection
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  private readonly categoryService = inject(CategoryService);
 
   // State Signals (protected readonly - used in template)
   protected readonly userName = signal<string>('');
@@ -85,6 +87,7 @@ export default class MainLayout implements OnInit {
   protected logOut(): void {
     this.activeMenu.set('Cerrar sesión');
     this.authService.signOut();
+    this.categoryService.clearCache();
     this.router.navigateByUrl('/auth/log-in');
   }
 }

@@ -1,1 +1,23 @@
-<p>items works!</p>
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-4 pt-4 pb-4">
+  <div class="grid grid-cols-4 gap-3">
+    @for (category of categoriesWithIcons(); track category.id) {
+      <details class="collapse bg-base-100 w-64 hover:border-2" name="my-accordion-det-1">
+        <summary class="collapse-title font-semibold text-center px-2">
+          @if (category.icon) {
+            <span class="{{ category.icon }} h-7 w-7"></span>
+          }
+          {{ category.name }}
+        </summary>
+        <div class="collapse-content">
+          @for (subcategory of category.children; track $index) {
+            <div
+              class="h-15 border-2 border-black hover:border-0 hover:bg-neutral hover:text-white rounded-2xl mb-2 flex items-center justify-center cursor-pointer font-bold text-[13px]"
+            >
+              {{ subcategory.name }}
+            </div>
+          }
+        </div>
+      </details>
+    }
+  </div>
+</div>

@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, authRedirectGuard } from '@core/auth/guards/auth-guard';
+import { authGuard, authRedirectGuard } from '@core/guards/auth-guard';
 export const routes: Routes = [
   {
     path: 'auth',
@@ -38,6 +38,10 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () => import('@features/inventory/inventory'),
+          },
+          {
+            path: 'items',
+            loadComponent: () => import('@features/inventory/items/items'),
           },
         ],
       },

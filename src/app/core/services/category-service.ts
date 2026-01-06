@@ -1,11 +1,17 @@
 import { inject, Injectable } from '@angular/core';
 import { Supabase } from '@core/supabase/supabase';
+import { BehaviorSubject, from, Observable, of } from 'rxjs';
+import { map, tap, shareReplay } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
 })
 export class CategoryService {
   private readonly supabaseClient = inject(Supabase).client;
+  private STORAGE_KEY = 'cache_categorias';
+
+  private categoriesSubject = new BehaviorSubject<any[] | null>(this.getStoredData());
+  public categories$ = this.categoriesSubject.asObservable();
 
   async getCategoriesRaw() {
     const { data, error } = await this.supabaseClient
@@ -35,5 +41,56 @@ export class CategoryService {
       data: subcategories,
       error: error,
     };
+  }
+
+  loadCategories(): void {
+    console.log('[CategoryService] loadCategories: start');
+    if (this.categoriesSubject.value && this.categoriesSubject.value.length > 0) {
+      console.log('[CategoryService] loadCategories: cache hit, skipping fetch');
+      return;
+    }
+
+    from(this.getCategoriesRaw())
+      .pipe(
+        map((res) => res.data || []),
+        tap((data) => {
+          console.log('[CategoryService] loadCategories: fetched', data);
+          this.saveToStorage(data);
+          this.categoriesSubject.next(data);
+        }),
+      )
+      .subscribe({
+        complete: () => console.log('[CategoryService] loadCategories: end'),
+        error: (err) => console.error('[CategoryService] loadCategories: error', err),
+      });
+  }
+
+  getCategoryTree(): Observable<any[]> {
+    return this.categories$.pipe(map((list) => this.buildTree(list || [])));
+  }
+
+  private buildTree(list: any[], parentId: number | null = null): any[] {
+    return list
+      .filter((item) => item.parent_id === parentId)
+      .map((item) => ({
+        ...item,
+        children: this.buildTree(list, item.id),
+      }));
+  }
+
+  // Manejo de persistencia para F5
+  private saveToStorage(data: any[]) {
+    sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+  }
+
+  private getStoredData(): any[] | null {
+    const data = sessionStorage.getItem(this.STORAGE_KEY);
+    return data ? JSON.parse(data) : null;
+  }
+
+  // Limpieza total al cerrar sesión
+  clearCache(): void {
+    sessionStorage.removeItem(this.STORAGE_KEY);
+    // this.categoriesSubject.next(null);
   }
 }
