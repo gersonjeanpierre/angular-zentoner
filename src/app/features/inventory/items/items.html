@@ -2,9 +2,11 @@
   <div class="grid grid-cols-4 gap-3">
     @for (category of categoriesWithIcons(); track category.id) {
       <details class="collapse bg-base-100 w-64 hover:border-2" name="my-accordion-det-1">
-        <summary class="collapse-title font-semibold text-center px-2">
+        <summary
+          class="collapse-title font-semibold px-2 flex flex-col justify-center items-center"
+        >
           @if (category.icon) {
-            <span class="{{ category.icon }} h-7 w-7"></span>
+            <span class="{{ category.icon }} h-14 w-14"></span>
           }
           {{ category.name }}
         </summary>

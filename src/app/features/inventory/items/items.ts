@@ -12,8 +12,13 @@ export default class Items {
 
   protected readonly icons = [
     { id: 1, icon: 'icon-[fluent-emoji-high-contrast--roll-of-paper]' },
-    { id: 2, icon: 'icon-[gridicons--ink]' },
+    { id: 2, icon: 'icon-[f7--drop]' },
     { id: 3, icon: 'icon-[streamline-sharp--cutter]' },
+    { id: 4, icon: 'icon-[bi--bag-heart]' },
+    { id: 5, icon: 'icon-[mi-coleccion--dtf]' },
+    { id: 6, icon: 'icon-[streamline-ultimate--print-text]' },
+    { id: 7, icon: 'icon-[fluent--projection-screen-24-regular]' },
+    { id: 8, icon: 'icon-[fluent--design-ideas-48-regular]' },
   ];
 
   protected readonly categoriesWithIcons = computed(() => {
