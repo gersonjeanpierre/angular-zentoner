@@ -1,6 +1,12 @@
 @import 'tailwindcss';
 @plugin "daisyui";
-@plugin "@iconify/tailwind4";
+
+@plugin "@iconify/tailwind4" {
+  icon-sets: from-folder(mi-coleccion, "./src/assets/icons");
+  ;
+}
+
+;
 
 @font-face {
   font-family: 'OpenSans';
