@@ -69,6 +69,16 @@ export class CategoryService {
     return this.categories$.pipe(map((list) => this.buildTree(list || [])));
   }
 
+  getSubSubCategories(parentId: number) {
+    return this.categories$.pipe(
+      map((list) => {
+        const parentCategory = list?.find((cat) => cat.id === parentId);
+        if (!parentCategory) return [];
+        return this.buildTree(list || [], parentId);
+      }),
+    );
+  }
+
   private buildTree(list: any[], parentId: number | null = null): any[] {
     return list
       .filter((item) => item.parent_id === parentId)

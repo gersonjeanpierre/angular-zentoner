@@ -53,3 +53,17 @@ WITH RECURSIVE cat_path AS (
   JOIN cat_path cp ON c.parent_id = cp.id
 )
 SELECT * FROM cat_path ORDER BY full_path;
+
+
+SELECT auth_management.is_universal_manager('4d712d67-0ea4-48c0-b698-a9324c38a94b'::uuid);
+
+SELECT er.*, r.name 
+FROM hr.employee_roles er 
+JOIN hr.roles r ON er.role_id = r.id 
+WHERE er.employee_id = '4d712d67-0ea4-48c0-b698-a9324c38a94b'::uuid;
+
+-- Asumiendo que 'Manager' existe en hr.roles (ajusta si es otro rol)
+INSERT INTO hr.employee_roles (employee_id, role_id) 
+VALUES ('4d712d67-0ea4-48c0-b698-a9324c38a94b'::uuid, (SELECT id FROM hr.roles WHERE name = 'Manager'));
+
+(SELECT 1 FROM hr.employee_roles er JOIN hr.roles r ON er.role_id = r.id WHERE er.employee_id = '4d712d67-0ea4-48c0-b698-a9324c38a94b'::uuid AND r.name IN ('SuperAdmin', 'Manager', 'HRManager', 'Accountant', 'Administrator', 'Developer'))

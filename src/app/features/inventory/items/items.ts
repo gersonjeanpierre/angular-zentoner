@@ -1,4 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { CategoryService } from '@core/services/category-service';
 
 @Component({
@@ -8,6 +9,7 @@ import { CategoryService } from '@core/services/category-service';
 })
 export default class Items {
   private readonly categoryService = inject(CategoryService);
+  private router = inject(Router);
   readonly categoriesTree = signal<any[]>([]);
 
   protected readonly icons = [
@@ -38,5 +40,9 @@ export default class Items {
     this.categoryService.getCategoryTree().subscribe((tree) => {
       this.categoriesTree.set(tree);
     });
+  }
+
+  protected navigateToSubcategory(categorySlug: string, subcategorySlug: string) {
+    this.router.navigate(['/inventario/items', categorySlug, subcategorySlug]);
   }
 }

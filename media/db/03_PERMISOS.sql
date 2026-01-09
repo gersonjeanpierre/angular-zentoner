@@ -22,7 +22,9 @@ GRANT SELECT,
 -- PERMISOS PARA SCHEMA Y FUNCIONES DE AUTH_MANAGEMENT **********
 --***************************************************************
 GRANT USAGE ON SCHEMA auth_management TO authenticated, service_role;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth_management TO authenticated, service_role;
 GRANT ALL ON ALL ROUTINES IN SCHEMA auth_management TO authenticated, service_role;
+
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA auth_management
 GRANT ALL ON TABLES TO authenticated, service_role;
 ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA auth_management

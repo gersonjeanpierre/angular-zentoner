@@ -353,22 +353,23 @@ CREATE TRIGGER trg_customers_set_updated_by BEFORE
 UPDATE ON sales.customers FOR EACH ROW EXECUTE FUNCTION public.set_audit_updated_by();
 -- FUNCIONES DE CHECKEO DE ROLES (auth_management)
 -- 🔥 AÑADIDO: Función para verificar roles que tienen acceso universal a gestión (Gestores)
-CREATE OR REPLACE FUNCTION auth_management.is_universal_manager(user_id uuid) RETURNS BOOLEAN LANGUAGE sql STABLE AS $$ -- Incluye todos los roles que no deben ser afectados por el shop_id
+
+CREATE OR REPLACE FUNCTION auth_management.is_universal_manager(user_id uuid) 
+RETURNS BOOLEAN 
+LANGUAGE sql 
+STABLE 
+SECURITY DEFINER 
+AS $$ 
 SELECT EXISTS (
-    SELECT 1
-    FROM hr.employee_roles er
-      JOIN hr.roles r ON er.role_id = r.id
-    WHERE er.employee_id = user_id
-      AND r.name IN (
-        'SuperAdmin',
-        'Manager',
-        'HRManager',
-        'Accountant',
-        'Administrator',
-        'Developer'
-      )
-  );
+  SELECT 1
+  FROM hr.employee_roles er
+  JOIN hr.roles r ON er.role_id = r.id
+  WHERE er.employee_id = user_id
+    AND r.name IN ('SuperAdmin', 'Manager', 'HRManager', 'Accountant', 'Administrator', 'Developer')
+);
 $$;
+
+
 CREATE OR REPLACE FUNCTION auth_management.is_employee(user_id uuid) RETURNS BOOLEAN LANGUAGE sql STABLE AS $$
 SELECT EXISTS (
     SELECT 1

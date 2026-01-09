@@ -14,6 +14,7 @@
           @for (subcategory of category.children; track $index) {
             <div
               class="h-15 border-2 border-black hover:border-0 hover:bg-neutral hover:text-white rounded-2xl mb-2 flex items-center justify-center cursor-pointer font-bold text-[13px]"
+              (click)="navigateToSubcategory(category.slug, subcategory.slug)"
             >
               {{ subcategory.name }}
             </div>

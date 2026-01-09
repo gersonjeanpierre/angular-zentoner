@@ -1,0 +1,247 @@
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-6 pt-4 pb-6">
+  @if (loading()) {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else {
+    <!-- Header -->
+    <div class="mb-6">
+      <button class="btn btn-ghost btn-sm mb-2" (click)="goBack()">
+        <span class="icon-[mdi--arrow-left] w-5 h-5"></span>
+        Volver
+      </button>
+      <h2 class="text-2xl font-bold">Editar Item</h2>
+      <p class="text-sm text-gray-500">{{ breadcrumb() }}</p>
+    </div>
+
+    @if (success()) {
+      <div class="alert alert-success mb-4">
+        <span class="icon-[mdi--check-circle] w-6 h-6"></span>
+        <span>Item actualizado exitosamente</span>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="alert alert-error mb-4">
+        <span class="icon-[mdi--alert-circle] w-6 h-6"></span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <!-- Form -->
+    <form (submit)="onSubmit()">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Información Básica -->
+        <div class="col-span-2">
+          <h3 class="text-lg font-semibold mb-3">Información Básica</h3>
+        </div>
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Nombre del Item *</span>
+          </div>
+          <input type="text" class="input input-bordered w-full" [field]="itemForm.name" />
+        </label>
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">SKU *</span>
+          </div>
+          <input type="text" class="input input-bordered w-full" [field]="itemForm.sku" />
+        </label>
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Tipo de Material *</span>
+          </div>
+          <select class="select select-bordered w-full" [field]="itemForm.supply_type">
+            @for (type of supplyTypes; track type.value) {
+              <option [value]="type.value">{{ type.label }}</option>
+            }
+          </select>
+        </label>
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Unidad de Medida *</span>
+          </div>
+          <select class="select select-bordered w-full" [field]="itemForm.unit_type">
+            @for (unit of unitTypes; track unit.value) {
+              <option [value]="unit.value">{{ unit.label }}</option>
+            }
+          </select>
+        </label>
+
+        <!-- Atributos Técnicos -->
+        <div class="col-span-2 mt-4">
+          <h3 class="text-lg font-semibold mb-3">Atributos Técnicos</h3>
+        </div>
+
+        @if (showPaperFields()) {
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Gramaje (g/m²)</span>
+            </div>
+            <input
+              type="number"
+              class="input input-bordered w-full"
+              [field]="itemForm.weight_gsm"
+            />
+          </label>
+
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Acabado</span>
+            </div>
+            <input type="text" class="input input-bordered w-full" [field]="itemForm.finish" />
+          </label>
+        }
+
+        @if (showRigidFields()) {
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Grosor (mm)</span>
+            </div>
+            <input
+              type="number"
+              step="0.1"
+              class="input input-bordered w-full"
+              [field]="itemForm.thickness_mm"
+            />
+          </label>
+
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Código de Color</span>
+            </div>
+            <input type="text" class="input input-bordered w-full" [field]="itemForm.color_code" />
+          </label>
+        }
+
+        @if (showMachineFields()) {
+          <label class="form-control w-full col-span-2">
+            <div class="label">
+              <span class="label-text">Número de Serie</span>
+            </div>
+            <input
+              type="text"
+              class="input input-bordered w-full"
+              [field]="itemForm.serial_number"
+            />
+          </label>
+        }
+
+        <!-- Dimensiones -->
+        @if (showDimensionFields()) {
+          <div class="col-span-2 mt-4">
+            <h3 class="text-lg font-semibold mb-3">Dimensiones</h3>
+          </div>
+
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Ancho (mm)</span>
+            </div>
+            <input type="number" class="input input-bordered w-full" [field]="itemForm.width_mm" />
+          </label>
+
+          @if (!showRollFields()) {
+            <label class="form-control w-full">
+              <div class="label">
+                <span class="label-text">Alto (mm)</span>
+              </div>
+              <input
+                type="number"
+                class="input input-bordered w-full"
+                [field]="itemForm.height_mm"
+              />
+            </label>
+          }
+
+          @if (showRollFields()) {
+            <label class="form-control w-full">
+              <div class="label">
+                <span class="label-text">Largo del Rollo (metros)</span>
+              </div>
+              <input
+                type="number"
+                step="0.01"
+                class="input input-bordered w-full"
+                [field]="itemForm.length_m"
+              />
+            </label>
+          }
+
+          @if (showPaperFields() || showRollFields()) {
+            <!-- Área Imprimible -->
+            <label class="form-control w-full">
+              <div class="label">
+                <span class="label-text">Ancho Imprimible (mm)</span>
+              </div>
+              <input
+                type="number"
+                class="input input-bordered w-full"
+                [field]="itemForm.printable_width_mm"
+              />
+            </label>
+
+            @if (!showRollFields()) {
+              <label class="form-control w-full">
+                <div class="label">
+                  <span class="label-text">Alto Imprimible (mm)</span>
+                </div>
+                <input
+                  type="number"
+                  class="input input-bordered w-full"
+                  [field]="itemForm.printable_height_mm"
+                />
+              </label>
+            }
+          }
+        }
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Estado</span>
+          </div>
+          <div class="flex items-center gap-2 h-12">
+            <input type="checkbox" class="toggle toggle-success" [field]="itemForm.is_active" />
+            <span class="label-text">
+              {{ itemForm.is_active().value() ? 'Activo' : 'Inactivo' }}
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Botones -->
+      <div class="flex justify-between mt-6">
+        <button
+          type="button"
+          class="btn btn-error"
+          (click)="onDelete()"
+          [disabled]="saving() || deleting()"
+        >
+          @if (deleting()) {
+            <span class="loading loading-spinner"></span>
+          }
+          Eliminar
+        </button>
+        <div class="flex gap-3">
+          <button
+            type="button"
+            class="btn btn-ghost"
+            (click)="goBack()"
+            [disabled]="saving() || deleting()"
+          >
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="saving() || deleting()">
+            @if (saving()) {
+              <span class="loading loading-spinner"></span>
+            }
+            Guardar Cambios
+          </button>
+        </div>
+      </div>
+    </form>
+  }
+</div>

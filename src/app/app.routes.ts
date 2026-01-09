@@ -34,16 +34,7 @@ export const routes: Routes = [
       },
       {
         path: 'inventario',
-        children: [
-          {
-            path: '',
-            loadComponent: () => import('@features/inventory/inventory'),
-          },
-          {
-            path: 'items',
-            loadComponent: () => import('@features/inventory/items/items'),
-          },
-        ],
+        loadChildren: () => import('@features/inventory/inventory.routes'),
       },
       {
         path: 'tickets',

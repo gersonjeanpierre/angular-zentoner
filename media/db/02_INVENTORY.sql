@@ -104,71 +104,7 @@ BEGIN
     (shop_uuid, sub_papel, 'Fotografía', 6),
     (shop_uuid, sub_papel, 'Hilo', 7),
     (shop_uuid, sub_papel, 'Opalina', 8);
-    -- Subcategoría Tamaño de Papel para Adhesivo
-    SELECT id INTO sub_papel_tamano_adhesivo FROM inventory.categories  WHERE name = 'Adhesivo' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_adhesivo, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_adhesivo, 'SA3', 2);
-
-    -- Subcategoría Tamaño de Papel para Bond
-    SELECT id INTO sub_papel_tamano_bond FROM inventory.categories  WHERE name = 'Bond' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_bond, 'A0', 1),
-    (shop_uuid, sub_papel_tamano_bond, 'A1', 2),
-    (shop_uuid, sub_papel_tamano_bond, 'A2', 3),
-    (shop_uuid, sub_papel_tamano_bond, 'A3', 4),
-    (shop_uuid, sub_papel_tamano_bond, 'A4', 5),
-    (shop_uuid, sub_papel_tamano_bond, 'SA3', 6);
-
-    -- Subcategoría Tamaño de Papel para Canson
-    SELECT id INTO sub_papel_tamano_canson FROM inventory.categories  WHERE name = 'Canson' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_canson, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_canson, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_canson, 'SA3', 3);
-
-    -- Subcategoría Tamaño de Papel para Couche
-    SELECT id INTO sub_papel_tamano_couche FROM inventory.categories  WHERE name = 'Couche' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_couche, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_couche, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_couche, 'SA3', 3);
-
-    -- Subcategoría Tamaño de Papel para Folkote
-    SELECT id INTO sub_papel_tamano_folkote FROM inventory.categories  WHERE name = 'Folkote' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_folkote, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_folkote, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_folkote, 'SA3', 3);
-
-    -- Subcategoría Tamaño de Papel para Fotografía
-    SELECT id INTO sub_papel_tamano_fotografia FROM inventory.categories  WHERE name = 'Fotografía' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_fotografia, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_fotografia, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_fotografia, 'SA3', 3);
-
-    -- Subcategoría Tamaño de Papel para Hilo
-    SELECT id INTO sub_papel_tamano_hilo FROM inventory.categories  WHERE name = 'Hilo' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_hilo, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_hilo, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_hilo, 'SA3', 3);
-
-    -- Subcategoría Tamaño de Papel para Opalina
-    SELECT id INTO sub_papel_tamano_opalina FROM inventory.categories  WHERE name = 'Opalina' AND parent_id = sub_papel AND shop_id = shop_uuid;
-    --NIVEL 3: Tamaños de Papel
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel_tamano_opalina, 'A4', 1),
-    (shop_uuid, sub_papel_tamano_opalina, 'A3', 2),
-    (shop_uuid, sub_papel_tamano_opalina, 'SA3', 3);
+  
 
     -- =================================================================================
     -- NIVEL 1: VINILOS Y GIGANTOGRAFÍA
@@ -180,26 +116,6 @@ BEGIN
     (shop_uuid, sub_vinil, 'Gigantografias', 1),
     (shop_uuid, sub_vinil, 'Vinilos', 2),
     (shop_uuid, sub_vinil, 'Rigidos', 3);
-    -- Subcategoria tipos de lonas para gigantografias
-    SELECT id INTO sub_vinil_tipos_giganto FROM inventory.categories WHERE name = 'Gigantografias' AND parent_id = sub_vinil AND shop_id = shop_uuid;
-    -- NIVEL 3: Tipos de Lonas
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_vinil_tipos_giganto, 'Lona Frontlit', 1),
-    (shop_uuid, sub_vinil_tipos_giganto, 'Lona Backlight', 2),
-    (shop_uuid, sub_vinil_tipos_giganto, 'Lona Blackout', 3);
-    -- Subcategoria tipos de vinilos
-    SELECT id INTO sub_vinil_tipos_vinilo FROM inventory.categories WHERE name = 'Vinilos' AND parent_id = sub_vinil AND shop_id = shop_uuid;
-    -- NIVEL 3: Tipos de Vinilos
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_vinil_tipos_vinilo, 'Vinilo Blanco', 1),
-    (shop_uuid, sub_vinil_tipos_vinilo, 'Vinilo Transparente', 2);
-    -- Subcategoria tipos de rigidos
-    SELECT id INTO sub_vinil_tipos_rigido FROM inventory.categories WHERE name = 'Rigidos' AND parent_id = sub_vinil AND shop_id = shop_uuid;
-    -- NIVEL 3: Tipos de Rígidos
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_vinil_tipos_rigido, 'Foam', 1),
-    (shop_uuid, sub_vinil_tipos_rigido, 'Celtex', 2),
-    (shop_uuid, sub_vinil_tipos_rigido, 'Acrílico', 3);
 END $$;
 -- ======================================================================
 
@@ -357,25 +273,18 @@ BEGIN
     (shop_uuid, 'Maquinaria y Equipos', 'Maquinaria y equipos para las impresiones. Hibrida UV, Laminadora, enmicadora, entre otros.', 6)
     ON CONFLICT DO NOTHING;
     
-    SELECT id INTO id_maquinaria FROM inventory.categories WHERE name = 'Maquinaria y Equipos' AND shop_id = shop_uuid;
+    SELECT id INTO id_maquinaria FROM inventory.categories WHERE name = 'Maquinaria y Equipos' AND shop_id = shop_uuid;  
 
     INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_maquinaria, 'Impresoras', 1) RETURNING id INTO id_printers;
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_printers, 'UV Híbridas', 1),
-    (shop_uuid, id_printers, 'Eco Solvente', 2),
-    (shop_uuid, id_printers, 'imagePRESS', 3),
-    (shop_uuid, id_printers, 'iPF', 4);
-    
-
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
+    (shop_uuid, id_maquinaria, 'Impresoras', 1),
     (shop_uuid, id_maquinaria, 'DTF', 2),
     (shop_uuid, id_maquinaria, 'Laminadoras', 3),
     (shop_uuid, id_maquinaria, 'Enmicadoras', 4),
     (shop_uuid, id_maquinaria, 'Plastificadoras', 5),
     (shop_uuid, id_maquinaria, 'Troqueladoras', 6),
     (shop_uuid, id_maquinaria, 'Corte y Grabado Láser', 7 ),
-    (shop_uuid, id_maquinaria, 'Sublimadoras', 8);
+    (shop_uuid, id_maquinaria, 'Sublimadoras', 8),
+    (shop_uuid, id_maquinaria, 'Otros Equipos', 9);
 END $$;
 
 -- ======================================================================
@@ -433,7 +342,10 @@ CREATE TABLE IF NOT EXISTS inventory.items (
   name TEXT NOT NULL,
   sku TEXT UNIQUE,
 
+  price_reference NUMERIC(10,2), -- Precio de referencia para cotizaciones o ventas rápidas
+
   -- Atributos técnicos
+  size_name TEXT,          -- Nombre comercial del tamaño (ej: SRA3, A3, A4, 1.27m, etc)
   weight_gsm INT,          -- Gramaje (ej: 300 para Couche 300g)
   finish TEXT,            -- Mate, Brillo, Satinado
   width_mm INT,          -- Ancho total del material (ej. 1520mm para un rollo de 1.52m)
@@ -465,6 +377,9 @@ ADD CONSTRAINT chk_item_name_length CHECK (
   ADD CONSTRAINT chk_sku_length CHECK (
     sku IS NULL OR char_length(sku) <= 50
   ),
+  ADD CONSTRAINT chk_size_name_length CHECK (
+    size_name IS NULL OR char_length(size_name) <= 150
+  ),
   ADD CONSTRAINT chk_serial_number_length CHECK (
     serial_number IS NULL OR char_length(serial_number) <= 100
   ),
@@ -490,10 +405,10 @@ ADD CONSTRAINT chk_item_name_length CHECK (
     thickness_mm IS NULL OR thickness_mm > 0
   ),
   ADD CONSTRAINT chk_supply_type_valid CHECK (
-    supply_type IN ('papel', 'lona', 'vinilo', 'rigido', 'tinta', 'merchandising', 'repuesto','maquina','otro')
+    supply_type IN ('papel', 'lona', 'vinilo', 'rigido', 'tinta', 'merchandising', 'repuesto','maquina','herramienta','consumible','otro')
   ),
   ADD CONSTRAINT chk_unit_type_valid CHECK (
-    unit_type IN ('metro-lineal', 'metro-cuadrado', 'unidad', 'mililitro')
+    unit_type IN ( 'unidad', 'plancha', 'rollo', 'millar')
   ),
   ADD CONSTRAINT chk_color_code_length CHECK (
     color_code IS NULL OR char_length(color_code) <= 20
@@ -501,6 +416,7 @@ ADD CONSTRAINT chk_item_name_length CHECK (
   ADD CONSTRAINT chk_finish_length CHECK (
     finish IS NULL OR char_length(finish) <= 50
   );
+
 
 -- RLS
 ALTER TABLE inventory.items ENABLE ROW LEVEL SECURITY;
@@ -777,6 +693,22 @@ END $$;
 DROP POLICY IF EXISTS "authenticated_can_select_categories" ON inventory.categories;
 CREATE POLICY "authenticated_can_select_categories"
   ON inventory.categories
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "authenticated_can_insert_items" ON inventory.items;
+CREATE POLICY "authenticated_can_insert_items"
+  ON inventory.items
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "authenticated_can_select_items" ON inventory.items;
+CREATE POLICY "authenticated_can_select_items"
+  ON inventory.items
   FOR SELECT
   TO authenticated
   USING (true);

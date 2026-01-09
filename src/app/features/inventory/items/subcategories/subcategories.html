@@ -1,0 +1,41 @@
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-4 pt-4 pb-4">
+  <div class="w-32">
+    <button class="btn btn-ghost btn-sm mb-2" (click)="goBack()">
+      <span class="icon-[mdi--arrow-left] w-5 h-5"></span>
+      Volver
+    </button>
+  </div>
+  @if (categoryData()) {
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold">{{ categoryData().name }}</h2>
+      <p class="text-gray-500 mt-2">{{ categoryData().description }}</p>
+    </div>
+
+    <!-- Grid de subcategorías -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      @for (subcategory of categoryData().children; track subcategory.id) {
+        <div
+          class="card bg-base-100 border border-base-300 shadow-sm cursor-pointer hover:shadow-lg hover:border-primary transition-all duration-200"
+          (click)="navigateToItems(subcategory.slug)"
+        >
+          <div class="card-body">
+            <h3 class="card-title text-lg">{{ subcategory.name }}</h3>
+            <p class="text-sm text-gray-500">
+              {{ subcategory.description || 'Items de ' + subcategory.name }}
+            </p>
+            <div class="card-actions justify-end mt-2">
+              <button class="btn btn-sm btn-neutral">
+                Ver Items
+                <span class="icon-[mdi--arrow-right] w-4 h-4"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  }
+</div>

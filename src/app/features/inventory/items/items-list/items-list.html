@@ -1,0 +1,146 @@
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-6 pt-4 pb-6">
+  <!-- Header con breadcrumb y botón crear -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <button class="btn btn-ghost btn-sm mb-2" (click)="goBack()">
+        <span class="icon-[mdi--arrow-left] w-5 h-5"></span>
+        Volver
+      </button>
+      <h2 class="text-2xl font-bold">{{ subcategoryData()?.name || 'Items' }}</h2>
+      <p class="text-sm text-gray-500">{{ breadcrumb() }}</p>
+    </div>
+    <button class="btn btn-primary" (click)="navigateToCreate()">
+      <span class="icon-[mdi--plus] w-5 h-5"></span>
+      Crear Item
+    </button>
+  </div>
+
+  <!-- Filtros y búsqueda -->
+  <div class="mb-4 flex gap-4">
+    <input
+      type="text"
+      placeholder="Buscar por nombre o SKU..."
+      class="input input-bordered flex-1"
+      (input)="onSearchChange($event)"
+    />
+    <select class="select select-bordered w-48" (change)="onStatusFilterChange($event)">
+      <option value="ACTIVE">Activos</option>
+      <option value="INACTIVE">Inactivos</option>
+      <option value="ALL">Todos</option>
+    </select>
+  </div>
+
+  @if (loading()) {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert-error">
+      <span class="icon-[mdi--alert-circle] w-6 h-6"></span>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (items().length === 0) {
+    <div class="text-center py-12">
+      <span class="icon-[mdi--package-variant] w-16 h-16 text-gray-300 mb-4"></span>
+      <p class="text-gray-500 mb-4">No hay items registrados en esta subcategoría</p>
+      <button class="btn btn-primary" (click)="navigateToCreate()">
+        <span class="icon-[mdi--plus] w-5 h-5"></span>
+        Crear primer item
+      </button>
+    </div>
+  } @else {
+    <!-- Tabla de items -->
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>SKU</th>
+            <th>Nombre</th>
+            <th>Tipo</th>
+            <th>Unidad</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of items(); track item.id) {
+            <tr class="hover">
+              <td>
+                <span class="border-2 rounded-2xl px-2 py-1">{{ item.sku }}</span>
+              </td>
+              <td class="font-bold">{{ item.name }}</td>
+              <td>
+                @for (supply of supplyTypes; track $index) {
+                  @if (supply.value === item.supply_type) {
+                    <span class="badge badge-outline">{{ supply.label }}</span>
+                  }
+                }
+              </td>
+              <td>
+                @for (unit of unitTypes; track $index) {
+                  @if (unit.value === item.unit_type) {
+                    <span class="badge badge-outline">{{ unit.label }}</span>
+                  }
+                }
+              </td>
+              <td>
+                @if (item.is_active) {
+                  <span class="badge badge-success">Activo</span>
+                } @else {
+                  <span class="badge badge-error">Inactivo</span>
+                }
+              </td>
+              <td>
+                <div class="flex gap-2">
+                  <button
+                    class="btn btn-sm btn-ghost"
+                    (click)="navigateToEdit(item.id)"
+                    title="Editar"
+                  >
+                    <span class="icon-[mdi--pencil] w-5 h-5"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación -->
+    <div class="flex justify-between items-center mt-6">
+      <div class="text-sm text-gray-600">
+        Mostrando <span class="font-semibold">{{ (currentPage() - 1) * pageSize() + 1 }}</span> -
+        <span class="font-semibold">{{
+          currentPage() * pageSize() > totalCount() ? totalCount() : currentPage() * pageSize()
+        }}</span>
+        de <span class="font-semibold">{{ totalCount() }}</span> items
+      </div>
+      <div class="join">
+        <button
+          class="join-item btn btn-sm"
+          [disabled]="currentPage() === 1"
+          (click)="onPageChange(currentPage() - 1)"
+        >
+          «
+        </button>
+        @for (page of [].constructor(totalPages()); track $index) {
+          <button
+            class="join-item btn btn-sm"
+            [class.btn-active]="$index + 1 === currentPage()"
+            (click)="onPageChange($index + 1)"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+        <button
+          class="join-item btn btn-sm"
+          [disabled]="currentPage() === totalPages()"
+          (click)="onPageChange(currentPage() + 1)"
+        >
+          »
+        </button>
+      </div>
+    </div>
+  }
+</div>
