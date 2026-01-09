@@ -41,6 +41,13 @@
             <span class="label-text">Nombre del Item *</span>
           </div>
           <input type="text" class="input input-bordered w-full" [field]="itemForm.name" />
+          @if (itemForm.name().invalid()) {
+            <div class="label">
+              <span class="label-text-alt text-error">{{
+                itemForm.name().errors()[0]?.message || 'Campo requerido'
+              }}</span>
+            </div>
+          }
         </label>
 
         <label class="form-control w-full">
@@ -48,6 +55,24 @@
             <span class="label-text">SKU *</span>
           </div>
           <input type="text" class="input input-bordered w-full" [field]="itemForm.sku" />
+          @if (itemForm.sku().invalid()) {
+            <div class="label">
+              <span class="label-text-alt text-error">{{
+                itemForm.sku().errors()[0]?.message || 'Campo requerido'
+              }}</span>
+            </div>
+          }
+        </label>
+
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Sub Categoria</span>
+          </div>
+          <select class="select w-full" [field]="itemForm.category_id">
+            @for (subSub of subSubCategories(); track subSub.value) {
+              <option [value]="subSub.value">{{ subSub.label }}</option>
+            }
+          </select>
         </label>
 
         <label class="form-control w-full">
@@ -234,7 +259,12 @@
           >
             Cancelar
           </button>
-          <button type="submit" class="btn btn-primary" [disabled]="saving() || deleting()">
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="saving() || deleting()"
+            (click)="onSubmit()"
+          >
             @if (saving()) {
               <span class="loading loading-spinner"></span>
             }

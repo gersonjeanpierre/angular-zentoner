@@ -65,13 +65,6 @@ export class ItemsService {
       .from('items')
       .select('*', { count: 'exact', head: false });
 
-    let test = await this.supabaseClient
-      .schema('inventory')
-      .from('items')
-      .select('*', { count: 'exact', head: false });
-
-    console.log('TEST ITEMS:', test);
-
     // Filtro por categoría
     if (categoryId) {
       query = query.eq('category_id', categoryId);
@@ -134,7 +127,7 @@ export class ItemsService {
       .eq('id', itemId)
       .single();
 
-    if (error) throw error;
+    if (error) console.error('Error al obtener item por ID:', error);
     if (!data) throw new Error('Item no encontrado');
 
     return data as ItemView;
@@ -144,39 +137,16 @@ export class ItemsService {
    * Actualizar un item existente
    */
   async updateItem(itemId: string, payload: UpdateItemPayload): Promise<ItemView> {
-    const updateData: any = {};
-
-    // Solo incluir campos que fueron enviados
-    if (payload.category_id !== undefined) updateData.category_id = payload.category_id;
-    if (payload.supply_type !== undefined) updateData.supply_type = payload.supply_type;
-    if (payload.unit_type !== undefined) updateData.unit_type = payload.unit_type;
-    if (payload.name !== undefined) updateData.name = payload.name;
-    if (payload.sku !== undefined) updateData.sku = payload.sku;
-    if (payload.weight_gsm !== undefined) updateData.weight_gsm = payload.weight_gsm;
-    if (payload.finish !== undefined) updateData.finish = payload.finish;
-    if (payload.width_mm !== undefined) updateData.width_mm = payload.width_mm;
-    if (payload.height_mm !== undefined) updateData.height_mm = payload.height_mm;
-    if (payload.length_m !== undefined) updateData.length_m = payload.length_m;
-    if (payload.color_code !== undefined) updateData.color_code = payload.color_code;
-    if (payload.printable_width_mm !== undefined)
-      updateData.printable_width_mm = payload.printable_width_mm;
-    if (payload.printable_height_mm !== undefined)
-      updateData.printable_height_mm = payload.printable_height_mm;
-    if (payload.thickness_mm !== undefined) updateData.thickness_mm = payload.thickness_mm;
-    if (payload.serial_number !== undefined) updateData.serial_number = payload.serial_number;
-    if (payload.metadata !== undefined) updateData.metadata = payload.metadata;
-    if (payload.is_active !== undefined) updateData.is_active = payload.is_active;
-
     const { data, error } = await this.supabaseClient
       .schema('inventory')
       .from('items')
-      .update(updateData)
+      .update(payload)
       .eq('id', itemId)
-      .select()
+      .select('*')
       .single();
 
     if (error) console.error('Error al actualizar item:', error);
-    if (!data) throw new Error('Error al actualizar item');
+    if (!data) console.error('No se recibió data al actualizar item');
 
     return data as ItemView;
   }

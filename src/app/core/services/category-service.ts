@@ -79,6 +79,23 @@ export class CategoryService {
     );
   }
 
+  getRootCategory(categoryId: number): any | null {
+    const tree = this.categoriesSubject.value;
+    if (!tree) return null;
+    // Para simplificar, busca en el array plano y sigue parent_id hasta null
+    const findRootFromId = (id: number): any | null => {
+      let current = tree.find((cat) => cat.id === id);
+      if (!current) return null;
+      while (current.parent_id) {
+        current = tree.find((cat) => cat.id === current.parent_id);
+        if (!current) return null; // Error en datos
+      }
+      return current;
+    };
+
+    return findRootFromId(categoryId);
+  }
+
   private buildTree(list: any[], parentId: number | null = null): any[] {
     return list
       .filter((item) => item.parent_id === parentId)

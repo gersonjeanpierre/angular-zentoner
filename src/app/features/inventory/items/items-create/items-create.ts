@@ -4,13 +4,7 @@ import { CommonModule } from '@angular/common';
 import { form, Field, required } from '@angular/forms/signals';
 import { CategoryService } from '@core/services/category-service';
 import { ItemsService } from '@core/services/items-service';
-import {
-  ItemFormModel,
-  ItemPayload,
-  selectOption,
-  SupplyType,
-  UnitType,
-} from '@data/models/inventory/item.model';
+import { ItemFormModel, ItemPayload, selectOption } from '@data/models/inventory/item.model';
 import { v7 as uuidv7 } from 'uuid';
 import { supplyTypes, unitTypes } from '@data/constants';
 
@@ -33,6 +27,7 @@ export default class ItemsCreate implements OnInit {
   protected readonly categorySlug = signal<string>('');
   protected readonly subcategorySlug = signal<string>('');
   protected readonly subcategoryData = signal<any>(null);
+  protected readonly subSubCategories = signal<selectOption[]>([]);
 
   protected readonly itemModel = signal<ItemFormModel>({
     category_id: '',
@@ -40,6 +35,7 @@ export default class ItemsCreate implements OnInit {
     sku: '',
     supply_type: 'papel',
     unit_type: 'unidad',
+    brand: '',
     price_reference: '',
     size_name: '',
     weight_gsm: '',
@@ -48,6 +44,7 @@ export default class ItemsCreate implements OnInit {
     height_mm: '',
     length_m: '',
     color_code: '',
+    volume_ml: '',
     printable_width_mm: '',
     printable_height_mm: '',
     thickness_mm: '',
@@ -92,12 +89,14 @@ export default class ItemsCreate implements OnInit {
     () => this.itemForm.supply_type().value() === 'maquina',
   );
 
+  protected readonly showInkFields = computed(
+    () => this.itemForm.supply_type().value() === 'tinta',
+  );
+
   protected readonly showDimensionFields = computed(() => {
     const type = this.itemForm.supply_type().value();
     return type === 'papel' || type === 'lona' || type === 'vinilo' || type === 'rigido';
   });
-
-  protected readonly subSubCategories = signal<selectOption[]>([]);
 
   ngOnInit() {
     this.categorySlug.set(this.route.snapshot.params['categorySlug']);

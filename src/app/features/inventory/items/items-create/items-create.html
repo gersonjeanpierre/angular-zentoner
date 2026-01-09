@@ -52,7 +52,7 @@
 
       <label class="form-control w-full">
         <div class="label">
-          <span class="label-text">Unidad de Medida *</span>
+          <span class="label-text">Sub Categoria</span>
         </div>
         <select class="select w-full" [field]="itemForm.category_id">
           @for (subSub of subSubCategories(); track subSub.value) {
@@ -81,6 +81,13 @@
             <option [value]="unit.value">{{ unit.label }}</option>
           }
         </select>
+      </label>
+
+      <label class="form-control w-full">
+        <div class="label">
+          <span class="label-text">Marca</span>
+        </div>
+        <input type="text" class="input w-full" [field]="itemForm.brand" />
       </label>
 
       <label class="form-control w-full">
@@ -135,6 +142,20 @@
             class="input input-bordered w-full"
             [field]="itemForm.finish"
             placeholder="Ej: Mate, Brillo, Satinado"
+          />
+        </label>
+      }
+
+      @if (showInkFields()) {
+        <label class="form-control w-full">
+          <div class="label">
+            <span class="label-text">Volumen (ml)</span>
+          </div>
+          <input
+            type="number"
+            class="input input-bordered w-full"
+            [field]="itemForm.volume_ml"
+            placeholder="Ej: 500"
           />
         </label>
       }

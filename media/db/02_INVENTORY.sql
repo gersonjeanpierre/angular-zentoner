@@ -342,23 +342,25 @@ CREATE TABLE IF NOT EXISTS inventory.items (
   name TEXT NOT NULL,
   sku TEXT UNIQUE,
 
+  brand TEXT,            -- Marca del insumo o material
   price_reference NUMERIC(10,2), -- Precio de referencia para cotizaciones o ventas rápidas
 
   -- Atributos técnicos
   size_name TEXT,          -- Nombre comercial del tamaño (ej: SRA3, A3, A4, 1.27m, etc)
   weight_gsm INT,          -- Gramaje (ej: 300 para Couche 300g)
-  finish TEXT,            -- Mate, Brillo, Satinado
+  finish TEXT,            -- Mate, Brillo, Satinado, Holográfico, etc.
   width_mm INT,          -- Ancho total del material (ej. 1520mm para un rollo de 1.52m)
   height_mm INT,         -- Largo (NULL si es rollo, valor si es pliego/hoja ej. 480mm para SRA3)
   length_m DECIMAL(8,2), -- Si es ROLLO, ¿cuántos metros lineales trae originalmente? (ej. 50.00)
   color_code TEXT,         -- Para vinilos de corte o papeles de color , null si no aplica
+  volume_ml INT,        -- Para tintas o líquidos (ej: 500ml, 1000ml)
   
   -- Area imprimible
   printable_width_mm INT,  -- El ancho menos los márgenes de pinza o rodillos
   printable_height_mm INT, -- El alto menos los márgenes (si aplica)
   
   -- Rigidez
-  thickness_mm DECIMAL,   -- Para acrílicos/celtex (ej: 3.0, 5.0)
+  thickness_mm DECIMAL(7,2),   -- Para acrílicos/celtex/foam/imantado (ej: 3.0, 5.0)
 
   -- Metadata de Máquinas (Opcional si es activo)
   serial_number TEXT,
@@ -702,6 +704,18 @@ CREATE POLICY "authenticated_can_insert_items"
   ON inventory.items
   FOR INSERT
   TO authenticated
+  WITH CHECK (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "authenticated_can_update_items" ON inventory.items;
+CREATE POLICY "authenticated_can_update_items"
+  ON inventory.items
+  FOR UPDATE
+  TO authenticated
+  USING (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  )
   WITH CHECK (
     auth_management.is_universal_manager((SELECT auth.uid()))
   );

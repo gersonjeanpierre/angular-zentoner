@@ -19,6 +19,7 @@ export interface ItemFormModel {
   sku: string;
   supply_type: SupplyType;
   unit_type: UnitType;
+  brand: string;
   price_reference: number | string;
   size_name: string;
   weight_gsm: number | string;
@@ -27,10 +28,12 @@ export interface ItemFormModel {
   height_mm: number | string;
   length_m: number | string;
   color_code: string;
+  volume_ml: number | string;
   printable_width_mm: number | string;
   printable_height_mm: number | string;
   thickness_mm: number | string;
   serial_number: string;
+  metadata?: Record<string, any>;
   is_active: boolean;
 }
 
@@ -43,6 +46,7 @@ export interface ItemPayload {
   sku: string;
 
   // Atributos técnicos opcionales
+  brand?: string | null;
   price_reference?: number | null;
   size_name?: string | null;
   weight_gsm?: number | null;
@@ -51,6 +55,7 @@ export interface ItemPayload {
   height_mm?: number | null;
   length_m?: number | null;
   color_code?: string | null;
+  volume_ml?: number | null;
   printable_width_mm?: number | null;
   printable_height_mm?: number | null;
   thickness_mm?: number | null;
@@ -70,16 +75,18 @@ export interface ItemView {
   name: string;
   sku: string;
 
+  brand?: string | null;
   price_reference?: number | null;
-  size_name?: string | null;
 
   // Atributos técnicos
+  size_name?: string | null;
   weight_gsm: number | null;
   finish: string | null;
   width_mm: number | null;
   height_mm: number | null;
   length_m: number | null;
   color_code: string | null;
+  volume_ml: number | null;
   printable_width_mm: number | null;
   printable_height_mm: number | null;
   thickness_mm: number | null;
@@ -100,6 +107,7 @@ export interface UpdateItemPayload {
   unit_type?: UnitType;
   name?: string;
   sku?: string;
+  brand?: string | null;
   price_reference?: number | null;
   size_name?: string | null;
   weight_gsm?: number | null;
@@ -108,6 +116,7 @@ export interface UpdateItemPayload {
   height_mm?: number | null;
   length_m?: number | null;
   color_code?: string | null;
+  volume_ml?: number | null;
   printable_width_mm?: number | null;
   printable_height_mm?: number | null;
   thickness_mm?: number | null;

@@ -2,35 +2,16 @@ import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { form, Field, required } from '@angular/forms/signals';
+import { firstValueFrom } from 'rxjs';
 import { CategoryService } from '@core/services/category-service';
 import { ItemsService } from '@core/services/items-service';
 import {
   ItemView,
   UpdateItemPayload,
-  SupplyType,
-  UnitType,
+  ItemFormModel,
+  selectOption,
 } from '@data/models/inventory/item.model';
 import { supplyTypes, unitTypes } from '@data/constants';
-
-interface ItemFormModel {
-  name: string;
-  sku: string;
-  supply_type: SupplyType;
-  unit_type: UnitType;
-  price_reference?: number | string;
-  size_name?: string;
-  weight_gsm: number | string;
-  finish: string;
-  width_mm: number | string;
-  height_mm: number | string;
-  length_m: number | string;
-  color_code: string;
-  printable_width_mm: number | string;
-  printable_height_mm: number | string;
-  thickness_mm: number | string;
-  serial_number: string;
-  is_active: boolean;
-}
 
 @Component({
   selector: 'app-items-edit',
@@ -54,12 +35,15 @@ export default class ItemsEdit implements OnInit {
   protected readonly categorySlug = signal<string>('');
   protected readonly subcategorySlug = signal<string>('');
   protected readonly subcategoryData = signal<any>(null);
+  protected readonly subSubCategories = signal<selectOption[]>([]);
 
   protected readonly itemModel = signal<ItemFormModel>({
+    category_id: '',
     name: '',
     sku: '',
     supply_type: 'papel',
     unit_type: 'unidad',
+    brand: '',
     price_reference: '',
     size_name: '',
     weight_gsm: '',
@@ -68,6 +52,7 @@ export default class ItemsEdit implements OnInit {
     height_mm: '',
     length_m: '',
     color_code: '',
+    volume_ml: '',
     printable_width_mm: '',
     printable_height_mm: '',
     thickness_mm: '',
@@ -117,29 +102,39 @@ export default class ItemsEdit implements OnInit {
     return type === 'papel' || type === 'lona' || type === 'vinilo' || type === 'rigido';
   });
 
-  ngOnInit() {
+  async ngOnInit() {
     this.itemId.set(this.route.snapshot.params['id']);
     this.categorySlug.set(this.route.snapshot.params['categorySlug']);
     this.subcategorySlug.set(this.route.snapshot.params['subcategorySlug']);
-    this.loadSubcategoryData();
-    this.loadItem();
+    await this.loadSubcategoryData();
+    await this.loadItem();
+    let current = this.categoryService.getRootCategory(Number(this.itemModel().category_id));
+    console.log('Categoría raíz obtenida en ngOnInit:', current);
   }
 
-  private loadSubcategoryData() {
-    this.categoryService.getCategoryTree().subscribe((tree) => {
-      const category = tree.find((cat: any) => cat.slug === this.categorySlug());
-      if (category) {
-        const subcategory = category.children?.find(
-          (sub: any) => sub.slug === this.subcategorySlug(),
+  private async loadSubcategoryData() {
+    const tree = await firstValueFrom(this.categoryService.getCategoryTree());
+    const category = tree.find((cat: any) => cat.slug === this.categorySlug());
+    if (category) {
+      const subcategory = category.children?.find(
+        (sub: any) => sub.slug === this.subcategorySlug(),
+      );
+      if (subcategory) {
+        this.subcategoryData.set({
+          ...subcategory,
+          parent_name: category.name,
+        });
+        // Cargar subSubCategories
+        const subSubs = await firstValueFrom(
+          this.categoryService.getSubSubCategories(subcategory.id),
         );
-        if (subcategory) {
-          this.subcategoryData.set({
-            ...subcategory,
-            parent_name: category.name,
-          });
-        }
+        const options = (subSubs || []).map((subSub: any) => ({
+          value: subSub.id.toString(),
+          label: subSub.name,
+        }));
+        this.subSubCategories.set(options);
       }
-    });
+    }
   }
 
   private async loadItem() {
@@ -147,16 +142,21 @@ export default class ItemsEdit implements OnInit {
       const item = await this.itemsService.getItemById(this.itemId());
 
       this.itemModel.set({
+        category_id: item.category_id.toString(),
         name: item.name,
         sku: item.sku,
         supply_type: item.supply_type,
         unit_type: item.unit_type,
+        brand: item.brand || '',
+        price_reference: item.price_reference || '',
+        size_name: item.size_name || '',
         weight_gsm: item.weight_gsm || '',
         finish: item.finish || '',
         width_mm: item.width_mm || '',
         height_mm: item.height_mm || '',
         length_m: item.length_m || '',
         color_code: item.color_code || '',
+        volume_ml: item.volume_ml || '',
         printable_width_mm: item.printable_width_mm || '',
         printable_height_mm: item.printable_height_mm || '',
         thickness_mm: item.thickness_mm || '',
@@ -182,10 +182,13 @@ export default class ItemsEdit implements OnInit {
     try {
       const formData = this.itemModel();
       const payload: UpdateItemPayload = {
+        category_id: Number(formData.category_id),
         name: formData.name,
         sku: formData.sku,
         supply_type: formData.supply_type,
         unit_type: formData.unit_type,
+        price_reference: formData.price_reference ? Number(formData.price_reference) : null,
+        size_name: formData.size_name || null,
         weight_gsm: formData.weight_gsm ? Number(formData.weight_gsm) : null,
         finish: formData.finish || null,
         width_mm: formData.width_mm ? Number(formData.width_mm) : null,
@@ -205,6 +208,7 @@ export default class ItemsEdit implements OnInit {
 
       await this.itemsService.updateItem(this.itemId(), payload);
 
+      console.log('Se envio payload desde edit.ts', payload);
       this.success.set(true);
       setTimeout(() => {
         this.goBack();
