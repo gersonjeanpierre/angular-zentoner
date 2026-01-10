@@ -15,6 +15,7 @@ export type UnitType = 'unidad' | 'rollo' | 'millar' | 'plancha';
 
 export interface ItemFormModel {
   category_id: string;
+  parent_id: string;
   name: string;
   sku: string;
   supply_type: SupplyType;
@@ -40,6 +41,7 @@ export interface ItemFormModel {
 export interface ItemPayload {
   id: string;
   category_id: number;
+  parent_id: number;
   supply_type: SupplyType;
   unit_type: UnitType;
   name: string;
@@ -68,6 +70,7 @@ export interface ItemPayload {
 export interface ItemView {
   id: string;
   category_id: number;
+  parent_id: number;
   category_name?: string;
   category_slug?: string;
   supply_type: SupplyType;
@@ -103,6 +106,7 @@ export interface ItemView {
 
 export interface UpdateItemPayload {
   category_id?: number;
+  parent_id?: number;
   supply_type?: SupplyType;
   unit_type?: UnitType;
   name?: string;

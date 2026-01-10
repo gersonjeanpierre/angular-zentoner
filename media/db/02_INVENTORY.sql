@@ -335,6 +335,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS inventory.items (
   id UUID PRIMARY KEY,
   category_id SMALLINT REFERENCES inventory.categories(id),
+  parent_id SMALLINT, -- Para subcategorías si aplica
   
   -- Clasificación Base
   supply_type TEXT NOT NULL, -- Esta en el constraint abajo
@@ -371,6 +372,8 @@ CREATE TABLE IF NOT EXISTS inventory.items (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+-- Agregar nueva columna parent_id
+-- ALTER TABLE inventory.items ADD COLUMN IF NOT EXISTS parent_id SMALLINT;
 
 ALTER TABLE inventory.items
 ADD CONSTRAINT chk_item_name_length CHECK (

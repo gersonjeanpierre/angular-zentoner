@@ -9,7 +9,7 @@ import {
 import { Supabase } from '@core/supabase/supabase';
 
 export interface GetItemsParams {
-  categoryId?: number;
+  parentId?: number;
   supplyType?: SupplyType;
   unitType?: UnitType;
   status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
@@ -51,7 +51,7 @@ export class ItemsService {
    */
   async getItems(params: GetItemsParams = {}): Promise<GetItemsResponse> {
     const {
-      categoryId,
+      parentId,
       supplyType,
       unitType,
       status = 'ACTIVE',
@@ -66,8 +66,8 @@ export class ItemsService {
       .select('*', { count: 'exact', head: false });
 
     // Filtro por categoría
-    if (categoryId) {
-      query = query.eq('category_id', categoryId);
+    if (parentId) {
+      query = query.eq('parent_id', parentId);
     }
 
     // Filtro por tipo de material

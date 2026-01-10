@@ -5,12 +5,7 @@ import { form, Field, required } from '@angular/forms/signals';
 import { firstValueFrom } from 'rxjs';
 import { CategoryService } from '@core/services/category-service';
 import { ItemsService } from '@core/services/items-service';
-import {
-  ItemView,
-  UpdateItemPayload,
-  ItemFormModel,
-  selectOption,
-} from '@data/models/inventory/item.model';
+import { UpdateItemPayload, ItemFormModel, selectOption } from '@data/models/inventory/item.model';
 import { supplyTypes, unitTypes } from '@data/constants';
 
 @Component({
@@ -39,6 +34,7 @@ export default class ItemsEdit implements OnInit {
 
   protected readonly itemModel = signal<ItemFormModel>({
     category_id: '',
+    parent_id: '',
     name: '',
     sku: '',
     supply_type: 'papel',
@@ -102,6 +98,10 @@ export default class ItemsEdit implements OnInit {
     return type === 'papel' || type === 'lona' || type === 'vinilo' || type === 'rigido';
   });
 
+  protected readonly showInkFields = computed(
+    () => this.itemForm.supply_type().value() === 'tinta',
+  );
+
   async ngOnInit() {
     this.itemId.set(this.route.snapshot.params['id']);
     this.categorySlug.set(this.route.snapshot.params['categorySlug']);
@@ -143,6 +143,7 @@ export default class ItemsEdit implements OnInit {
 
       this.itemModel.set({
         category_id: item.category_id.toString(),
+        parent_id: item.parent_id.toString(),
         name: item.name,
         sku: item.sku,
         supply_type: item.supply_type,
@@ -187,6 +188,7 @@ export default class ItemsEdit implements OnInit {
         sku: formData.sku,
         supply_type: formData.supply_type,
         unit_type: formData.unit_type,
+        brand: formData.brand || null,
         price_reference: formData.price_reference ? Number(formData.price_reference) : null,
         size_name: formData.size_name || null,
         weight_gsm: formData.weight_gsm ? Number(formData.weight_gsm) : null,
@@ -195,6 +197,7 @@ export default class ItemsEdit implements OnInit {
         height_mm: formData.height_mm ? Number(formData.height_mm) : null,
         length_m: formData.length_m ? Number(formData.length_m) : null,
         color_code: formData.color_code || null,
+        volume_ml: formData.volume_ml ? Number(formData.volume_ml) : null,
         printable_width_mm: formData.printable_width_mm
           ? Number(formData.printable_width_mm)
           : null,

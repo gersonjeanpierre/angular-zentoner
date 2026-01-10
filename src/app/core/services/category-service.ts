@@ -96,6 +96,8 @@ export class CategoryService {
     return findRootFromId(categoryId);
   }
 
+  getIdSubSubCategory() {}
+
   private buildTree(list: any[], parentId: number | null = null): any[] {
     return list
       .filter((item) => item.parent_id === parentId)

@@ -31,6 +31,7 @@ export default class ItemsCreate implements OnInit {
 
   protected readonly itemModel = signal<ItemFormModel>({
     category_id: '',
+    parent_id: '',
     name: '',
     sku: '',
     supply_type: 'papel',
@@ -147,10 +148,12 @@ export default class ItemsCreate implements OnInit {
       const payload: ItemPayload = {
         id: uuidv7(),
         category_id: Number(formData.category_id),
+        parent_id: subcategoryId,
         supply_type: formData.supply_type,
         unit_type: formData.unit_type,
         name: formData.name,
         sku: formData.sku,
+        brand: formData.brand || null,
         price_reference: formData.price_reference ? Number(formData.price_reference) : null,
         size_name: formData.size_name || null,
         weight_gsm: formData.weight_gsm ? Number(formData.weight_gsm) : null,
@@ -159,6 +162,7 @@ export default class ItemsCreate implements OnInit {
         height_mm: formData.height_mm ? Number(formData.height_mm) : null,
         length_m: formData.length_m ? Number(formData.length_m) : null,
         color_code: formData.color_code || null,
+        volume_ml: formData.volume_ml ? Number(formData.volume_ml) : null,
         printable_width_mm: formData.printable_width_mm
           ? Number(formData.printable_width_mm)
           : null,

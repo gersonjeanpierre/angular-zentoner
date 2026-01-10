@@ -51,18 +51,20 @@ export default class ItemsList implements OnInit {
     return `${subcat.parent_name || ''} > ${subcat.name || ''}`;
   });
 
-  ngOnInit() {
+  async ngOnInit() {
     this.categorySlug.set(this.route.snapshot.params['categorySlug']);
     this.subcategorySlug.set(this.route.snapshot.params['subcategorySlug']);
     this.loadSubcategoryData();
-
+    console.log('Category Slug:', this.categorySlug());
+    console.log('Subcategory Slug:', this.subcategorySlug());
+    console.log('Subcategory Data:', this.subcategoryData());
     // Configurar debounce para búsqueda
     this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe((searchTerm) => {
       this.searchTerm.set(searchTerm);
       this.currentPage.set(1);
       this.loadItems();
     });
-    this.loadItems();
+    await this.loadItems();
   }
 
   private loadSubcategoryData() {
@@ -94,6 +96,7 @@ export default class ItemsList implements OnInit {
       }
 
       const response = await this.itemsService.getItems({
+        parentId: subcategoryId,
         status: this.statusFilter(),
         search: this.searchTerm(),
         page: this.currentPage(),

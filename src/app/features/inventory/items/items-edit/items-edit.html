@@ -122,6 +122,20 @@
           </label>
         }
 
+        @if (showInkFields()) {
+          <label class="form-control w-full">
+            <div class="label">
+              <span class="label-text">Volumen (ml)</span>
+            </div>
+            <input
+              type="number"
+              class="input input-bordered w-full"
+              [field]="itemForm.volume_ml"
+              placeholder="Ej: 500"
+            />
+          </label>
+        }
+
         @if (showRigidFields()) {
           <label class="form-control w-full">
             <div class="label">
