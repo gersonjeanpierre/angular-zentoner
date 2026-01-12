@@ -4,11 +4,9 @@
 DROP SCHEMA IF EXISTS inventory CASCADE;
 CREATE SCHEMA IF NOT EXISTS inventory;
 
-DROP TABLE IF EXISTS inventory.kardex CASCADE;
-DROP TABLE IF EXISTS inventory.movement_type CASCADE;
-DROP TABLE IF EXISTS inventory.movement_reason CASCADE;
 DROP TABLE IF EXISTS inventory.items CASCADE;
 DROP TABLE IF EXISTS inventory.categories CASCADE;
+DROP TABLE IF EXISTS inventory.machines CASCADE;
 -- ======================================================================
 -- CATEGORIAS 
 -- ======================================================================
@@ -328,10 +326,10 @@ BEGIN
     (shop_uuid, id_servicios, 'Servicios de Impresión', 1),
     (shop_uuid, id_servicios, 'Otros', 2);
 END $$;
+
 -- ######################################################################
 -- ITEMs Tabla principal de inventario
 -- ######################################################################
-
 CREATE TABLE IF NOT EXISTS inventory.items (
   id UUID PRIMARY KEY,
   category_id SMALLINT REFERENCES inventory.categories(id),
@@ -422,189 +420,28 @@ ADD CONSTRAINT chk_item_name_length CHECK (
     finish IS NULL OR char_length(finish) <= 50
   );
 
-
--- RLS
 ALTER TABLE inventory.items ENABLE ROW LEVEL SECURITY;
 
--- ======================================================================
--- K A R D E X   D E   I N V E N T A R I O
--- ======================================================================
-DROP TABLE IF EXISTS inventory.movement_type CASCADE;
-DROP TABLE IF EXISTS inventory.movement_reason CASCADE;
-
-CREATE TABLE IF NOT EXISTS inventory.movement_type (
-  id SMALLSERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
+CREATE TABLE IF NOT EXISTS inventory.machines (
+  id UUID PRIMARY KEY,
+  shop_id UUID REFERENCES core.shops(id),
+  name TEXT NOT NULL,
+  model TEXT,
+  metadata JSONB,
+  is_active BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  delete_at TIMESTAMPTZ
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE inventory.movement_type
-  ADD CONSTRAINT chk_movement_type_name_length CHECK (
-    name IS NULL OR char_length(name) <= 50
+ALTER TABLE inventory.machines
+  ADD CONSTRAINT chk_machine_name_length CHECK (
+    name IS NULL OR char_length(name) <= 150
   ),
-  ADD CONSTRAINT chk_movement_type_description_length CHECK (
-    description IS NULL OR char_length(description) <= 200
-  );
-CREATE TRIGGER trg_movement_type_set_updated_at
-  BEFORE UPDATE ON inventory.movement_type
-  FOR EACH ROW
-  EXECUTE FUNCTION core.set_updated_at();
-
-ALTER TABLE inventory.movement_type ENABLE ROW LEVEL SECURITY;
--- SEED DATA PARA MOVEMENT TYPES
-INSERT INTO inventory.movement_type (name, description) VALUES
-('ENTRADA', 'Ingreso de inventario al almacén'),
-('SALIDA', 'Salida de inventario del almacén'),
-('AJUSTE', 'Corrección manual o ajuste de inventario');
-
--- ======================================================================
-
-
-CREATE TABLE IF NOT EXISTS inventory.movement_reason (
-  id SMALLSERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  delete_at TIMESTAMPTZ
-);
-
-ALTER TABLE inventory.movement_reason
-  ADD CONSTRAINT chk_movement_reason_name_length CHECK (
-    name IS NULL OR char_length(name) <= 50
-  ),
-  ADD CONSTRAINT chk_movement_reason_description_length CHECK (
-    description IS NULL OR char_length(description) <= 200
+  ADD CONSTRAINT chk_machine_model_length CHECK (
+    model IS NULL OR char_length(model) <= 150
   );
 
-CREATE TRIGGER trg_movement_reason_set_updated_at
-  BEFORE UPDATE ON inventory.movement_reason
-  FOR EACH ROW
-  EXECUTE FUNCTION core.set_updated_at();
-
-ALTER TABLE inventory.movement_reason ENABLE ROW LEVEL SECURITY;
--- SEED DATA PARA MOVEMENT REASONS
-INSERT INTO inventory.movement_reason (name, description) VALUES
-('COMPRA', 'Entrada por factura de proveedor'),
-('VENTA', 'Salida por despacho al cliente'),
-('PRODUCCION', 'Salida por consumo en máquina'),
-('MERMA_TECNICA', 'Desperdicio por inicio de impresión/calibración'),
-('DAÑO_OPERATIVO', 'Se malogró el material por atascamiento o error humano'),
-('DEVOLUCION', 'El cliente devolvió o nosotros devolvemos al proveedor'),
-('INVENTARIO_INICIAL', 'Carga inicial del sistema'),
-('AJUSTE_MANUAL', 'Corrección manual por auditoría o conteo físico'),
-('TRASLADO', 'Movimiento entre almacenes o sucursales'),
-('OTRO', 'Otros motivos no listados');
-
-
-CREATE TABLE IF NOT EXISTS inventory.kardex (
-    id UUID PRIMARY KEY,
-    item_id UUID REFERENCES inventory.items(id) NOT NULL,
-    batch_code TEXT,  -- Lote o código de lote si aplica
-    
-    -- Información del movimiento
-    movement_type_id SMALLINT REFERENCES inventory.movement_type(id) NOT NULL,
-    movement_reason_id SMALLINT REFERENCES inventory.movement_reason(id) NOT NULL,
-    quantity DECIMAL(12,3) NOT NULL, -- Siempre positiva, el tipo_movimiento define el signo
-    
-    -- Instantánea (Snapshot) para auditoría rápida
-    -- en ingles
-    previous_balance DECIMAL(12,3) NOT NULL,
-    subsequent_balance DECIMAL(12,3) NOT NULL,
-    
-    -- Valoración (Importante para reportes de rentabilidad)
-    unit_cost_at_moment NUMERIC(15,4) DEFAULT 0,
-    
-    -- Trazabilidad y Documentación
-    order_detail_id UUID REFERENCES sales.order_details(id),
-    notes TEXT,             -- Ej: "Desperdicio de 2 metros por atasco en cabezal"
-    
-    -- Auditoría Supabase
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id) -- Quién realizó la acción
-);
-
-ALTER TABLE inventory.kardex
-  ADD CONSTRAINT chk_batch_code_length CHECK (
-    batch_code IS NULL OR char_length(batch_code) <= 50
-  ),
-  ADD CONSTRAINT chk_quantity_positive CHECK (
-    quantity > 0
-  ),
-  ADD CONSTRAINT chk_unit_cost_at_moment_nonnegative CHECK (
-    unit_cost_at_moment >= 0
-  ),
-  ADD CONSTRAINT chk_notes_length CHECK (
-    notes IS NULL OR char_length(notes) <= 500
-  );
-
--- Indices para reportes rápidos (vital cuando el kardex crezca)
-CREATE INDEX idx_kardex_item_id ON inventory.kardex(item_id);
-CREATE INDEX idx_kardex_created_at ON inventory.kardex(created_at);
-
-ALTER TABLE inventory.kardex ENABLE ROW LEVEL SECURITY;
-
-
-
--- ######################################################################
--- # SEED ITEMS DE INVENTARIO
--- ######################################################################
-DO $$ 
-DECLARE 
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
-    -- IDs de categorías (Asumiendo que se generaron en el orden del script anterior)
-    -- En un entorno real, es mejor buscarlos por nombre y shop_id
-    v_cat_papel_couche_sa3 SMALLINT;
-    v_cat_vinilo_blanco SMALLINT;
-    v_cat_tazas SMALLINT;
-    v_cat_maquinaria_uv SMALLINT;
-    v_cat_maquinaria_laser SMALLINT;
-BEGIN 
-
-    -- Obtener IDs de categorías para asegurar integridad
-    SELECT id INTO v_cat_papel_couche_sa3 FROM inventory.categories WHERE id=24 AND shop_id = shop_uuid LIMIT 1;
-    SELECT id INTO v_cat_vinilo_blanco FROM inventory.categories WHERE name = 'Vinilo Blanco' AND shop_id = shop_uuid LIMIT 1;
-    SELECT id INTO v_cat_tazas FROM inventory.categories WHERE name = 'Copas, Tazas y Vasos' AND shop_id = shop_uuid LIMIT 1;
-    SELECT id INTO v_cat_maquinaria_uv FROM inventory.categories WHERE name = 'UV Híbridas' AND shop_id = shop_uuid LIMIT 1;
-    SELECT id INTO v_cat_maquinaria_laser FROM inventory.categories WHERE name = 'imagePRESS' AND shop_id = shop_uuid LIMIT 1;
-
-    -- ======================================================================
-    -- MAQUINARIA (Activos fijos)
-    -- ======================================================================
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, serial_number, metadata) VALUES
-    (gen_random_uuid(), v_cat_maquinaria_uv, 'maquina', 'unidad', 'Impresora UV Híbrida Flora 2.5m', 'MAC-UV-001', 'FL2500-X99', '{"cabezal": "Epson i3200", "tintas": "CMYK+W+V"}'),
-    (gen_random_uuid(), v_cat_maquinaria_laser, 'maquina', 'unidad', 'VP 23', 'VP-023', 'VP023-2025', '{"ultimo_mantenimiento": "2024-05-15", "horas_uso": 1200}'),
-    (gen_random_uuid(), v_cat_maquinaria_laser, 'maquina', 'unidad', 'Eco Solvent Printer', 'Q5-3208', 'Q5-3208-194', '{"ultimo_mantenimiento": "10-10-2025", "formato": "3200mm"}');
-
-    -- ======================================================================
-    -- GIGANTOGRAFÍA Y VINILOS (Rollos - Salida por Metro Lineal)
-    -- ======================================================================
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, width_mm, length_m, printable_width_mm) VALUES
-    -- Vinilo en rollo de 1.27m x 50m
-    (gen_random_uuid(), v_cat_vinilo_blanco, 'vinilo', 'metro-lineal', 'Vinilo Blanco Brillante 1.27m', 'MAT-VIN-127', 1270, 50.00, 1250);
-    -- ======================================================================
-    -- PAPELERÍA (Pliegos - Salida por Unidad de pliego)
-    -- ======================================================================
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, weight_gsm, finish, width_mm, height_mm) VALUES
-    -- Papel Couche SRA3 (320mm x 450mm)
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Brillo 150g SA3', 'PAP-COU-B-150-SA3', 150, 'Brillo', 320, 450),
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Brillo 200g SA3', 'PAP-COU-B-200-SA3', 150, 'Brillo', 320, 450),
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Brillo 200g SA3', 'PAP-COU-B-300-SA3', 300, 'Brillo', 320, 450),
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Mate 150g SA3', 'PAP-COU-M-150-SA3', 150, 'Mate', 320, 450),
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Mate 200g SA3', 'PAP-COU-M-200-SA3', 150, 'Mate', 320, 450),
-    (gen_random_uuid(), v_cat_papel_couche_sa3, 'papel', 'unidad', 'Papel Couche Mate 200g SA3', 'PAP-COU-M-300-SA3', 300, 'Mate', 320, 450);
-
-    -- ======================================================================|
-    -- MERCHANDISING (Blancos - Salida por Unidad)
-    -- ======================================================================
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku) VALUES
-    (gen_random_uuid(), v_cat_tazas, 'merchandising', 'unidad', 'Taza Blanca para Sublimar 11oz', 'MER-TAZA-001'),
-    (gen_random_uuid(), v_cat_tazas, 'merchandising', 'unidad', 'Taza Asa e Interior Color Negro 11oz', 'MER-TAZA-002');
-
-END $$;
+ALTER TABLE inventory.machines ENABLE ROW LEVEL SECURITY;
 
 -- LONAS
 DO $$ 
@@ -711,6 +548,13 @@ CREATE POLICY "authenticated_can_insert_items"
     auth_management.is_universal_manager((SELECT auth.uid()))
   );
 
+DROP POLICY IF EXISTS "authenticated_can_select_items" ON inventory.items;
+CREATE POLICY "authenticated_can_select_items"
+  ON inventory.items
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
 DROP POLICY IF EXISTS "authenticated_can_update_items" ON inventory.items;
 CREATE POLICY "authenticated_can_update_items"
   ON inventory.items
@@ -722,10 +566,3 @@ CREATE POLICY "authenticated_can_update_items"
   WITH CHECK (
     auth_management.is_universal_manager((SELECT auth.uid()))
   );
-
-DROP POLICY IF EXISTS "authenticated_can_select_items" ON inventory.items;
-CREATE POLICY "authenticated_can_select_items"
-  ON inventory.items
-  FOR SELECT
-  TO authenticated
-  USING (true);

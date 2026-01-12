@@ -1,0 +1,160 @@
+<div class="flex flex-col gap-6 p-6 max-w-4xl mx-auto">
+  <!-- Header -->
+  <div>
+    <h1 class="text-3xl font-bold">Nuevo Lote de Kardex</h1>
+    <p class="text-base-content/70 mt-1">Registrar nuevo lote de inventario</p>
+  </div>
+
+  <!-- Loading State -->
+  @if (loadingData()) {
+    <div class="flex justify-center items-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <span class="icon-[mdi--alert-circle] text-xl"></span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Success State -->
+  @if (success()) {
+    <div class="alert alert-success">
+      <span class="icon-[mdi--check-circle] text-xl"></span>
+      <span>Lote registrado correctamente. Redirigiendo...</span>
+    </div>
+  }
+
+  <!-- Form -->
+  @if (!loadingData() && !success()) {
+    <form (submit)="onSubmit($event)" class="flex flex-col gap-6">
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Información del Lote</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Item -->
+            <div class="form-control w-full md:col-span-2">
+              <label class="label">
+                <span class="label-text">Item *</span>
+              </label>
+              <select
+                [field]="kardexForm.item_id"
+                (change)="onItemChange($event)"
+                class="select select-bordered w-full"
+                [class.select-error]="
+                  kardexForm.item_id().touched() && kardexForm.item_id().invalid()
+                "
+              >
+                <option value="">Seleccionar item...</option>
+                @for (item of items(); track item.id) {
+                  <option [value]="item.id">
+                    {{ item.name }} ({{ item.sku }}) - {{ item.unit_type }}
+                  </option>
+                }
+              </select>
+              @if (kardexForm.item_id().touched() && kardexForm.item_id().invalid()) {
+                <div class="label">
+                  @for (error of kardexForm.item_id().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Batch Code -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Código de Lote *</span>
+              </label>
+              <input
+                type="text"
+                [field]="kardexForm.batch_code"
+                placeholder="Ej: 26-ENE-001"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  kardexForm.batch_code().touched() && kardexForm.batch_code().invalid()
+                "
+              />
+              @if (kardexForm.batch_code().touched() && kardexForm.batch_code().invalid()) {
+                <div class="label">
+                  @for (error of kardexForm.batch_code().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Quantity Base -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Cantidad Base *</span>
+              </label>
+              <input
+                type="number"
+                [field]="kardexForm.quantity_base"
+                step="0.001"
+                placeholder="0.000"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  kardexForm.quantity_base().touched() && kardexForm.quantity_base().invalid()
+                "
+              />
+              @if (kardexForm.quantity_base().touched() && kardexForm.quantity_base().invalid()) {
+                <div class="label">
+                  @for (error of kardexForm.quantity_base().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+              <label class="label">
+                <span class="label-text-alt">
+                  @if (selectedItem()) {
+                    Unidad: {{ selectedItem()?.unit_type }}
+                  }
+                </span>
+              </label>
+            </div>
+
+            <!-- Notes -->
+            <div class="form-control w-full md:col-span-2">
+              <label class="label">
+                <span class="label-text">Notas</span>
+              </label>
+              <textarea
+                [field]="kardexForm.notes"
+                placeholder="Observaciones adicionales..."
+                class="textarea textarea-bordered h-24"
+              ></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 justify-end">
+        <button type="button" (click)="cancel()" class="btn btn-ghost" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="
+            kardexForm.item_id().invalid() ||
+            kardexForm.batch_code().invalid() ||
+            kardexForm.quantity_base().invalid() ||
+            loading()
+          "
+        >
+          @if (loading()) {
+            <span class="loading loading-spinner"></span>
+          }
+          Registrar Lote
+        </button>
+      </div>
+    </form>
+  }
+</div>

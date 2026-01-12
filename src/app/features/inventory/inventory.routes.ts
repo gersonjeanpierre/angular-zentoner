@@ -30,6 +30,23 @@ const inventoryRoutes: Routes = [
       },
     ],
   },
+  {
+    path: 'kardex',
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./kardex/kardex-list/kardex-list'),
+      },
+      {
+        path: 'nuevo',
+        loadComponent: () => import('./kardex/kardex-create/kardex-create'),
+      },
+      {
+        path: 'item/:itemId',
+        loadComponent: () => import('./kardex/item-kardex-history/item-kardex-history'),
+      },
+    ],
+  },
 ];
 
 export default inventoryRoutes;

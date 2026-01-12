@@ -1,0 +1,203 @@
+<div class="flex flex-col gap-4 p-6">
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold">Kardex de Inventario</h1>
+      <p class="text-base-content/70 mt-1">Gestión de lotes de inventario</p>
+    </div>
+    <button (click)="navigateToNewEntry()" class="btn btn-primary">
+      <span class="icon-[mdi--plus] text-xl"></span>
+      Nuevo Lote
+    </button>
+  </div>
+
+  <!-- Filters -->
+  <div class="card bg-base-100 shadow-sm">
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Item Filter -->
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Item</span>
+          </label>
+          <select
+            class="select select-bordered w-full"
+            [value]="selectedItemId()"
+            (change)="onItemChange($event)"
+          >
+            <option value="">Todos los items</option>
+            @for (item of items(); track item.id) {
+              <option [value]="item.id">{{ item.name }} ({{ item.sku }})</option>
+            }
+          </select>
+        </div>
+
+        <!-- Search by Batch Code -->
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Buscar por Código de Lote</span>
+          </label>
+          <input
+            type="text"
+            class="input input-bordered w-full"
+            placeholder="Código de lote..."
+            (input)="onSearch($event)"
+            [value]="searchTerm()"
+          />
+        </div>
+      </div>
+
+      @if (hasFilters()) {
+        <div class="mt-4 flex justify-end">
+          <button (click)="clearFilters()" class="btn btn-ghost btn-sm">
+            <span class="icon-[mdi--filter-off] text-lg"></span>
+            Limpiar Filtros
+          </button>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Results Count -->
+  <div class="flex items-center justify-between text-sm">
+    <p class="text-base-content/70">
+      Mostrando {{ kardexEntries().length }} de {{ totalCount() }} lotes
+    </p>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="flex justify-center items-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <span class="icon-[mdi--alert-circle] text-xl"></span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Table -->
+  @if (!loading() && !error()) {
+    <div class="card bg-base-100 shadow-sm overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Fecha</th>
+            <th>Item</th>
+            <th>SKU</th>
+            <th>Lote</th>
+            <th class="text-right">Cantidad Base</th>
+            <th class="text-right">Cantidad Usada</th>
+            <th class="text-right">Cantidad Restante</th>
+            <th>Estado</th>
+            <th>Notas</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (kardexEntries().length === 0) {
+            <tr>
+              <td colspan="10" class="text-center py-8">
+                <div class="flex flex-col items-center gap-2">
+                  <span class="icon-[mdi--package-variant] text-4xl text-base-content/30"></span>
+                  <p class="text-base-content/70">No se encontraron lotes</p>
+                </div>
+              </td>
+            </tr>
+          } @else {
+            @for (entry of kardexEntries(); track entry.id) {
+              <tr>
+                <td class="whitespace-nowrap">{{ formatDate(entry.created_at) }}</td>
+                <td>{{ entry.item_name }}</td>
+                <td>
+                  <span class="badge badge-ghost badge-sm">{{ entry.item_sku }}</span>
+                </td>
+                <td>
+                  @if (entry.batch_code) {
+                    <span class="badge badge-outline badge-sm">{{ entry.batch_code }}</span>
+                  } @else {
+                    <span class="text-base-content/30">-</span>
+                  }
+                </td>
+                <td class="text-right font-mono">
+                  {{ entry.quantity_base | number: '1.2-3' }}
+                </td>
+                <td class="text-right font-mono">
+                  @if (entry.quantity_used !== null && entry.quantity_used !== undefined) {
+                    {{ entry.quantity_used | number: '1.2-3' }}
+                  } @else {
+                    <span class="text-base-content/30">0</span>
+                  }
+                </td>
+                <td class="text-right font-mono">
+                  @if (
+                    entry.quantity_remaining !== null && entry.quantity_remaining !== undefined
+                  ) {
+                    {{ entry.quantity_remaining | number: '1.2-3' }}
+                  } @else {
+                    <span class="text-base-content/30">0</span>
+                  }
+                </td>
+                <td>
+                  <span
+                    class="badge badge-sm"
+                    [class]="getStatusBadgeClass(entry.quantity_remaining)"
+                  >
+                    {{ getStatusText(entry.quantity_remaining) }}
+                  </span>
+                </td>
+                <td class="max-w-xs truncate">
+                  @if (entry.notes) {
+                    <span class="text-sm">{{ entry.notes }}</span>
+                  } @else {
+                    <span class="text-base-content/30">-</span>
+                  }
+                </td>
+                <td>
+                  <button class="btn btn-ghost btn-xs" title="Ver historial de consumos">
+                    <span class="icon-[mdi--history]"></span>
+                  </button>
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="flex justify-center items-center gap-2">
+        <button
+          (click)="previousPage()"
+          [disabled]="currentPage() === 1"
+          class="btn btn-sm btn-outline"
+        >
+          <span class="icon-[mdi--chevron-left]"></span>
+        </button>
+
+        @for (page of [].constructor(totalPages()); track $index) {
+          <button
+            (click)="goToPage($index + 1)"
+            [class.btn-active]="currentPage() === $index + 1"
+            class="btn btn-sm btn-outline"
+          >
+            {{ $index + 1 }}
+          </button>
+        }
+
+        <button
+          (click)="nextPage()"
+          [disabled]="currentPage() === totalPages()"
+          class="btn btn-sm btn-outline"
+        >
+          <span class="icon-[mdi--chevron-right]"></span>
+        </button>
+      </div>
+    }
+  }
+</div>

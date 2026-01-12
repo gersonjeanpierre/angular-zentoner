@@ -29,4 +29,8 @@ export default class Inventory {
   protected toItems() {
     this.router.navigate(['/inventario/items']);
   }
+
+  protected toKardex() {
+    this.router.navigate(['/inventario/kardex']);
+  }
 }

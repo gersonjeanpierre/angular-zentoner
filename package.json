@@ -39,7 +39,7 @@
     "@angular/build": "^21.0.5",
     "@angular/cli": "^21.0.5",
     "@angular/compiler-cli": "^21.0.8",
-    "@iconify/json": "^2.2.426",
+    "@iconify/json": "^2.2.427",
     "@iconify/tailwind4": "^1.2.0",
     "@types/qrcode": "^1.5.6",
     "angular-eslint": "20.6.0",
@@ -49,6 +49,6 @@
     "prettier": "3.6.2",
     "typescript": "~5.9.3",
     "typescript-eslint": "8.46.3",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.17"
   }
 }

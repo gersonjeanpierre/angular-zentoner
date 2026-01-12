@@ -41,6 +41,7 @@ export class ItemsService {
 
     if (error) {
       console.error('Error al crear item:', error);
+      throw error;
     }
 
     return data;
