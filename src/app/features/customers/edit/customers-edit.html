@@ -30,7 +30,7 @@
               <span
                 class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"
               ></span>
-              <select class="select grow shadow-none" [field]="customerForm.customerType">
+              <select class="select grow shadow-none" [formField]="customerForm.customerType">
                 <option value="" disabled>Tipo de cliente</option>
                 <option value="NUEVO">Nuevo</option>
                 <option value="FRECUENTE">Frecuente</option>
@@ -47,7 +47,7 @@
               @if (customerForm.personType().value() === 'NATURAL') {
                 <label class="input input-neutral mb-2">
                   <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input class="grow" [field]="customerForm.firstName" placeholder="Nombres" />
+                  <input class="grow" [formField]="customerForm.firstName" placeholder="Nombres" />
                 </label>
               } @else {
                 <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
@@ -65,7 +65,7 @@
               @if (customerForm.personType().value() === 'NATURAL') {
                 <label class="input input-neutral mb-2">
                   <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input class="grow" [field]="customerForm.lastName" placeholder="Apellidos" />
+                  <input class="grow" [formField]="customerForm.lastName" placeholder="Apellidos" />
                 </label>
               } @else {
                 <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
@@ -83,7 +83,11 @@
               @if (customerForm.personType().value() === 'JURIDICA') {
                 <label class="input input-neutral mb-2">
                   <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
-                  <input class="grow" [field]="customerForm.legalName" placeholder="Razón social" />
+                  <input
+                    class="grow"
+                    [formField]="customerForm.legalName"
+                    placeholder="Razón social"
+                  />
                 </label>
               } @else {
                 <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
@@ -102,7 +106,7 @@
                 <span class="icon-[material-symbols--phone-iphone] h-7 w-7"></span>
                 <input
                   class="grow"
-                  [field]="customerForm.phone"
+                  [formField]="customerForm.phone"
                   placeholder="Teléfono"
                   [class.input-error]="
                     customerForm.phone().touched() && customerForm.phone().invalid()
@@ -122,19 +126,28 @@
               <legend class="fieldset-legend text-lg">Documentos</legend>
               <label class="input input-neutral mb-2">
                 <span class="icon-[material-symbols--id-card-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.dni" placeholder="DNI" />
+                <input class="grow" [formField]="customerForm.dni" placeholder="DNI" />
               </label>
               <label class="input input-neutral mb-2">
                 <span class="icon-[material-symbols--text-ad-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.ce" placeholder="Carnet extranjería" />
+                <input
+                  class="grow"
+                  [formField]="customerForm.ce"
+                  placeholder="Carnet extranjería"
+                />
               </label>
               <label class="input input-neutral mb-2">
                 <span class="icon-[material-symbols--newsmode-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.ruc" placeholder="RUC" />
+                <input class="grow" [formField]="customerForm.ruc" placeholder="RUC" />
               </label>
               <label class="input input-neutral mb-2">
                 <span class="icon-[material-symbols--mail-rounded] h-7 w-7"></span>
-                <input class="grow" [field]="customerForm.email" placeholder="Email" type="email" />
+                <input
+                  class="grow"
+                  [formField]="customerForm.email"
+                  placeholder="Email"
+                  type="email"
+                />
               </label>
               <label class="input input-neutral grow bg-base-200">
                 <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>

@@ -13,7 +13,7 @@
           type="email"
           placeholder="ejemplo@zentoner.com"
           class="input input-bordered w-full"
-          [field]="signUpForm.email"
+          [formField]="signUpForm.email"
           [class.input-error]="signUpForm.email().touched() && signUpForm.email().invalid()"
           autocomplete="username"
         />
@@ -35,7 +35,7 @@
           type="password"
           placeholder="Mínimo 6 caracteres"
           class="input input-bordered w-full"
-          [field]="signUpForm.password"
+          [formField]="signUpForm.password"
           [class.input-error]="signUpForm.password().touched() && signUpForm.password().invalid()"
           autocomplete="new-password"
         />
@@ -57,7 +57,7 @@
           type="text"
           placeholder="Nombre"
           class="input input-bordered w-full"
-          [field]="signUpForm.firstName"
+          [formField]="signUpForm.firstName"
           [class.input-error]="signUpForm.firstName().touched() && signUpForm.firstName().invalid()"
           autocomplete="given-name"
         />
@@ -79,7 +79,7 @@
           type="text"
           placeholder="Apellido"
           class="input input-bordered w-full"
-          [field]="signUpForm.lastName"
+          [formField]="signUpForm.lastName"
           [class.input-error]="signUpForm.lastName().touched() && signUpForm.lastName().invalid()"
           autocomplete="family-name"
         />
@@ -99,7 +99,7 @@
         </label>
         <select
           class="select select-bordered w-full"
-          [field]="signUpForm.shopId"
+          [formField]="signUpForm.shopId"
           [class.select-error]="signUpForm.shopId().touched() && signUpForm.shopId().invalid()"
         >
           <option value="" disabled>Seleccione una tienda</option>

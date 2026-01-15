@@ -14,7 +14,7 @@
                 type="text"
                 class="grow cursor-pointer"
                 placeholder="Nombre del diseñador"
-                [field]="ticketForm.designer"
+                [formField]="ticketForm.designer"
                 autocomplete="off"
               />
             </label>
@@ -27,7 +27,7 @@
                 type="text"
                 class="grow cursor-pointer"
                 placeholder="Nombre del cliente"
-                [field]="ticketForm.client"
+                [formField]="ticketForm.client"
                 autocomplete="off"
               />
             </label>
@@ -62,7 +62,7 @@
           <!-- Items a agregar -->
           <div class="w-full overflow-x-auto md:overflow-visible">
             <div
-              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-[500px] md:min-w-0"
+              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-125 md:min-w-0"
             >
               <span class="text-left">Categoría</span>
               <span class="text-left">Tipo</span>
@@ -78,7 +78,7 @@
                   <!-- Categoría -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
                     placeholder="Categoría"
                     readonly
                     [value]="item.category"
@@ -88,7 +88,7 @@
                   <!-- Tamaño -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
                     placeholder="Tipo"
                     readonly
                     [value]="item.type"
@@ -98,7 +98,7 @@
                   <!-- Tipo -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
                     placeholder="Tamaño"
                     readonly
                     [value]="item.size"
@@ -108,7 +108,7 @@
                   <!-- Maquina -->
                   <input
                     type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-[100px]"
+                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
                     placeholder="Maquina"
                     readonly
                     [value]="item.machine"
@@ -169,7 +169,7 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese adelanto"
-                  [field]="ticketForm.advance"
+                  [formField]="ticketForm.advance"
                   autocomplete="off"
                   step="0.01"
                   (input)="calculateTotals()"
@@ -185,7 +185,7 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese descuento"
-                  [field]="ticketForm.discount"
+                  [formField]="ticketForm.discount"
                   autocomplete="off"
                   step="0.01"
                   (input)="calculateTotals()"

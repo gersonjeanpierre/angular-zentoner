@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { form, Field, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 import { CategoryService } from '@core/services/category-service';
 import { ItemsService } from '@core/services/items-service';
 import { ItemFormModel, ItemPayload, selectOption } from '@data/models/inventory/item.model';
@@ -10,7 +10,7 @@ import { supplyTypes, unitTypes } from '@data/constants';
 
 @Component({
   selector: 'app-items-create',
-  imports: [CommonModule, Field],
+  imports: [CommonModule, FormField],
   templateUrl: './items-create.html',
   styleUrl: './items-create.css',
 })

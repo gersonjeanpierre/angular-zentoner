@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, HostListener, signal } from '@angular/core';
-import { form, Field } from '@angular/forms/signals';
+import { form, FormField } from '@angular/forms/signals';
 import { TicketDataModel, TicketItemModel } from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
@@ -9,7 +9,7 @@ import { PRINTING_CATEGORIES } from '@data/constants/categories';
 
 @Component({
   selector: 'app-tickets',
-  imports: [Field, TicketPreview, ModalSearch],
+  imports: [FormField, TicketPreview, ModalSearch],
   templateUrl: './tickets.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

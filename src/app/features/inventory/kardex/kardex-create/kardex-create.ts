@@ -1,7 +1,7 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
 import { Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
-import { form, Field, required, min } from '@angular/forms/signals';
+import { form, FormField, required, min } from '@angular/forms/signals';
 import { KardexService } from '@core/services/kardex-service';
 import { ItemsService } from '@core/services/items-service';
 import { AuthService } from '@core/services/auth-service';
@@ -11,7 +11,7 @@ import { v7 as uuidv7 } from 'uuid';
 
 @Component({
   selector: 'app-kardex-create',
-  imports: [CommonModule, Field],
+  imports: [CommonModule, FormField],
   templateUrl: './kardex-create.html',
   styleUrl: './kardex-create.css',
 })

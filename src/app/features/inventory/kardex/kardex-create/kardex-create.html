@@ -42,7 +42,7 @@
                 <span class="label-text">Item *</span>
               </label>
               <select
-                [field]="kardexForm.item_id"
+                [formField]="kardexForm.item_id"
                 (change)="onItemChange($event)"
                 class="select select-bordered w-full"
                 [class.select-error]="
@@ -72,7 +72,7 @@
               </label>
               <input
                 type="text"
-                [field]="kardexForm.batch_code"
+                [formField]="kardexForm.batch_code"
                 placeholder="Ej: 26-ENE-001"
                 class="input input-bordered w-full"
                 [class.input-error]="
@@ -95,7 +95,7 @@
               </label>
               <input
                 type="number"
-                [field]="kardexForm.quantity_base"
+                [formField]="kardexForm.quantity_base"
                 step="0.001"
                 placeholder="0.000"
                 class="input input-bordered w-full"
@@ -125,7 +125,7 @@
                 <span class="label-text">Notas</span>
               </label>
               <textarea
-                [field]="kardexForm.notes"
+                [formField]="kardexForm.notes"
                 placeholder="Observaciones adicionales..."
                 class="textarea textarea-bordered h-24"
               ></textarea>

@@ -35,7 +35,7 @@
         <div class="label">
           <span class="label-text">Nombre del Item *</span>
         </div>
-        <input type="text" class="input input-bordered w-full" [field]="itemForm.name" />
+        <input type="text" class="input input-bordered w-full" [formField]="itemForm.name" />
       </label>
 
       <label class="form-control w-full">
@@ -45,7 +45,7 @@
         <input
           type="text"
           class="input input-bordered w-full"
-          [field]="itemForm.sku"
+          [formField]="itemForm.sku"
           placeholder="Ej: PAP-COU-B-150-SA3"
         />
       </label>
@@ -54,7 +54,7 @@
         <div class="label">
           <span class="label-text">Sub Categoria</span>
         </div>
-        <select class="select w-full" [field]="itemForm.category_id">
+        <select class="select w-full" [formField]="itemForm.category_id">
           @for (subSub of subSubCategories(); track subSub.value) {
             <option [value]="subSub.value">{{ subSub.label }}</option>
           }
@@ -65,7 +65,7 @@
         <div class="label">
           <span class="label-text">Tipo de Material *</span>
         </div>
-        <select class="select select-bordered w-full" [field]="itemForm.supply_type">
+        <select class="select select-bordered w-full" [formField]="itemForm.supply_type">
           @for (type of supplyTypes; track type.value) {
             <option [value]="type.value">{{ type.label }}</option>
           }
@@ -76,7 +76,7 @@
         <div class="label">
           <span class="label-text">Unidad de Medida *</span>
         </div>
-        <select class="select select-bordered w-full" [field]="itemForm.unit_type">
+        <select class="select select-bordered w-full" [formField]="itemForm.unit_type">
           @for (unit of unitTypes; track unit.value) {
             <option [value]="unit.value">{{ unit.label }}</option>
           }
@@ -87,7 +87,7 @@
         <div class="label">
           <span class="label-text">Marca</span>
         </div>
-        <input type="text" class="input w-full" [field]="itemForm.brand" />
+        <input type="text" class="input w-full" [formField]="itemForm.brand" />
       </label>
 
       <label class="form-control w-full">
@@ -97,7 +97,7 @@
         <input
           type="number"
           class="input input-bordered w-full"
-          [field]="itemForm.price_reference"
+          [formField]="itemForm.price_reference"
         />
       </label>
 
@@ -115,7 +115,7 @@
             <input
               type="text"
               class="input input-bordered w-full"
-              [field]="itemForm.size_name"
+              [formField]="itemForm.size_name"
               placeholder="Ej: SA3"
             />
           </label>
@@ -128,7 +128,7 @@
           <input
             type="number"
             class="input input-bordered w-full"
-            [field]="itemForm.weight_gsm"
+            [formField]="itemForm.weight_gsm"
             placeholder="Ej: 150"
           />
         </label>
@@ -140,7 +140,7 @@
           <input
             type="text"
             class="input input-bordered w-full"
-            [field]="itemForm.finish"
+            [formField]="itemForm.finish"
             placeholder="Ej: Mate, Brillo, Satinado"
           />
         </label>
@@ -154,7 +154,7 @@
           <input
             type="number"
             class="input input-bordered w-full"
-            [field]="itemForm.volume_ml"
+            [formField]="itemForm.volume_ml"
             placeholder="Ej: 500"
           />
         </label>
@@ -169,7 +169,7 @@
             type="number"
             step="0.1"
             class="input input-bordered w-full"
-            [field]="itemForm.thickness_mm"
+            [formField]="itemForm.thickness_mm"
             placeholder="Ej: 3.0"
           />
         </label>
@@ -181,7 +181,7 @@
           <input
             type="text"
             class="input input-bordered w-full"
-            [field]="itemForm.color_code"
+            [formField]="itemForm.color_code"
             placeholder="Ej: #FFFFFF"
           />
         </label>
@@ -195,7 +195,7 @@
           <input
             type="text"
             class="input input-bordered w-full"
-            [field]="itemForm.serial_number"
+            [formField]="itemForm.serial_number"
             placeholder="Ej: FL2500-X99"
           />
         </label>
@@ -214,7 +214,7 @@
           <input
             type="number"
             class="input input-bordered w-full"
-            [field]="itemForm.width_mm"
+            [formField]="itemForm.width_mm"
             placeholder="Ej: 320"
           />
         </label>
@@ -227,7 +227,7 @@
             <input
               type="number"
               class="input input-bordered w-full"
-              [field]="itemForm.height_mm"
+              [formField]="itemForm.height_mm"
               placeholder="Ej: 450"
             />
           </label>
@@ -242,7 +242,7 @@
               type="number"
               step="0.01"
               class="input input-bordered w-full"
-              [field]="itemForm.length_m"
+              [formField]="itemForm.length_m"
               placeholder="Ej: 50.00"
             />
           </label>
@@ -257,7 +257,7 @@
             <input
               type="number"
               class="input input-bordered w-full"
-              [field]="itemForm.printable_width_mm"
+              [formField]="itemForm.printable_width_mm"
               placeholder="Ej: 310"
             />
           </label>
@@ -270,7 +270,7 @@
               <input
                 type="number"
                 class="input input-bordered w-full"
-                [field]="itemForm.printable_height_mm"
+                [formField]="itemForm.printable_height_mm"
                 placeholder="Ej: 440"
               />
             </label>
@@ -283,7 +283,7 @@
           <span class="label-text">Estado</span>
         </div>
         <div class="flex items-center gap-2 h-12">
-          <input type="checkbox" class="toggle toggle-success" [field]="itemForm.is_active" />
+          <input type="checkbox" class="toggle toggle-success" [formField]="itemForm.is_active" />
           <span class="label-text">
             {{ itemForm.is_active().value() ? 'Activo' : 'Inactivo' }}
           </span>

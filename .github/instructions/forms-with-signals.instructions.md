@@ -8,6 +8,27 @@ description: Guía práctica para implementar formularios con Angular Signal For
 
 Signal Forms usa Angular signals para gestionar el estado de formularios de forma reactiva y type-safe, proporcionando sincronización automática entre el modelo de datos y la UI.
 
+## Actualizaciones en Angular 21.1
+
+En Angular 21.1, el directive `[field]` ha sido renombrado a `[formField]` para mayor claridad y consistencia. La funcionalidad permanece idéntica.
+
+### Migración:
+
+```typescript
+// Antes (Angular 21.0)
+<input type="email" [field]="loginForm.email" />
+
+// Después (Angular 21.1)
+<input type="email" [formField]="loginForm.email" />
+```
+
+### Mejoras Adicionales:
+
+- **Soporte para controles personalizados:** Mejor soporte para controles personalizados con modelos no basados en signals.
+- **Requisitos de input:** Los controles personalizados ahora pueden requerir inputs `dirty`, `hidden`, y `pending`.
+- **Arrays de solo lectura:** Soporte completo para arrays de solo lectura en signal forms.
+- **Validación asíncrona:** Limpieza adecuada de listeners de abort después del timeout de validación.
+
 ## Pasos de Implementación
 
 ### 1. Crear el modelo del formulario con `signal()`
@@ -30,24 +51,24 @@ const loginModel = signal<LoginData>({
 const loginForm = form(loginModel);
 
 // Acceso a campos con dot notation
-loginForm.email
-loginForm.password
+loginForm.email;
+loginForm.password;
 ```
 
-### 3. Vincular inputs HTML con `[field]` directive
+### 3. Vincular inputs HTML con `[formField]` directive
 
 ```html
-<input type="email" [field]="loginForm.email" class="input input-bordered w-full" />
-<input type="password" [field]="loginForm.password" class="input input-bordered w-full" />
+<input type="email" [formField]="loginForm.email" class="input input-bordered w-full" />
+<input type="password" [formField]="loginForm.password" class="input input-bordered w-full" />
 ```
 
-**Nota:** El directive `[field]` sincroniza automáticamente atributos como `required`, `disabled`, y `readonly`.
+**Nota:** El directive `[formField]` sincroniza automáticamente atributos como `required`, `disabled`, y `readonly`.
 
 ### 4. Leer valores con `value()`
 
 ```typescript
 // Obtener FieldState
-loginForm.email() // Returns FieldState
+loginForm.email(); // Returns FieldState
 
 // Leer valor actual
 const currentEmail = loginForm.email().value();
@@ -71,67 +92,76 @@ console.log(loginModel().email); // 'alice@wonderland.com'
 ## Tipos de Inputs Soportados (con DaisyUI)
 
 ### Text Inputs
+
 ```html
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Name</span>
   </label>
-  <input type="text" [field]="form.name" class="input input-bordered w-full" />
+  <input type="text" [formField]="form.name" class="input input-bordered w-full" />
 </div>
 
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Email</span>
   </label>
-  <input type="email" [field]="form.email" class="input input-bordered w-full" />
+  <input type="email" [formField]="form.email" class="input input-bordered w-full" />
 </div>
 
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Message</span>
   </label>
-  <textarea [field]="form.message" class="textarea textarea-bordered h-24" placeholder="Bio"></textarea>
+  <textarea
+    [formField]="form.message"
+    class="textarea textarea-bordered h-24"
+    placeholder="Bio"
+  ></textarea>
 </div>
 ```
 
 ### Numbers
+
 ```html
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Age</span>
   </label>
-  <input type="number" [field]="form.age" class="input input-bordered w-full" />
+  <input type="number" [formField]="form.age" class="input input-bordered w-full" />
 </div>
 ```
 
 ### Date y Time
+
 ```html
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Date</span>
   </label>
-  <input type="date" [field]="form.eventDate" class="input input-bordered w-full" />
+  <input type="date" [formField]="form.eventDate" class="input input-bordered w-full" />
 </div>
 
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Time</span>
   </label>
-  <input type="time" [field]="form.eventTime" class="input input-bordered w-full" />
+  <input type="time" [formField]="form.eventTime" class="input input-bordered w-full" />
 </div>
 ```
 
 **Conversión a Date object:**
+
 ```typescript
 const dateObject = new Date(form.eventDate().value());
 ```
 
 ### Checkboxes
+
 ```html
 <!-- Single checkbox -->
 <div class="form-control">
   <label class="label cursor-pointer justify-start gap-2">
-    <input type="checkbox" [field]="form.agreeToTerms" class="checkbox" />
+    <input type="checkbox" [formField]="form.agreeToTerms" class="checkbox" />
     <span class="label-text">I agree to the terms</span>
   </label>
 </div>
@@ -139,42 +169,44 @@ const dateObject = new Date(form.eventDate().value());
 <!-- Multiple checkboxes -->
 <div class="form-control">
   <label class="label cursor-pointer justify-start gap-2">
-    <input type="checkbox" [field]="form.emailNotifications" class="checkbox" />
+    <input type="checkbox" [formField]="form.emailNotifications" class="checkbox" />
     <span class="label-text">Email notifications</span>
   </label>
 </div>
 <div class="form-control">
   <label class="label cursor-pointer justify-start gap-2">
-    <input type="checkbox" [field]="form.smsNotifications" class="checkbox" />
+    <input type="checkbox" [formField]="form.smsNotifications" class="checkbox" />
     <span class="label-text">SMS notifications</span>
   </label>
 </div>
 ```
 
 ### Radio Buttons
+
 ```html
 <div class="form-control">
   <label class="label cursor-pointer justify-start gap-2">
-    <input type="radio" value="free" [field]="form.plan" class="radio" />
+    <input type="radio" value="free" [formField]="form.plan" class="radio" />
     <span class="label-text">Free</span>
   </label>
 </div>
 <div class="form-control">
   <label class="label cursor-pointer justify-start gap-2">
-    <input type="radio" value="premium" [field]="form.plan" class="radio" />
+    <input type="radio" value="premium" [formField]="form.plan" class="radio" />
     <span class="label-text">Premium</span>
   </label>
 </div>
 ```
 
 ### Select Dropdowns
+
 ```html
 <!-- Static options -->
 <div class="form-control w-full">
   <label class="label">
     <span class="label-text">Country</span>
   </label>
-  <select [field]="form.country" class="select select-bordered">
+  <select [formField]="form.country" class="select select-bordered">
     <option value="">Select a country</option>
     <option value="us">United States</option>
   </select>
@@ -185,10 +217,10 @@ const dateObject = new Date(form.eventDate().value());
   <label class="label">
     <span class="label-text">Product</span>
   </label>
-  <select [field]="form.productId" class="select select-bordered">
+  <select [formField]="form.productId" class="select select-bordered">
     <option value="">Select a product</option>
     @for (product of products; track product.id) {
-      <option [value]="product.id">{{ product.name }}</option>
+    <option [value]="product.id">{{ product.name }}</option>
     }
   </select>
 </div>
@@ -205,7 +237,7 @@ const loginForm = form(loginModel, (schemaPath) => {
   email(schemaPath.email, { message: 'Please enter a valid email address' });
   required(schemaPath.password, { message: 'Password is required' });
   minLength(schemaPath.password, 8, { message: 'Password must be at least 8 characters' });
-  
+
   // Debounce para mejor UX
   debounce(schemaPath.email, 500);
 });
@@ -227,29 +259,33 @@ const loginForm = form(loginModel, (schemaPath) => {
   <label class="label">
     <span class="label-text">Email</span>
   </label>
-  <input type="email" [field]="loginForm.email" class="input input-bordered w-full" 
-         [class.input-error]="loginForm.email().touched() && loginForm.email().invalid()" />
-  
+  <input
+    type="email"
+    [formField]="loginForm.email"
+    class="input input-bordered w-full"
+    [class.input-error]="loginForm.email().touched() && loginForm.email().invalid()"
+  />
+
   @if (loginForm.email().touched() && loginForm.email().invalid()) {
-    <div class="label">
-      @for (error of loginForm.email().errors(); track error) {
-        <span class="label-text-alt text-error">{{ error.message }}</span>
-      }
-    </div>
+  <div class="label">
+    @for (error of loginForm.email().errors(); track error) {
+    <span class="label-text-alt text-error">{{ error.message }}</span>
+    }
+  </div>
   }
 </div>
 ```
 
 ### Field State Signals
 
-| Signal | Descripción |
-|--------|-------------|
-| `valid()` | `true` si pasa todas las validaciones |
-| `touched()` | `true` si el usuario ha enfocado y desenfocado el campo |
-| `dirty()` | `true` si el usuario ha cambiado el valor |
-| `disabled()` | `true` si el campo está deshabilitado |
-| `pending()` | `true` si validación async está en progreso |
-| `errors()` | Array de errores con `kind` y `message` |
+| Signal       | Descripción                                             |
+| ------------ | ------------------------------------------------------- |
+| `valid()`    | `true` si pasa todas las validaciones                   |
+| `touched()`  | `true` si el usuario ha enfocado y desenfocado el campo |
+| `dirty()`    | `true` si el usuario ha cambiado el valor               |
+| `disabled()` | `true` si el campo está deshabilitado                   |
+| `pending()`  | `true` si validación async está en progreso             |
+| `errors()`   | Array de errores con `kind` y `message`                 |
 
 ## Ejemplo Completo
 
@@ -257,7 +293,7 @@ const loginForm = form(loginModel, (schemaPath) => {
 
 ```typescript
 import { Component, signal, ChangeDetectionStrategy } from '@angular/core';
-import { form, Field, required, email } from '@angular/forms/signals';
+import { form, FormField, required, email } from '@angular/forms/signals';
 
 interface LoginData {
   email: string;
@@ -267,7 +303,7 @@ interface LoginData {
 @Component({
   selector: 'app-login',
   templateUrl: 'login.html',
-  imports: [Field],
+  imports: [FormField],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class LoginComponent {
@@ -294,21 +330,28 @@ export class LoginComponent {
 ### Template HTML
 
 ```html
-<form (submit)="onSubmit($event)" class="flex flex-col gap-4 max-w-md mx-auto p-4 bg-base-200 rounded-box shadow-lg">
+<form
+  (submit)="onSubmit($event)"
+  class="flex flex-col gap-4 max-w-md mx-auto p-4 bg-base-200 rounded-box shadow-lg"
+>
   <h2 class="text-2xl font-bold text-center mb-4">Login</h2>
-  
+
   <div class="form-control w-full">
     <label class="label">
       <span class="label-text">Email</span>
     </label>
-    <input type="email" [field]="loginForm.email" class="input input-bordered w-full" 
-           [class.input-error]="loginForm.email().touched() && loginForm.email().invalid()" />
+    <input
+      type="email"
+      [formField]="loginForm.email"
+      class="input input-bordered w-full"
+      [class.input-error]="loginForm.email().touched() && loginForm.email().invalid()"
+    />
     @if (loginForm.email().touched() && loginForm.email().invalid()) {
-      <div class="label">
-        @for (error of loginForm.email().errors(); track error) {
-          <span class="label-text-alt text-error">{{ error.message }}</span>
-        }
-      </div>
+    <div class="label">
+      @for (error of loginForm.email().errors(); track error) {
+      <span class="label-text-alt text-error">{{ error.message }}</span>
+      }
+    </div>
     }
   </div>
 
@@ -316,14 +359,18 @@ export class LoginComponent {
     <label class="label">
       <span class="label-text">Password</span>
     </label>
-    <input type="password" [field]="loginForm.password" class="input input-bordered w-full" 
-           [class.input-error]="loginForm.password().touched() && loginForm.password().invalid()" />
+    <input
+      type="password"
+      [formField]="loginForm.password"
+      class="input input-bordered w-full"
+      [class.input-error]="loginForm.password().touched() && loginForm.password().invalid()"
+    />
     @if (loginForm.password().touched() && loginForm.password().invalid()) {
-      <div class="label">
-        @for (error of loginForm.password().errors(); track error) {
-          <span class="label-text-alt text-error">{{ error.message }}</span>
-        }
-      </div>
+    <div class="label">
+      @for (error of loginForm.password().errors(); track error) {
+      <span class="label-text-alt text-error">{{ error.message }}</span>
+      }
+    </div>
     }
   </div>
 
@@ -338,7 +385,7 @@ export class LoginComponent {
 3. **Personaliza mensajes de error** para que sean claros y útiles
 4. **Usa `ChangeDetectionStrategy.OnPush`** con Signal Forms para mejor performance
 5. **El schema path es para validación**, usa el field tree para acceder a valores
-6. **Multiple select no está soportado** actualmente por `[field]` directive
+6. **Multiple select no está soportado** actualmente por `[formField]` directive
 7. **Usa `form-control` y `label` de DaisyUI** para estructurar correctamente los inputs y sus etiquetas.
 
 ## Referencias

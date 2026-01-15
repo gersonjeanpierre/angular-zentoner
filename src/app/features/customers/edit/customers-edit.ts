@@ -6,7 +6,7 @@ import { CustomerView } from '@data/models/customer/customer.model';
 import camelCase from 'camelcase-keys';
 import { generateCustomerCode } from '../utils/customer-utils';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
-import { form, Field, required } from '@angular/forms/signals';
+import { form, FormField, required } from '@angular/forms/signals';
 
 interface CustomerFormModel {
   personType: string;
@@ -24,7 +24,7 @@ interface CustomerFormModel {
 
 @Component({
   selector: 'app-customers-edit',
-  imports: [RouterModule, AlertModal, Field],
+  imports: [RouterModule, AlertModal, FormField],
   templateUrl: './customers-edit.html',
   styleUrls: ['./customers-edit.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,

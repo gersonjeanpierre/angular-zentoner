@@ -5,7 +5,7 @@ import { AuthService } from '@core/services/auth-service';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
 import {
   form,
-  Field,
+  FormField,
   required,
   email,
   minLength,
@@ -20,7 +20,7 @@ interface LoginData {
 
 @Component({
   selector: 'app-log-in',
-  imports: [LogoLaserVeloz, AlertModal, Field],
+  imports: [LogoLaserVeloz, AlertModal, FormField],
   templateUrl: './log-in.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

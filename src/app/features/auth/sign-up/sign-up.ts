@@ -9,7 +9,7 @@ import {
 import { LogoLaserVeloz } from '../../../shared/components/logo-laser-veloz/logo-laser-veloz';
 import {
   form,
-  Field,
+  FormField,
   required,
   email,
   minLength,
@@ -39,7 +39,7 @@ interface RoleType {
 
 @Component({
   selector: 'app-sign-up',
-  imports: [LogoLaserVeloz, AlertModal, Field],
+  imports: [LogoLaserVeloz, AlertModal, FormField],
   templateUrl: './sign-up.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
