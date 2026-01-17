@@ -1,4 +1,5 @@
 ---
+applyTo: '**'
 description: Guía práctica para implementar formularios con Angular Signal Forms usando Tailwind CSS y DaisyUI
 ---
 

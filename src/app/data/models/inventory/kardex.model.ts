@@ -22,58 +22,90 @@ export interface MovementReason {
   created_at: string;
 }
 
-// Nuevo modelo para Kardex (rollos/lotes individuales)
-export interface KardexFormModel {
+// Roll Tracking (seguimiento de rollos individuales)
+export interface RollTrackingFormModel {
   item_id: string;
-  batch_code: string;
-  quantity_base: number | string;
+  roll_code: string;
+  current_quantity: number | string;
+}
+
+export interface RollTrackingPayload {
+  id: string;
+  item_id: string;
+  roll_code: string;
+  current_quantity: number;
+  status: 'full' | 'in_use' | 'depleted' | 'scrapped';
+}
+
+export interface RollTrackingView {
+  id: string;
+  item_id: string;
+  item_name?: string;
+  item_sku?: string;
+  roll_code: string;
+  current_quantity: number;
+  status: 'full' | 'in_use' | 'depleted' | 'scrapped';
+  created_at: string;
+  updated_at: string;
+}
+
+// Kardex (registro contable de movimientos)
+export interface KardexFormModel {
+  movement_type_id: number | string;
+  movement_reason_id: number | string;
+  item_id: string;
+  roll_id: string;
+  quantity: number | string;
   notes: string;
 }
 
 export interface KardexPayload {
   id: string;
+  movement_type_id: number;
+  movement_reason_id: number;
   item_id: string;
-  batch_code?: string | null;
-  quantity_used?: number | null;
-  quantity_remaining?: number | null;
-  quantity_base: number;
+  roll_id?: string | null;
+  quantity: number;
+  previous_balance: number;
+  subsequent_balance: number;
   notes?: string | null;
   created_by?: string | null;
 }
 
 export interface KardexView {
   id: string;
+  movement_type_id: number;
+  movement_type_name?: string;
+  movement_reason_id: number;
+  movement_reason_name?: string;
   item_id: string;
   item_name?: string;
   item_sku?: string;
-  batch_code?: string | null;
-  quantity_used?: number | null;
-  quantity_remaining?: number | null;
-  quantity_base: number;
+  roll_id?: string | null;
+  roll_code?: string | null;
+  quantity: number;
+  previous_balance: number;
+  subsequent_balance: number;
   notes?: string | null;
   created_at: string;
-  updated_at: string;
   created_by?: string | null;
 }
 
-// Modelo para Consumption Logs
+// Consumption Logs (registro técnico de producción)
 export interface ConsumptionLogFormModel {
-  movement_type_id: string;
-  movement_reason_id: string;
   machine_id: string;
-  order_detail_id: string;
   job_name: string;
   customer_quantity: number | string;
   calibration_waste: number | string;
   error_waste: number | string;
   width_used_mm: number | string;
   length_used_mm: number | string;
+  operator_id: string;
+  order_detail_id: string;
 }
 
 export interface ConsumptionLogPayload {
   id: string;
-  movement_type_id: number;
-  movement_reason_id: number;
   machine_id?: string | null;
   operator_id?: string | null;
   order_detail_id?: string | null;
@@ -87,10 +119,6 @@ export interface ConsumptionLogPayload {
 
 export interface ConsumptionLogView {
   id: string;
-  movement_type_id: number;
-  movement_type_name?: string;
-  movement_reason_id: number;
-  movement_reason_name?: string;
   machine_id?: string | null;
   machine_name?: string | null;
   operator_id?: string | null;
@@ -106,7 +134,7 @@ export interface ConsumptionLogView {
   updated_at: string;
 }
 
-// Modelo para Kardex Consumption (relación entre kardex y consumption logs)
+// Kardex Consumption (relación entre kardex y consumption logs)
 export interface KardexConsumptionPayload {
   id: string;
   kardex_id: string;
@@ -118,7 +146,6 @@ export interface KardexConsumptionPayload {
 export interface KardexConsumptionView {
   id: string;
   kardex_id: string;
-  kardex_batch_code?: string;
   consumption_log_id: string;
   used_quantity: number;
   notes?: string | null;
@@ -126,12 +153,29 @@ export interface KardexConsumptionView {
   updated_at: string;
 }
 
+// Balance de Kardex (para reportes)
 export interface KardexBalance {
   item_id: string;
   item_name: string;
   item_sku: string;
-  total_base: number;
-  total_used: number;
-  total_remaining: number;
+  current_stock: number;
+  last_movement_date?: string;
   unit_type: string;
+}
+
+// Producción completa (para formulario integrado)
+export interface ProductionFormModel {
+  movement_type_id: number | string;
+  movement_reason_id: number | string;
+  roll_id: string;
+  machine_id: string;
+  operator_id: string;
+  job_name: string;
+  order_detail_id: string;
+  customer_quantity: number | string;
+  calibration_waste: number | string;
+  error_waste: number | string;
+  width_used_mm: number | string;
+  length_used_mm: number | string;
+  notes: string;
 }

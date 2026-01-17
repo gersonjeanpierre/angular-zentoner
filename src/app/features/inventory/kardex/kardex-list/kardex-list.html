@@ -2,19 +2,70 @@
   <!-- Header -->
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-3xl font-bold">Kardex de Inventario</h1>
-      <p class="text-base-content/70 mt-1">Gestión de lotes de inventario</p>
+      <h1 class="text-3xl font-bold">Rollos de Inventario</h1>
+      <p class="text-base-content/70 mt-1">Gestión de rollos y seguimiento de stock</p>
     </div>
-    <button (click)="navigateToNewEntry()" class="btn btn-primary">
-      <span class="icon-[mdi--plus] text-xl"></span>
-      Nuevo Lote
-    </button>
+    <div class="flex gap-2">
+      <a [routerLink]="['/inventario/kardex/produccion']" class="btn btn-accent">
+        <span class="icon-[mdi--factory] text-xl"></span>
+        Registrar Producción
+      </a>
+      <button (click)="navigateToNewEntry()" class="btn btn-primary">
+        <span class="icon-[mdi--plus] text-xl"></span>
+        Nuevo Rollo
+      </button>
+    </div>
   </div>
+
+  <!-- Stats Cards -->
+  @if (!loading()) {
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="stats shadow">
+        <div class="stat">
+          <div class="stat-figure text-primary">
+            <span class="icon-[mdi--package-variant] text-3xl"></span>
+          </div>
+          <div class="stat-title">Total Rollos</div>
+          <div class="stat-value text-primary">{{ totalCount() }}</div>
+        </div>
+      </div>
+
+      <div class="stats shadow">
+        <div class="stat">
+          <div class="stat-figure text-success">
+            <span class="icon-[mdi--check-circle] text-3xl"></span>
+          </div>
+          <div class="stat-title">Disponibles</div>
+          <div class="stat-value text-success">{{ getAvailableCount() }}</div>
+        </div>
+      </div>
+
+      <div class="stats shadow">
+        <div class="stat">
+          <div class="stat-figure text-warning">
+            <span class="icon-[mdi--alert] text-3xl"></span>
+          </div>
+          <div class="stat-title">Parciales</div>
+          <div class="stat-value text-warning">{{ getPartialCount() }}</div>
+        </div>
+      </div>
+
+      <div class="stats shadow">
+        <div class="stat">
+          <div class="stat-figure text-error">
+            <span class="icon-[mdi--close-circle] text-3xl"></span>
+          </div>
+          <div class="stat-title">Vacíos</div>
+          <div class="stat-value text-error">{{ getEmptyCount() }}</div>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- Filters -->
   <div class="card bg-base-100 shadow-sm">
     <div class="card-body">
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <!-- Item Filter -->
         <div class="form-control w-full">
           <label class="label">
@@ -32,15 +83,33 @@
           </select>
         </div>
 
-        <!-- Search by Batch Code -->
+        <!-- Status Filter -->
         <div class="form-control w-full">
           <label class="label">
-            <span class="label-text">Buscar por Código de Lote</span>
+            <span class="label-text">Estado</span>
+          </label>
+          <select
+            class="select select-bordered w-full"
+            [value]="selectedStatus()"
+            (change)="onStatusChange($event)"
+          >
+            <option value="">Todos los estados</option>
+            <option value="FULL">Completo</option>
+            <option value="PARTIAL">Parcial</option>
+            <option value="EMPTY">Vacío</option>
+            <option value="SCRAPPED">Descartado</option>
+          </select>
+        </div>
+
+        <!-- Search by Roll Code -->
+        <div class="form-control w-full">
+          <label class="label">
+            <span class="label-text">Buscar por Código</span>
           </label>
           <input
             type="text"
             class="input input-bordered w-full"
-            placeholder="Código de lote..."
+            placeholder="Código de rollo..."
             (input)="onSearch($event)"
             [value]="searchTerm()"
           />
@@ -60,9 +129,7 @@
 
   <!-- Results Count -->
   <div class="flex items-center justify-between text-sm">
-    <p class="text-base-content/70">
-      Mostrando {{ kardexEntries().length }} de {{ totalCount() }} lotes
-    </p>
+    <p class="text-base-content/70">Mostrando {{ rolls().length }} de {{ totalCount() }} rollos</p>
   </div>
 
   <!-- Loading State -->
@@ -86,81 +153,65 @@
       <table class="table table-zebra">
         <thead>
           <tr>
-            <th>Fecha</th>
+            <th>Código Rollo</th>
             <th>Item</th>
             <th>SKU</th>
-            <th>Lote</th>
-            <th class="text-right">Cantidad Base</th>
-            <th class="text-right">Cantidad Usada</th>
-            <th class="text-right">Cantidad Restante</th>
-            <th>Estado</th>
-            <th>Notas</th>
-            <th>Acciones</th>
+            <th class="text-right">Cantidad</th>
+            <th class="text-center">Estado</th>
+            <th>Fecha Creación</th>
+            <th class="text-center">Acciones</th>
           </tr>
         </thead>
         <tbody>
-          @if (kardexEntries().length === 0) {
+          @if (rolls().length === 0) {
             <tr>
-              <td colspan="10" class="text-center py-8">
+              <td colspan="7" class="text-center py-8">
                 <div class="flex flex-col items-center gap-2">
                   <span class="icon-[mdi--package-variant] text-4xl text-base-content/30"></span>
-                  <p class="text-base-content/70">No se encontraron lotes</p>
+                  <p class="text-base-content/70">No se encontraron rollos</p>
                 </div>
               </td>
             </tr>
           } @else {
-            @for (entry of kardexEntries(); track entry.id) {
+            @for (roll of rolls(); track roll.id) {
               <tr>
-                <td class="whitespace-nowrap">{{ formatDate(entry.created_at) }}</td>
-                <td>{{ entry.item_name }}</td>
                 <td>
-                  <span class="badge badge-ghost badge-sm">{{ entry.item_sku }}</span>
+                  <span class="badge badge-outline font-mono text-sm">{{ roll.roll_code }}</span>
                 </td>
                 <td>
-                  @if (entry.batch_code) {
-                    <span class="badge badge-outline badge-sm">{{ entry.batch_code }}</span>
-                  } @else {
-                    <span class="text-base-content/30">-</span>
-                  }
-                </td>
-                <td class="text-right font-mono">
-                  {{ entry.quantity_base | number: '1.2-3' }}
-                </td>
-                <td class="text-right font-mono">
-                  @if (entry.quantity_used !== null && entry.quantity_used !== undefined) {
-                    {{ entry.quantity_used | number: '1.2-3' }}
-                  } @else {
-                    <span class="text-base-content/30">0</span>
-                  }
-                </td>
-                <td class="text-right font-mono">
-                  @if (
-                    entry.quantity_remaining !== null && entry.quantity_remaining !== undefined
-                  ) {
-                    {{ entry.quantity_remaining | number: '1.2-3' }}
-                  } @else {
-                    <span class="text-base-content/30">0</span>
-                  }
+                  <div class="font-medium">{{ roll.item_name }}</div>
                 </td>
                 <td>
-                  <span
-                    class="badge badge-sm"
-                    [class]="getStatusBadgeClass(entry.quantity_remaining)"
-                  >
-                    {{ getStatusText(entry.quantity_remaining) }}
+                  <span class="badge badge-ghost badge-sm">{{ roll.item_sku }}</span>
+                </td>
+                <td class="text-right font-mono text-sm font-semibold">
+                  {{ roll.current_quantity | number: '1.2-3' }}
+                </td>
+                <td class="text-center">
+                  <span class="badge badge-sm" [class]="getStatusBadgeClass(roll.status)">
+                    {{ getStatusText(roll.status) }}
                   </span>
                 </td>
-                <td class="max-w-xs truncate">
-                  @if (entry.notes) {
-                    <span class="text-sm">{{ entry.notes }}</span>
-                  } @else {
-                    <span class="text-base-content/30">-</span>
-                  }
-                </td>
+                <td class="whitespace-nowrap text-sm">{{ formatDate(roll.created_at) }}</td>
                 <td>
-                  <button class="btn btn-ghost btn-xs" title="Ver historial de consumos">
-                    <span class="icon-[mdi--history]"></span>
-                  </button>
+                  <div class="flex gap-1 justify-center">
+                    <button
+                      (click)="viewRollHistory(roll.id)"
+                      class="btn btn-ghost btn-xs"
+                      title="Ver historial de movimientos"
+                    >
+                      <span class="icon-[mdi--history]"></span>
+                    </button>
+                    @if (roll.status !== 'depleted' && roll.status !== 'scrapped') {
+                      <button
+                        (click)="useRoll(roll.id)"
+                        class="btn btn-ghost btn-xs text-primary"
+                        title="Usar en producción"
+                      >
+                        <span class="icon-[mdi--factory]"></span>
+                      </button>
+                    }
+                  </div>
                 </td>
               </tr>
             }

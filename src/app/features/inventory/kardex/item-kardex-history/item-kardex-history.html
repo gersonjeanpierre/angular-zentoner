@@ -5,10 +5,13 @@
       <span class="icon-[mdi--arrow-left] text-xl"></span>
     </button>
     <div>
-      <h1 class="text-3xl font-bold">Historial de Lotes</h1>
+      <h1 class="text-3xl font-bold">Historial de Movimientos</h1>
       @if (kardexHistory().length > 0) {
         <p class="text-base-content/70 mt-1">
           {{ kardexHistory()[0].item_name }} ({{ kardexHistory()[0].item_sku }})
+          @if (kardexHistory()[0].roll_code) {
+            - Rollo: {{ kardexHistory()[0].roll_code }}
+          }
         </p>
       }
     </div>
@@ -38,11 +41,12 @@
             <thead>
               <tr>
                 <th>Fecha</th>
-                <th>Lote</th>
-                <th class="text-right">Cantidad Base</th>
-                <th class="text-right">Cantidad Usada</th>
-                <th class="text-right">Cantidad Restante</th>
-                <th>Estado</th>
+                <th>Tipo</th>
+                <th>Razón</th>
+                <th>Rollo</th>
+                <th class="text-right">Cantidad</th>
+                <th class="text-right">Balance Anterior</th>
+                <th class="text-right">Balance Posterior</th>
                 <th>Notas</th>
               </tr>
             </thead>
@@ -51,38 +55,33 @@
                 <tr>
                   <td class="whitespace-nowrap">{{ formatDate(entry.created_at) }}</td>
                   <td>
-                    @if (entry.batch_code) {
-                      <span class="badge badge-outline badge-sm">{{ entry.batch_code }}</span>
+                    <span
+                      class="badge badge-sm"
+                      [class]="getMovementTypeBadgeClass(entry.movement_type_name)"
+                    >
+                      {{ entry.movement_type_name }}
+                    </span>
+                  </td>
+                  <td>
+                    <span class="text-sm">{{ entry.movement_reason_name }}</span>
+                  </td>
+                  <td>
+                    @if (entry.roll_code) {
+                      <span class="badge badge-outline badge-sm font-mono">{{
+                        entry.roll_code
+                      }}</span>
                     } @else {
                       <span class="text-base-content/30">-</span>
                     }
                   </td>
                   <td class="text-right font-mono">
-                    {{ entry.quantity_base | number: '1.2-3' }}
+                    {{ entry.quantity | number: '1.2-3' }}
                   </td>
                   <td class="text-right font-mono">
-                    @if (entry.quantity_used !== null && entry.quantity_used !== undefined) {
-                      {{ entry.quantity_used | number: '1.2-3' }}
-                    } @else {
-                      <span class="text-base-content/30">0</span>
-                    }
+                    {{ entry.previous_balance | number: '1.2-3' }}
                   </td>
                   <td class="text-right font-mono">
-                    @if (
-                      entry.quantity_remaining !== null && entry.quantity_remaining !== undefined
-                    ) {
-                      {{ entry.quantity_remaining | number: '1.2-3' }}
-                    } @else {
-                      <span class="text-base-content/30">0</span>
-                    }
-                  </td>
-                  <td>
-                    <span
-                      class="badge badge-sm"
-                      [class]="getStatusBadgeClass(entry.quantity_remaining)"
-                    >
-                      {{ getStatusText(entry.quantity_remaining) }}
-                    </span>
+                    {{ entry.subsequent_balance | number: '1.2-3' }}
                   </td>
                   <td class="max-w-xs truncate">
                     @if (entry.notes) {
@@ -103,10 +102,21 @@
   <!-- Empty State -->
   @if (!loading() && !error() && kardexHistory().length === 0) {
     <div class="card bg-base-100 shadow-sm">
-      <div class="card-body flex flex-col items-center gap-4 py-12">
-        <span class="icon-[mdi--package-variant] text-6xl text-base-content/30"></span>
-        <p class="text-base-content/70 text-lg">No hay movimientos registrados para este item</p>
-        <button (click)="goBack()" class="btn btn-primary">Volver al Kardex</button>
+      <div class="card-body">
+        <div class="flex flex-col items-center gap-4 py-12">
+          <span class="icon-[mdi--package-variant-closed] text-6xl text-base-content/30"></span>
+          <div class="text-center">
+            <h3 class="text-xl font-semibold">No hay movimientos</h3>
+            <p class="text-base-content/70">
+              No se encontraron movimientos para este
+              @if (rollId()) {
+                rollo
+              } @else {
+                item
+              }
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   }

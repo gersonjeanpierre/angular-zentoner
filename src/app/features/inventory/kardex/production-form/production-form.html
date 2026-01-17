@@ -1,0 +1,388 @@
+<div class="flex flex-col gap-6 p-6 max-w-5xl mx-auto">
+  <!-- Breadcrumbs -->
+  <div class="text-sm breadcrumbs">
+    <ul>
+      <li><a [routerLink]="['/inventario']">Inventario</a></li>
+      <li><a [routerLink]="['/inventario/kardex']">Rollos</a></li>
+      <li>Registrar Producción</li>
+    </ul>
+  </div>
+
+  <!-- Header -->
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold">Registrar Producción</h1>
+      <p class="text-base-content/70 mt-1">
+        Registrar consumo de material en producción (Cliente + Mermas)
+      </p>
+    </div>
+    <a [routerLink]="['/inventario/kardex']" class="btn btn-ghost btn-sm">
+      <span class="icon-[mdi--arrow-left]"></span>
+      Volver
+    </a>
+  </div>
+
+  <!-- Loading State -->
+  @if (loadingData()) {
+    <div class="flex justify-center items-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <span class="icon-[mdi--alert-circle] text-xl"></span>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Success State -->
+  @if (success()) {
+    <div class="alert alert-success">
+      <span class="icon-[mdi--check-circle] text-xl"></span>
+      <span>Producción registrada correctamente. Redirigiendo...</span>
+    </div>
+  }
+
+  <!-- Form -->
+  @if (!loadingData() && !success()) {
+    <form (submit)="onSubmit($event)" class="flex flex-col gap-6">
+      <!-- Material Selection -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Selección de Material</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Item -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Item *</span>
+              </label>
+              <select (change)="onItemChange($event)" class="select select-bordered w-full">
+                <option value="">Seleccionar item...</option>
+                @for (item of items(); track item.id) {
+                  <option [value]="item.id">{{ item.name }} ({{ item.sku }})</option>
+                }
+              </select>
+            </div>
+
+            <!-- Roll -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Rollo *</span>
+              </label>
+              <select
+                [formField]="productionForm.roll_id"
+                (change)="onRollChange($event)"
+                class="select select-bordered w-full"
+                [class.select-error]="
+                  productionForm.roll_id().touched() && productionForm.roll_id().invalid()
+                "
+              >
+                <option value="">Seleccionar rollo...</option>
+                @if (selectedItem()) {
+                  @for (roll of rolls(); track roll.id) {
+                    <option [value]="roll.id">
+                      {{ roll.roll_code }} - Disponible:
+                      {{ roll.current_quantity | number: '1.2-3' }}
+                    </option>
+                  }
+                } @else {
+                  <option value="" disabled>Primero seleccione un item</option>
+                }
+              </select>
+              @if (productionForm.roll_id().touched() && productionForm.roll_id().invalid()) {
+                <div class="label">
+                  @for (error of productionForm.roll_id().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Roll Info -->
+          @if (selectedRoll()) {
+            <div class="card bg-base-200">
+              <div class="card-body">
+                <h3 class="card-title text-base">Información del Rollo</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-sm text-base-content/70">Código</p>
+                    <p class="font-mono font-semibold">{{ selectedRoll()!.roll_code }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-base-content/70">Stock Actual</p>
+                    <p class="font-semibold text-primary">
+                      {{ selectedRoll()!.current_quantity | number: '1.2-3' }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Production Details -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Detalles de Producción</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Machine -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Máquina *</span>
+              </label>
+              <select
+                [formField]="productionForm.machine_id"
+                class="select select-bordered w-full"
+                [class.select-error]="
+                  productionForm.machine_id().touched() && productionForm.machine_id().invalid()
+                "
+              >
+                <option value="">Seleccionar máquina...</option>
+                @for (machine of machines(); track machine.id) {
+                  <option [value]="machine.id">{{ machine.name }}</option>
+                }
+              </select>
+              @if (productionForm.machine_id().touched() && productionForm.machine_id().invalid()) {
+                <div class="label">
+                  @for (error of productionForm.machine_id().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Job Name -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Nombre del Trabajo *</span>
+              </label>
+              <input
+                type="text"
+                [formField]="productionForm.job_name"
+                placeholder="Ej: Volante publicitario"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  productionForm.job_name().touched() && productionForm.job_name().invalid()
+                "
+              />
+              @if (productionForm.job_name().touched() && productionForm.job_name().invalid()) {
+                <div class="label">
+                  @for (error of productionForm.job_name().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Order Detail ID -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">ID Detalle Orden</span>
+              </label>
+              <input
+                type="text"
+                [formField]="productionForm.order_detail_id"
+                placeholder="Opcional"
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quantities -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Cantidades de Consumo</h2>
+          <p class="text-sm text-base-content/70 mb-4">
+            Registre las cantidades consumidas en la producción
+          </p>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Customer Quantity -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Cantidad Cliente *</span>
+                <span class="label-text-alt">
+                  <span class="icon-[mdi--check-circle] text-success"></span>
+                </span>
+              </label>
+              <input
+                type="number"
+                [formField]="productionForm.customer_quantity"
+                step="0.001"
+                placeholder="0.000"
+                class="input input-bordered w-full"
+                [class.input-error]="
+                  productionForm.customer_quantity().touched() &&
+                  productionForm.customer_quantity().invalid()
+                "
+              />
+              @if (
+                productionForm.customer_quantity().touched() &&
+                productionForm.customer_quantity().invalid()
+              ) {
+                <div class="label">
+                  @for (error of productionForm.customer_quantity().errors(); track error) {
+                    <span class="label-text-alt text-error">{{ error.message }}</span>
+                  }
+                </div>
+              }
+              <label class="label">
+                <span class="label-text-alt">Material entregado al cliente</span>
+              </label>
+            </div>
+
+            <!-- Calibration Waste -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Merma Técnica</span>
+                <span class="label-text-alt">
+                  <span class="icon-[mdi--cog] text-warning"></span>
+                </span>
+              </label>
+              <input
+                type="number"
+                [formField]="productionForm.calibration_waste"
+                step="0.001"
+                placeholder="0.000"
+                class="input input-bordered w-full"
+              />
+              <label class="label">
+                <span class="label-text-alt">Desperdicio por calibración/setup</span>
+              </label>
+            </div>
+
+            <!-- Error Waste -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Error Operativo</span>
+                <span class="label-text-alt">
+                  <span class="icon-[mdi--alert] text-error"></span>
+                </span>
+              </label>
+              <input
+                type="number"
+                [formField]="productionForm.error_waste"
+                step="0.001"
+                placeholder="0.000"
+                class="input input-bordered w-full"
+              />
+              <label class="label">
+                <span class="label-text-alt">Daño por error humano/máquina</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          @if (getTotalQuantity() > 0) {
+            <div class="divider"></div>
+            <div class="alert alert-info">
+              <span class="icon-[mdi--calculator]"></span>
+              <div class="w-full">
+                <div class="flex justify-between items-center">
+                  <span class="font-semibold">Total a Consumir:</span>
+                  <span class="text-2xl font-bold">{{ getTotalQuantity() | number: '1.2-3' }}</span>
+                </div>
+                @if (selectedRoll() && getTotalQuantity() > selectedRoll()!.current_quantity) {
+                  <div class="text-error text-sm mt-2">
+                    <span class="icon-[mdi--alert-circle]"></span>
+                    Stock insuficiente. Disponible:
+                    {{ selectedRoll()!.current_quantity | number: '1.2-3' }}
+                  </div>
+                } @else if (selectedRoll()) {
+                  <div class="text-success text-sm mt-2">
+                    <span class="icon-[mdi--check-circle]"></span>
+                    Stock suficiente. Quedará:
+                    {{ selectedRoll()!.current_quantity - getTotalQuantity() | number: '1.2-3' }}
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Dimensions (Optional) -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Dimensiones (Opcional)</h2>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Width Used -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Ancho Usado (mm)</span>
+              </label>
+              <input
+                type="number"
+                [formField]="productionForm.width_used_mm"
+                step="0.1"
+                placeholder="0.0"
+                class="input input-bordered w-full"
+              />
+            </div>
+
+            <!-- Length Used -->
+            <div class="form-control w-full">
+              <label class="label">
+                <span class="label-text">Largo Usado (mm)</span>
+              </label>
+              <input
+                type="number"
+                [formField]="productionForm.length_used_mm"
+                step="0.1"
+                placeholder="0.0"
+                class="input input-bordered w-full"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h2 class="card-title">Notas</h2>
+
+          <div class="form-control w-full">
+            <textarea
+              [formField]="productionForm.notes"
+              placeholder="Observaciones adicionales..."
+              class="textarea textarea-bordered h-24"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="flex gap-4 justify-end">
+        <button type="button" (click)="cancel()" class="btn btn-ghost" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          class="btn btn-primary"
+          [disabled]="
+            productionForm.roll_id().invalid() ||
+            productionForm.machine_id().invalid() ||
+            productionForm.job_name().invalid() ||
+            productionForm.customer_quantity().invalid() ||
+            loading()
+          "
+        >
+          @if (loading()) {
+            <span class="loading loading-spinner"></span>
+          }
+          Registrar Producción
+        </button>
+      </div>
+    </form>
+  }
+</div>

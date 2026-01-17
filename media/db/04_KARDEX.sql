@@ -6,22 +6,25 @@ DROP TABLE IF EXISTS inventory.consumption_logs CASCADE;
 DROP TABLE IF EXISTS inventory.kardex_consumption CASCADE;
 DROP TABLE IF EXISTS inventory.movement_type CASCADE;
 DROP TABLE IF EXISTS inventory.movement_reason CASCADE;
-
+DROP TABLE IF EXISTS inventory.roll_tracking CASCADE;
 
 CREATE TABLE IF NOT EXISTS inventory.movement_type (
-  id SMALLSERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id SMALLSERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE inventory.movement_type
-  ADD CONSTRAINT chk_movement_type_name_length CHECK (
-    name IS NULL OR char_length(name) <= 50
-  ),
-  ADD CONSTRAINT chk_movement_type_description_length CHECK (
-    description IS NULL OR char_length(description) <= 200
-  );
+ADD CONSTRAINT chk_movement_type_name_length CHECK (
+    name IS NULL
+    OR char_length(name) <= 50
+),
+ADD CONSTRAINT chk_movement_type_description_length CHECK (
+    description IS NULL
+    OR char_length(description) <= 200
+);
+
 CREATE TRIGGER trg_movement_type_set_updated_at
   BEFORE UPDATE ON inventory.movement_type
   FOR EACH ROW
@@ -29,28 +32,39 @@ CREATE TRIGGER trg_movement_type_set_updated_at
 
 ALTER TABLE inventory.movement_type ENABLE ROW LEVEL SECURITY;
 -- SEED DATA PARA MOVEMENT TYPES
-INSERT INTO inventory.movement_type (name, description) VALUES
-('ENTRADA', 'Ingreso de inventario al almacén'),
-('SALIDA', 'Salida de inventario del almacén'),
-('AJUSTE', 'Corrección manual o ajuste de inventario');
+INSERT INTO
+    inventory.movement_type (name, description)
+VALUES (
+        'ENTRADA',
+        'Ingreso de inventario al almacén'
+    ),
+    (
+        'SALIDA',
+        'Salida de inventario del almacén'
+    ),
+    (
+        'AJUSTE',
+        'Corrección manual o ajuste de inventario'
+    );
 
 -- ======================================================================
 
-
 CREATE TABLE IF NOT EXISTS inventory.movement_reason (
-  id SMALLSERIAL PRIMARY KEY,
-  name TEXT UNIQUE NOT NULL,
-  description TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+    id SMALLSERIAL PRIMARY KEY,
+    name TEXT UNIQUE NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE inventory.movement_reason
-  ADD CONSTRAINT chk_movement_reason_name_length CHECK (
-    name IS NULL OR char_length(name) <= 50
-  ),
-  ADD CONSTRAINT chk_movement_reason_description_length CHECK (
-    description IS NULL OR char_length(description) <= 150
-  );
+ADD CONSTRAINT chk_movement_reason_name_length CHECK (
+    name IS NULL
+    OR char_length(name) <= 50
+),
+ADD CONSTRAINT chk_movement_reason_description_length CHECK (
+    description IS NULL
+    OR char_length(description) <= 150
+);
 
 CREATE TRIGGER trg_movement_reason_set_updated_at
   BEFORE UPDATE ON inventory.movement_reason
@@ -59,129 +73,171 @@ CREATE TRIGGER trg_movement_reason_set_updated_at
 
 ALTER TABLE inventory.movement_reason ENABLE ROW LEVEL SECURITY;
 -- SEED DATA PARA MOVEMENT REASONS
-INSERT INTO inventory.movement_reason (name, description) VALUES
-('COMPRA', 'Entrada por factura de proveedor'),
-('VENTA', 'Salida por despacho al cliente'),
-('PRODUCCION', 'Salida por consumo en máquina'),
-('MERMA_TECNICA', 'Desperdicio por inicio de impresión/calibración'),
-('DAÑO_OPERATIVO', 'Se malogró el material por atascamiento o error humano'),
-('DEVOLUCION', 'El cliente devolvió o nosotros devolvemos al proveedor'),
-('INVENTARIO_INICIAL', 'Carga inicial del sistema'),
-('AJUSTE_MANUAL', 'Corrección manual por auditoría o conteo físico'),
-('TRASLADO', 'Movimiento entre almacenes o sucursales'),
-('OTRO', 'Otros motivos no listados');
+INSERT INTO
+    inventory.movement_reason (name, description)
+VALUES (
+        'COMPRA',
+        'Entrada por factura de proveedor'
+    ),
+    (
+        'VENTA',
+        'Salida por despacho al cliente'
+    ),
+    (
+        'PRODUCCION',
+        'Salida por consumo en máquina'
+    ),
+    (
+        'MERMA_TECNICA',
+        'Desperdicio por inicio de impresión/calibración'
+    ),
+    (
+        'DAÑO_OPERATIVO',
+        'Se malogró el material por atascamiento o error humano'
+    ),
+    (
+        'DEVOLUCION',
+        'El cliente devolvió o nosotros devolvemos al proveedor'
+    ),
+    (
+        'INVENTARIO_INICIAL',
+        'Carga inicial del sistema'
+    ),
+    (
+        'AJUSTE_MANUAL',
+        'Corrección manual por auditoría o conteo físico'
+    ),
+    (
+        'TRASLADO',
+        'Movimiento entre almacenes o sucursales'
+    ),
+    (
+        'OTRO',
+        'Otros motivos no listados'
+    );
 
+CREATE TABLE IF NOT EXISTS inventory.roll_tracking (
+    id UUID PRIMARY KEY,
+    item_id UUID REFERENCES inventory.items (id) NOT NULL,
+    roll_code TEXT UNIQUE NOT NULL, -- Codigo que se pegara al rollo fisico
+    -- initial_quantity DECIMAL(12, 3) NOT NULL,
+    current_quantity DECIMAL(12, 3) NOT NULL,
+    status TEXT CHECK (status IN ('full', 'in_use', 'depleted', 'scrapped')) DEFAULT 'full',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE inventory.roll_tracking
+ADD CONSTRAINT chk_roll_code_length CHECK (
+    char_length(roll_code) <= 50
+),
+ADD CONSTRAINT chk_current_quantity_nonnegative CHECK (current_quantity >= 0);
+
+ALTER TABLE inventory.roll_tracking ENABLE ROW LEVEL SECURITY;
 
 CREATE TABLE IF NOT EXISTS inventory.kardex (
     id UUID PRIMARY KEY,
-    item_id UUID REFERENCES inventory.items(id) NOT NULL,
-    batch_code TEXT,  -- Codigo para cada rollo, vinil, laminado,etc.
-    
-    quantity_used DECIMAL(12,3),  -- Cantidad usada en la operación
-    quantity_remaining DECIMAL(12,3), -- Cantidad restante después del movimiento
-    quantity_base DECIMAL(12,3) NOT NULL,
-
+    item_id UUID REFERENCES inventory.items (id) NOT NULL,
+    roll_id UUID REFERENCES inventory.roll_tracking (id),
+    movement_type_id SMALLINT REFERENCES inventory.movement_type (id) NOT NULL,
+    movement_reason_id SMALLINT REFERENCES inventory.movement_reason (id) NOT NULL,
+    quantity DECIMAL(12,3) NOT NULL, -- Cantidad del movimiento
+    previous_balance DECIMAL(12,3) NOT NULL, -- Stock antes
+    subsequent_balance DECIMAL(12,3) NOT NULL, -- Stock después
     notes TEXT,
-    
-    -- Auditoría Supabase
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
-    created_by UUID REFERENCES auth.users(id) -- Quién realizó la acción
+    created_by UUID REFERENCES auth.users (id) -- Quién realizó la acción
 );
 
-
 ALTER TABLE inventory.kardex
-  ADD CONSTRAINT chk_batch_code_length CHECK (
-    batch_code IS NULL OR char_length(batch_code) <= 50
-  ),
-  ADD CONSTRAINT chk_quantity_used_nonnegative CHECK (
-    quantity_used IS NULL OR quantity_used >= 0
-  ),
-  ADD CONSTRAINT chk_quantity_remaining_nonnegative CHECK (
-    quantity_remaining IS NULL OR quantity_remaining >= 0
-  ),
-  ADD CONSTRAINT chk_quantity_base_positive CHECK (
-    quantity_base > 0
-  ),
-  ADD CONSTRAINT chk_notes_length CHECK (
-    notes IS NULL OR char_length(notes) <= 500
-  );
+ADD CONSTRAINT chk_batch_code_length CHECK (
+    roll_id IS NULL
+    OR char_length(roll_id::TEXT) <= 50
+),
+ADD CONSTRAINT chk_quantity_positive CHECK (quantity > 0),
+ADD CONSTRAINT chk_previous_balance_nonnegative CHECK (previous_balance >= 0),
+ADD CONSTRAINT chk_subsequent_balance_nonnegative CHECK (subsequent_balance >= 0),
+ADD CONSTRAINT chk_notes_length CHECK (
+    notes IS NULL
+    OR char_length(notes) <= 250
+);
 
+CREATE INDEX idx_kardex_item_id ON inventory.kardex (item_id);
 
-CREATE INDEX idx_kardex_item_id ON inventory.kardex(item_id);
-CREATE INDEX idx_kardex_created_at ON inventory.kardex(created_at);
+CREATE INDEX idx_kardex_created_at ON inventory.kardex (created_at);
 
 ALTER TABLE inventory.kardex ENABLE ROW LEVEL SECURITY;
 
-
 CREATE TABLE IF NOT EXISTS inventory.consumption_logs (
-  id UUID PRIMARY KEY,
-  -- Información del movimiento
-  movement_type_id SMALLINT REFERENCES inventory.movement_type(id) NOT NULL,
-  movement_reason_id SMALLINT REFERENCES inventory.movement_reason(id) NOT NULL,
-
-  machine_id UUID REFERENCES inventory.machines(id),
-  operator_id UUID REFERENCES auth.users(id),
-
-  -- detalle de venta
-  order_detail_id UUID REFERENCES sales.order_details(id),
-
-  -- Detalles técnicos de la impresión
-  job_name TEXT,              -- Nombre del trabajo (ej: "Banner Publicitario X")
-  customer_quantity DECIMAL,  -- Lo que realmente se entregó al cliente
-  calibration_waste DECIMAL,  -- Lo gastado en encendido/limpieza
-  error_waste DECIMAL,        -- Lo perdido por atascos/errores
-  
-  -- Dimensiones (Útil para rollos y planchas)
-  width_used_mm INT,
-  length_used_mm INT,
-  
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+    id UUID PRIMARY KEY,
+    movement_type_id SMALLINT REFERENCES inventory.movement_type (id) NOT NULL,
+    movement_reason_id SMALLINT REFERENCES inventory.movement_reason (id) NOT NULL,
+    machine_id UUID REFERENCES inventory.machines (id),
+    operator_id UUID REFERENCES auth.users (id),
+    order_detail_id UUID REFERENCES sales.order_details (id),
+    job_name TEXT,
+    customer_quantity DECIMAL,
+    calibration_waste DECIMAL, -- encendido/limpieza
+    error_waste DECIMAL, -- atascos/errores
+    width_used_mm INT,
+    length_used_mm INT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE inventory.consumption_logs
-  ADD CONSTRAINT chk_job_name_length CHECK (
-    job_name IS NULL OR char_length(job_name) <= 150
-  ),
-  ADD CONSTRAINT chk_customer_quantity_nonnegative CHECK (
-    customer_quantity IS NULL OR customer_quantity >= 0
-  ),
-  ADD CONSTRAINT chk_calibration_waste_nonnegative CHECK (
-    calibration_waste IS NULL OR calibration_waste >= 0
-  ),
-  ADD CONSTRAINT chk_error_waste_nonnegative CHECK (
-    error_waste IS NULL OR error_waste >= 0
-  ),
-  ADD CONSTRAINT chk_width_used_mm_nonnegative CHECK (
-    width_used_mm IS NULL OR width_used_mm >= 0
-  ),
-  ADD CONSTRAINT chk_length_used_mm_nonnegative CHECK (
-    length_used_mm IS NULL OR length_used_mm >= 0
-  );
+ADD CONSTRAINT chk_job_name_length CHECK (
+    job_name IS NULL
+    OR char_length(job_name) <= 150
+),
+ADD CONSTRAINT chk_customer_quantity_nonnegative CHECK (
+    customer_quantity IS NULL
+    OR customer_quantity >= 0
+),
+ADD CONSTRAINT chk_calibration_waste_nonnegative CHECK (
+    calibration_waste IS NULL
+    OR calibration_waste >= 0
+),
+ADD CONSTRAINT chk_error_waste_nonnegative CHECK (
+    error_waste IS NULL
+    OR error_waste >= 0
+),
+ADD CONSTRAINT chk_width_used_mm_nonnegative CHECK (
+    width_used_mm IS NULL
+    OR width_used_mm >= 0
+),
+ADD CONSTRAINT chk_length_used_mm_nonnegative CHECK (
+    length_used_mm IS NULL
+    OR length_used_mm >= 0
+);
 
 ALTER TABLE inventory.consumption_logs ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS inventory.kardex_consumption ( 
-  id UUID PRIMARY KEY, 
-  kardex_id UUID REFERENCES inventory.kardex(id) ON DELETE CASCADE,
-  consumption_log_id UUID REFERENCES inventory.consumption_logs(id) ON DELETE CASCADE, 
-  used_quantity DECIMAL(12,3) NOT NULL, 
-  notes TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS inventory.kardex_consumption (
+    id UUID PRIMARY KEY,
+    kardex_id UUID REFERENCES inventory.kardex (id) ON DELETE CASCADE,
+    consumption_log_id UUID REFERENCES inventory.consumption_logs (id) ON DELETE CASCADE,
+    used_quantity DECIMAL(12, 3) NOT NULL,
+    notes TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE INDEX idx_kardex_consumption_kardex_id ON inventory.kardex_consumption(kardex_id); 
-CREATE INDEX idx_kardex_consumption_log_id ON inventory.kardex_consumption(consumption_log_id);
+CREATE INDEX idx_kardex_consumption_kardex_id ON inventory.kardex_consumption (kardex_id);
+
+CREATE INDEX idx_kardex_consumption_log_id ON inventory.kardex_consumption (consumption_log_id);
 
 ALTER TABLE inventory.kardex_consumption
-  ADD CONSTRAINT chk_used_quantity_positive CHECK (used_quantity > 0),
-  ADD CONSTRAINT chk_notes_length CHECK (
-    notes IS NULL OR char_length(notes) <= 250
-  );
+ADD CONSTRAINT chk_used_quantity_positive CHECK (used_quantity > 0),
+ADD CONSTRAINT chk_notes_length CHECK (
+    notes IS NULL
+    OR char_length(notes) <= 250
+);
 
 ALTER TABLE inventory.kardex_consumption ENABLE ROW LEVEL SECURITY;
+
+
 
 -- ======================================================================
 -- TRIGGERS PARA ACTUALIZAR updated_at
@@ -201,114 +257,230 @@ CREATE TRIGGER trg_kardex_consumption_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION core.set_updated_at();
 
+CREATE TRIGGER trg_roll_tracking_set_updated_at
+  BEFORE UPDATE ON inventory.roll_tracking
+  FOR EACH ROW
+  EXECUTE FUNCTION core.set_updated_at();
+
 --- para kardex
 DROP POLICY IF EXISTS "authenticated_can_select_movement_reason" ON inventory.movement_reason;
-CREATE POLICY "authenticated_can_select_movement_reason"
-  ON inventory.movement_reason
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_select_movement_reason" ON inventory.movement_reason FOR
+SELECT TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_select_movement_type" ON inventory.movement_type;
-CREATE POLICY "authenticated_can_select_movement_type"
-  ON inventory.movement_type
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_select_movement_type" ON inventory.movement_type FOR
+SELECT TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_select_kardex" ON inventory.kardex;
-CREATE POLICY "authenticated_can_select_kardex"
-  ON inventory.kardex
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_select_kardex" ON inventory.kardex FOR
+SELECT TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_insert_kardex_movement" ON inventory.kardex;
-CREATE POLICY "authenticated_can_insert_kardex_movement"
-  ON inventory.kardex
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_insert_kardex_movement" ON inventory.kardex FOR INSERT TO authenticated
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_update_kardex_movement" ON inventory.kardex;
-CREATE POLICY "authenticated_can_update_kardex_movement"
-  ON inventory.kardex
-  FOR UPDATE
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  )
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_update_kardex_movement" ON inventory.kardex
+FOR UPDATE
+    TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    )
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_select_consumption_logs" ON inventory.consumption_logs;
-CREATE POLICY "authenticated_can_select_consumption_logs"
-  ON inventory.consumption_logs
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_select_consumption_logs" ON inventory.consumption_logs FOR
+SELECT TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_insert_consumption_logs" ON inventory.consumption_logs;
-CREATE POLICY "authenticated_can_insert_consumption_logs"
-  ON inventory.consumption_logs
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_insert_consumption_logs" ON inventory.consumption_logs FOR INSERT TO authenticated
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_update_consumption_logs" ON inventory.consumption_logs;
-CREATE POLICY "authenticated_can_update_consumption_logs" 
-  ON inventory.consumption_logs
-  FOR UPDATE
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  )
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_update_consumption_logs" ON inventory.consumption_logs
+FOR UPDATE
+    TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    )
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_select_kardex_consumption" ON inventory.kardex_consumption;
-CREATE POLICY "authenticated_can_select_kardex_consumption"
-  ON inventory.kardex_consumption
-  FOR SELECT
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_select_kardex_consumption" ON inventory.kardex_consumption FOR
+SELECT TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_insert_kardex_consumption" ON inventory.kardex_consumption;
-CREATE POLICY "authenticated_can_insert_kardex_consumption"
-  ON inventory.kardex_consumption
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+CREATE POLICY "authenticated_can_insert_kardex_consumption" ON inventory.kardex_consumption FOR INSERT TO authenticated
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
 
 DROP POLICY IF EXISTS "authenticated_can_update_kardex_consumption" ON inventory.kardex_consumption;
-CREATE POLICY "authenticated_can_update_kardex_consumption"
-  ON inventory.kardex_consumption
-  FOR UPDATE
-  TO authenticated
-  USING (
-    auth_management.is_universal_manager((SELECT auth.uid()))
+CREATE POLICY "authenticated_can_update_kardex_consumption" ON inventory.kardex_consumption
+FOR UPDATE
+    TO authenticated USING (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    )
+WITH
+    CHECK (
+        auth_management.is_universal_manager (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
+
+DROP POLICY IF EXISTS "authenticated_can_select_roll_tracking" ON inventory.roll_tracking;
+CREATE POLICY "authenticated_can_select_roll_tracking" ON inventory.roll_tracking FOR
+SELECT TO authenticated USING  (
+    auth_management.is_employee (
+        (
+            SELECT auth.uid ()
+        )
+    )
+);
+
+DROP POLICY IF EXISTS "authenticated_can_insert_roll_tracking" ON inventory.roll_tracking;
+CREATE POLICY "authenticated_can_insert_roll_tracking" ON inventory.roll_tracking FOR INSERT TO authenticated 
+WITH
+    CHECK (
+        auth_management.is_employee (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
+
+DROP POLICY IF EXISTS "authenticated_can_update_roll_tracking" ON inventory.roll_tracking;
+CREATE POLICY "authenticated_can_update_roll_tracking" ON inventory.roll_tracking
+FOR UPDATE TO authenticated USING  (
+    auth_management.is_employee (
+        (
+            SELECT auth.uid ()
+        )
+    )
+)
+WITH
+    CHECK (
+        auth_management.is_employee (
+            (
+                SELECT auth.uid ()
+            )
+        )
+    );
+
+-- ######################################################################
+-- RPC Y FUNCIONES ADICIONALES PARA KARDEX
+-- ######################################################################
+CREATE OR REPLACE FUNCTION inventory.register_purchase(
+  p_kardex_id UUID,
+  p_roll_tracking_id UUID,
+  p_item_id UUID,
+  p_roll_code TEXT
+) RETURNS JSON AS $$
+DECLARE
+  v_roll_id UUID;
+  v_kardex_id UUID;
+  quantity_initial DECIMAL(10,3);  
+BEGIN
+  SELECT length_m INTO quantity_initial
+  FROM inventory.items
+  WHERE id = p_item_id;
+
+  -- 1. Crear rollo
+  INSERT INTO inventory.roll_tracking (id, item_id, roll_code, current_quantity, status)
+  VALUES (p_roll_tracking_id, p_item_id, p_roll_code, quantity_initial, 'full')
+  RETURNING id INTO v_roll_id;
+
+  -- 2. Registrar en kardex
+  INSERT INTO inventory.kardex (
+    id, item_id, roll_id, movement_type_id, movement_reason_id,
+    quantity, previous_balance, subsequent_balance
   )
-  WITH CHECK (
-    auth_management.is_universal_manager((SELECT auth.uid()))
-  );
+  VALUES (
+    p_kardex_id, p_item_id, v_roll_id,
+    1, -- ENTRADA
+    1, -- COMPRA
+    quantity_initial, 0, quantity_initial
+  )
+  RETURNING id INTO v_kardex_id;
+
+  RETURN json_build_object('rollId', v_roll_id, 'kardexId', v_kardex_id);
+END;
+$$ LANGUAGE plpgsql;
 
 
 
@@ -337,9 +509,6 @@ CREATE POLICY "authenticated_can_update_kardex_consumption"
 
 -- CREATE INDEX idx_roll_tracking_item_id ON inventory.roll_tracking(item_id);
 -- CREATE INDEX idx_roll_tracking_status ON inventory.roll_tracking(status);
-
-
-
 
 -- ######################################################################
 -- FUNCIONES Y TRIGGERS ÚTILES PARA KARDEX
@@ -666,11 +835,11 @@ $$ LANGUAGE plpgsql;
 -- 9. VISTA MATERIALIZADA PARA STOCK ACTUAL (PERFORMANCE)
 -- ======================================================================
 CREATE MATERIALIZED VIEW IF NOT EXISTS inventory.mv_current_stock AS
-SELECT * FROM inventory.get_current_stock();
+SELECT *
+FROM inventory.get_current_stock ();
 
 -- Crear índice para búsquedas rápidas
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_current_stock_item_id 
-  ON inventory.mv_current_stock(item_id);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_current_stock_item_id ON inventory.mv_current_stock (item_id);
 
 -- Función para refrescar la vista
 CREATE OR REPLACE FUNCTION inventory.refresh_current_stock()
@@ -700,39 +869,34 @@ CREATE TRIGGER trg_refresh_stock_on_kardex
 
 -- Permitir SELECT a usuarios autenticados
 DROP POLICY IF EXISTS "authenticated_can_select_kardex" ON inventory.kardex;
-CREATE POLICY "authenticated_can_select_kardex"
-  ON inventory.kardex
-  FOR SELECT
-  TO authenticated
-  USING (true);
+
+CREATE POLICY "authenticated_can_select_kardex" ON inventory.kardex FOR
+SELECT TO authenticated USING (true);
 
 -- Permitir INSERT solo a usuarios autenticados de la misma tienda
 DROP POLICY IF EXISTS "authenticated_can_insert_kardex" ON inventory.kardex;
-CREATE POLICY "authenticated_can_insert_kardex"
-  ON inventory.kardex
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM inventory.items i
-      WHERE i.id = kardex.item_id
-    )
-  );
+
+CREATE POLICY "authenticated_can_insert_kardex" ON inventory.kardex FOR INSERT TO authenticated
+WITH
+    CHECK (
+        EXISTS (
+            SELECT 1
+            FROM inventory.items i
+            WHERE
+                i.id = kardex.item_id
+        )
+    );
 
 -- Políticas para movement_type y movement_reason (solo lectura)
 DROP POLICY IF EXISTS "authenticated_can_select_movement_type" ON inventory.movement_type;
-CREATE POLICY "authenticated_can_select_movement_type"
-  ON inventory.movement_type
-  FOR SELECT
-  TO authenticated
-  USING (true);
+
+CREATE POLICY "authenticated_can_select_movement_type" ON inventory.movement_type FOR
+SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS "authenticated_can_select_movement_reason" ON inventory.movement_reason;
-CREATE POLICY "authenticated_can_select_movement_reason"
-  ON inventory.movement_reason
-  FOR SELECT
-  TO authenticated
-  USING (true);
+
+CREATE POLICY "authenticated_can_select_movement_reason" ON inventory.movement_reason FOR
+SELECT TO authenticated USING (true);
 
 -- ======================================================================
 -- EJEMPLOS DE USO DESDE TYPESCRIPT
@@ -741,34 +905,34 @@ CREATE POLICY "authenticated_can_select_movement_reason"
 /*
 // 1. Obtener stock actual de todos los items
 const { data, error } = await supabaseClient
-  .rpc('get_current_stock');
+.rpc('get_current_stock');
 
 // 2. Validar stock antes de venta
 const { data: hasStock } = await supabaseClient
-  .rpc('validate_stock', {
-    p_item_id: itemId,
-    p_quantity: quantity
-  });
+.rpc('validate_stock', {
+p_item_id: itemId,
+p_quantity: quantity
+});
 
 // 3. Obtener items con stock bajo
 const { data: lowStockItems } = await supabaseClient
-  .rpc('get_low_stock_items', { p_threshold: 10 });
+.rpc('get_low_stock_items', { p_threshold: 10 });
 
 // 4. Generar reporte de kardex
 const { data: report } = await supabaseClient
-  .rpc('generate_kardex_report', {
-    p_start_date: '2024-01-01T00:00:00Z',
-    p_end_date: '2024-12-31T23:59:59Z'
-  });
+.rpc('generate_kardex_report', {
+p_start_date: '2024-01-01T00:00:00Z',
+p_end_date: '2024-12-31T23:59:59Z'
+});
 
 // 5. Calcular COGS del mes
 const { data: cogs } = await supabaseClient
-  .rpc('calculate_cogs', {
-    p_start_date: '2024-01-01T00:00:00Z',
-    p_end_date: '2024-01-31T23:59:59Z'
-  });
+.rpc('calculate_cogs', {
+p_start_date: '2024-01-01T00:00:00Z',
+p_end_date: '2024-01-31T23:59:59Z'
+});
 
 // 6. Valorización de inventario
 const { data: valuation } = await supabaseClient
-  .rpc('calculate_inventory_value');
+.rpc('calculate_inventory_value');
 */

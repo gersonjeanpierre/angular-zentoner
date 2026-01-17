@@ -1,17 +1,17 @@
 import { Component, inject, signal, OnInit, computed } from '@angular/core';
-import { Router } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { form, FormField, required, min } from '@angular/forms/signals';
 import { KardexService } from '@core/services/kardex-service';
 import { ItemsService } from '@core/services/items-service';
 import { AuthService } from '@core/services/auth-service';
-import { KardexFormModel, KardexPayload } from '@data/models/inventory/kardex.model';
+import { RollTrackingFormModel } from '@data/models/inventory/kardex.model';
 import { ItemView } from '@data/models/inventory/item.model';
 import { v7 as uuidv7 } from 'uuid';
 
 @Component({
   selector: 'app-kardex-create',
-  imports: [CommonModule, FormField],
+  imports: [CommonModule, FormField, RouterModule],
   templateUrl: './kardex-create.html',
   styleUrl: './kardex-create.css',
 })
@@ -27,21 +27,19 @@ export default class KardexCreate implements OnInit {
   protected readonly success = signal(false);
 
   protected readonly items = signal<ItemView[]>([]);
-
   protected readonly selectedItem = signal<ItemView | null>(null);
 
-  protected readonly kardexModel = signal<KardexFormModel>({
+  protected readonly rollModel = signal<RollTrackingFormModel>({
     item_id: '',
-    batch_code: '',
-    quantity_base: '',
-    notes: '',
+    roll_code: '',
+    current_quantity: '',
   });
 
-  protected readonly kardexForm = form(this.kardexModel, (schema) => {
+  protected readonly rollForm = form(this.rollModel, (schema) => {
     required(schema.item_id, { message: 'Seleccione un item' });
-    required(schema.batch_code, { message: 'Ingrese el código de lote' });
-    required(schema.quantity_base, { message: 'Ingrese la cantidad base' });
-    min(schema.quantity_base, 0.001, { message: 'La cantidad debe ser mayor a 0' });
+    required(schema.roll_code, { message: 'Ingrese el código del rollo' });
+    required(schema.current_quantity, { message: 'Ingrese la cantidad' });
+    min(schema.current_quantity, 0, { message: 'La cantidad debe ser mayor a 0' });
   });
 
   async ngOnInit() {
@@ -78,9 +76,9 @@ export default class KardexCreate implements OnInit {
     event.preventDefault();
 
     if (
-      this.kardexForm.item_id().invalid() ||
-      this.kardexForm.batch_code().invalid() ||
-      this.kardexForm.quantity_base().invalid()
+      this.rollForm.item_id().invalid() ||
+      this.rollForm.roll_code().invalid() ||
+      this.rollForm.current_quantity().invalid()
     ) {
       return;
     }
@@ -89,29 +87,21 @@ export default class KardexCreate implements OnInit {
       this.loading.set(true);
       this.error.set(null);
 
-      const formData = this.kardexModel();
-      const {
-        data: { user: currentUser },
-      } = await this.authService.getUser();
+      const formData = this.rollModel();
 
-      const payload: KardexPayload = {
-        id: uuidv7(),
-        item_id: formData.item_id,
-        batch_code: formData.batch_code || null,
-        quantity_base: Number(formData.quantity_base),
-        notes: formData.notes || null,
-        created_by: currentUser?.id || null,
-      };
-
-      await this.kardexService.createKardexEntry(payload);
+      await this.kardexService.registerPurchase({
+        idKardex: uuidv7(),
+        itemId: formData.item_id,
+        rollCode: formData.roll_code,
+      });
 
       this.success.set(true);
       setTimeout(() => {
         this.router.navigate(['/inventario/kardex']);
       }, 1500);
     } catch (error) {
-      console.error('Error al registrar lote:', error);
-      this.error.set('Error al registrar el lote de kardex');
+      console.error('Error al registrar rollo:', error);
+      this.error.set('Error al registrar el rollo en inventario');
     } finally {
       this.loading.set(false);
     }

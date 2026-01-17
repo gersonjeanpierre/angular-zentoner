@@ -3,7 +3,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { KardexService } from '@core/services/kardex-service';
 import { ItemsService } from '@core/services/items-service';
-import { KardexView } from '@data/models/inventory/kardex.model';
+import { RollTrackingView } from '@data/models/inventory/kardex.model';
 import { ItemView } from '@data/models/inventory/item.model';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
@@ -23,11 +23,12 @@ export default class KardexList implements OnInit {
   // State signals
   protected readonly loading = signal(true);
   protected readonly error = signal<string | null>(null);
-  protected readonly kardexEntries = signal<KardexView[]>([]);
+  protected readonly rolls = signal<RollTrackingView[]>([]);
   protected readonly items = signal<ItemView[]>([]);
 
   // Filter signals
   protected readonly selectedItemId = signal<string>('');
+  protected readonly selectedStatus = signal<string>('');
   protected readonly searchTerm = signal('');
 
   // Pagination signals
@@ -38,7 +39,19 @@ export default class KardexList implements OnInit {
 
   // Computed values
   protected readonly hasFilters = computed(() => {
-    return !!(this.selectedItemId() || this.searchTerm());
+    return !!(this.selectedItemId() || this.selectedStatus() || this.searchTerm());
+  });
+
+  protected readonly getAvailableCount = computed(() => {
+    return this.rolls().filter((r) => r.status === 'full').length;
+  });
+
+  protected readonly getPartialCount = computed(() => {
+    return this.rolls().filter((r) => r.status === 'in_use').length;
+  });
+
+  protected readonly getEmptyCount = computed(() => {
+    return this.rolls().filter((r) => r.status === 'depleted').length;
   });
 
   async ngOnInit() {
@@ -46,40 +59,61 @@ export default class KardexList implements OnInit {
     this.searchSubject.pipe(debounceTime(300), distinctUntilChanged()).subscribe((searchTerm) => {
       this.searchTerm.set(searchTerm);
       this.currentPage.set(1);
-      this.loadKardexEntries();
+      this.loadRolls();
     });
 
-    await this.loadItems();
-    await this.loadKardexEntries();
+    await this.loadInitialData();
   }
 
-  private async loadItems() {
+  private async loadInitialData() {
     try {
-      const response = await this.itemsService.getItems({ status: 'ACTIVE', pageSize: 1000 });
-      this.items.set(response.data);
+      const itemsResponse = await this.itemsService.getItems({ status: 'ACTIVE', pageSize: 1000 });
+      this.items.set(itemsResponse.data);
+      await this.loadRolls();
     } catch (error) {
-      console.error('Error al cargar items:', error);
+      console.error('Error al cargar datos iniciales:', error);
+      this.error.set('Error al cargar los datos iniciales');
     }
   }
 
-  protected async loadKardexEntries() {
+  private async loadRolls() {
     try {
       this.loading.set(true);
       this.error.set(null);
 
-      const response = await this.kardexService.getKardexEntries({
-        itemId: this.selectedItemId() || undefined,
-        batchCode: this.searchTerm() || undefined,
+      const params: any = {
         page: this.currentPage(),
         pageSize: this.pageSize(),
-      });
+      };
 
-      this.kardexEntries.set(response.data);
+      if (this.selectedItemId()) {
+        params.itemId = this.selectedItemId();
+      }
+
+      if (this.selectedStatus()) {
+        params.status = this.selectedStatus();
+      }
+
+      const response = await this.kardexService.getRolls(params);
+
+      // Filtrar por búsqueda local si hay término
+      let filteredRolls = response.data;
+      if (this.searchTerm()) {
+        const term = this.searchTerm().toLowerCase();
+        filteredRolls = response.data.filter(
+          (roll) =>
+            roll.roll_code.toLowerCase().includes(term) ||
+            roll.item_name?.toLowerCase().includes(term) ||
+            roll.item_sku?.toLowerCase().includes(term),
+        );
+      }
+
+      this.rolls.set(filteredRolls);
       this.totalCount.set(response.count);
       this.totalPages.set(response.totalPages);
     } catch (error) {
-      console.error('Error al cargar kardex:', error);
-      this.error.set('Error al cargar los lotes de kardex');
+      console.error('Error al cargar rollos:', error);
+      this.error.set('Error al cargar los rollos de inventario');
     } finally {
       this.loading.set(false);
     }
@@ -94,69 +128,96 @@ export default class KardexList implements OnInit {
     const select = event.target as HTMLSelectElement;
     this.selectedItemId.set(select.value);
     this.currentPage.set(1);
-    this.loadKardexEntries();
+    this.loadRolls();
+  }
+
+  protected onStatusChange(event: Event) {
+    const select = event.target as HTMLSelectElement;
+    this.selectedStatus.set(select.value);
+    this.currentPage.set(1);
+    this.loadRolls();
   }
 
   protected clearFilters() {
     this.selectedItemId.set('');
+    this.selectedStatus.set('');
     this.searchTerm.set('');
     this.currentPage.set(1);
-    this.loadKardexEntries();
+    this.loadRolls();
   }
 
   protected nextPage() {
     if (this.currentPage() < this.totalPages()) {
       this.currentPage.set(this.currentPage() + 1);
-      this.loadKardexEntries();
+      this.loadRolls();
     }
   }
 
   protected previousPage() {
     if (this.currentPage() > 1) {
       this.currentPage.set(this.currentPage() - 1);
-      this.loadKardexEntries();
+      this.loadRolls();
     }
   }
 
   protected goToPage(page: number) {
     this.currentPage.set(page);
-    this.loadKardexEntries();
+    this.loadRolls();
   }
 
   protected navigateToNewEntry() {
     this.router.navigate(['/inventario/kardex/nuevo']);
   }
 
-  protected navigateToConsumptionLogs() {
-    this.router.navigate(['/inventario/kardex/consumos']);
+  protected viewRollHistory(rollId: string) {
+    this.router.navigate(['/inventario/kardex/rollo', rollId]);
   }
 
-  protected formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    return date.toLocaleString('es-PE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
+  protected useRoll(rollId: string) {
+    this.router.navigate(['/inventario/kardex/produccion'], {
+      queryParams: { rollId },
     });
   }
 
-  protected getStatusBadgeClass(quantityRemaining: number | null | undefined): string {
-    if (quantityRemaining === null || quantityRemaining === undefined || quantityRemaining === 0) {
-      return 'badge-error';
-    } else if (quantityRemaining > 0) {
-      return 'badge-success';
-    }
-    return 'badge-ghost';
+  // Eliminado getPercentage() - no hay initial_quantity en el schema
+
+  protected formatDate(dateString: string | null | undefined): string {
+    if (!dateString) return '-';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('es-PE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
   }
 
-  protected getStatusText(quantityRemaining: number | null | undefined): string {
-    if (quantityRemaining === null || quantityRemaining === undefined || quantityRemaining === 0) {
-      return 'Agotado';
-    } else if (quantityRemaining > 0) {
-      return 'Disponible';
+  protected getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'full':
+        return 'badge-success';
+      case 'in_use':
+        return 'badge-warning';
+      case 'depleted':
+        return 'badge-error';
+      case 'scrapped':
+        return 'badge-ghost';
+      default:
+        return 'badge-ghost';
     }
-    return '-';
+  }
+
+  protected getStatusText(status: string): string {
+    switch (status) {
+      case 'full':
+        return 'Completo';
+      case 'in_use':
+        return 'En uso';
+      case 'depleted':
+        return 'Agotado';
+      case 'scrapped':
+        return 'Descartado';
+      default:
+        return status;
+    }
   }
 }

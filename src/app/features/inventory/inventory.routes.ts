@@ -42,7 +42,15 @@ const inventoryRoutes: Routes = [
         loadComponent: () => import('./kardex/kardex-create/kardex-create'),
       },
       {
+        path: 'produccion',
+        loadComponent: () => import('./kardex/production-form/production-form'),
+      },
+      {
         path: 'item/:itemId',
+        loadComponent: () => import('./kardex/item-kardex-history/item-kardex-history'),
+      },
+      {
+        path: 'rollo/:rollId',
         loadComponent: () => import('./kardex/item-kardex-history/item-kardex-history'),
       },
     ],
