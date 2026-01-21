@@ -37,6 +37,10 @@ export const routes: Routes = [
         loadChildren: () => import('@features/inventory/inventory.routes'),
       },
       {
+        path: 'ventas',
+        loadChildren: () => import('@features/sales/sales.routes'),
+      },
+      {
         path: 'tickets',
         children: [
           {

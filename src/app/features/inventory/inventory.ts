@@ -33,4 +33,8 @@ export default class Inventory {
   protected toKardex() {
     this.router.navigate(['/inventario/kardex']);
   }
+
+  protected toMachines() {
+    this.router.navigate(['/inventario/maquinas']);
+  }
 }

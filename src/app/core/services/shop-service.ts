@@ -34,4 +34,30 @@ export class ShopService {
       error: error ?? undefined,
     };
   }
+
+  async insertShops(shops: ShopModel[]) {
+    const shopsToInsert = shops.map((shop) => ({
+      id: shop.id,
+      name: shop.name,
+      address: shop.address ?? null,
+      email: shop.email ?? null,
+      main_phone: shop.mainPhone ?? null,
+      secondary_phone: shop.secondaryPhone ?? null,
+      company_data: shop.companyData ? JSON.stringify(shop.companyData) : null,
+      basic_service_providers: shop.basicServiceProviders
+        ? JSON.stringify(shop.basicServiceProviders)
+        : null,
+    }));
+
+    const { data, error } = await this.supabase
+      .schema('core')
+      .from('shops')
+      .insert(shopsToInsert)
+      .select();
+
+    return {
+      data: (data as ShopModel[]) ?? undefined,
+      error: error ?? undefined,
+    };
+  }
 }

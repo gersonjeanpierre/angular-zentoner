@@ -1,0 +1,250 @@
+<div class="container mx-auto p-4 max-w-6xl">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Nueva Orden de Venta</h1>
+    <button class="btn btn-ghost" (click)="cancel()">
+      <i class="icon-[mdi--arrow-left] w-5 h-5"></i>
+      Volver
+    </button>
+  </div>
+
+  <form (submit)="onSubmit($event)" class="space-y-6">
+    <!-- Customer & Employee Selection -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Información General</h2>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Customer Selection -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Cliente *</span>
+            </label>
+            <div class="join w-full">
+              <input
+                type="text"
+                [value]="orderForm.customerName().value()"
+                placeholder="Seleccionar cliente"
+                class="input input-bordered join-item w-full"
+                readonly
+                [class.input-error]="
+                  orderForm.customerId().touched() && orderForm.customerId().invalid()
+                "
+              />
+              <button type="button" class="btn btn-primary join-item" (click)="openCustomerModal()">
+                <i class="icon-[mdi--magnify] w-5 h-5"></i>
+              </button>
+            </div>
+            @if (orderForm.customerId().touched() && orderForm.customerId().invalid()) {
+              <div class="label">
+                @for (error of orderForm.customerId().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Employee Selection -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Diseñador *</span>
+            </label>
+            <div class="join w-full">
+              <input
+                type="text"
+                [value]="orderForm.employeeName().value()"
+                placeholder="Seleccionar diseñador"
+                class="input input-bordered join-item w-full"
+                readonly
+                [class.input-error]="
+                  orderForm.employeeId().touched() && orderForm.employeeId().invalid()
+                "
+              />
+              <button type="button" class="btn btn-primary join-item" (click)="openEmployeeModal()">
+                <i class="icon-[mdi--magnify] w-5 h-5"></i>
+              </button>
+            </div>
+            @if (orderForm.employeeId().touched() && orderForm.employeeId().invalid()) {
+              <div class="label">
+                @for (error of orderForm.employeeId().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Details -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Detalles de la Orden</h2>
+
+        <!-- Add Detail Form -->
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-4">
+          <div class="md:col-span-4">
+            <input
+              type="text"
+              [value]="currentDetail().description"
+              (input)="handleDescriptionChange($event)"
+              placeholder="Descripción"
+              class="input input-bordered w-full"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <input
+              type="number"
+              [value]="currentDetail().quantity"
+              (input)="handleQuantityInput($event)"
+              placeholder="Cantidad"
+              class="input input-bordered w-full"
+              step="0.01"
+              min="0"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <input
+              type="number"
+              [value]="currentDetail().unit_price"
+              (input)="handleUnitPriceInput($event)"
+              placeholder="Precio Unit."
+              class="input input-bordered w-full"
+              step="0.01"
+              min="0"
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <input
+              type="number"
+              [value]="currentDetail().subtotal"
+              placeholder="Subtotal"
+              class="input input-bordered w-full"
+              readonly
+            />
+          </div>
+
+          <div class="md:col-span-2">
+            <button type="button" class="btn btn-primary w-full" (click)="addDetail()">
+              <i class="icon-[mdi--plus] w-5 h-5"></i>
+              Agregar
+            </button>
+          </div>
+        </div>
+
+        <!-- Details List -->
+        @if (orderForm.details().value().length > 0) {
+          <div class="overflow-x-auto">
+            <table class="table table-zebra">
+              <thead>
+                <tr>
+                  <th>Descripción</th>
+                  <th>Cantidad</th>
+                  <th>Precio Unit.</th>
+                  <th>Subtotal</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (detail of orderForm.details().value(); track detail.id) {
+                  <tr>
+                    <td>{{ detail.description }}</td>
+                    <td>{{ detail.quantity }}</td>
+                    <td>S/ {{ detail.unit_price.toFixed(2) }}</td>
+                    <td class="font-semibold">S/ {{ detail.subtotal.toFixed(2) }}</td>
+                    <td>
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-error btn-ghost"
+                        (click)="removeDetail(detail.id!)"
+                      >
+                        <i class="icon-[mdi--delete] w-4 h-4"></i>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <div class="text-center py-8 text-base-content/50">
+            <i class="icon-[mdi--cart-outline] w-12 h-12 mx-auto mb-2"></i>
+            <p>No hay detalles agregados</p>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Totals -->
+    <div class="card bg-base-200">
+      <div class="card-body">
+        <h2 class="card-title mb-4">Resumen</h2>
+
+        <div class="space-y-2">
+          <div class="flex justify-between items-center">
+            <span>Subtotal:</span>
+            <span class="font-semibold">S/ {{ totalAmount().toFixed(2) }}</span>
+          </div>
+
+          <div class="flex justify-between items-center">
+            <div class="form-control">
+              <label class="label cursor-pointer gap-2">
+                <span class="label-text">IGV (18%):</span>
+                <input
+                  type="checkbox"
+                  [checked]="includeIGV()"
+                  (change)="handleIGVChange($event)"
+                  class="checkbox checkbox-sm"
+                />
+              </label>
+            </div>
+            <span class="font-semibold">S/ {{ igvAmount().toFixed(2) }}</span>
+          </div>
+
+          <div class="divider my-2"></div>
+
+          <div class="flex justify-between items-center text-xl">
+            <span class="font-bold">Total:</span>
+            <span class="font-bold text-primary">S/ {{ finalAmount().toFixed(2) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex justify-end gap-4">
+      <button type="button" class="btn btn-ghost" (click)="cancel()">Cancelar</button>
+      <button type="submit" class="btn btn-primary">
+        <i class="icon-[mdi--content-save] w-5 h-5"></i>
+        Guardar Orden
+      </button>
+    </div>
+  </form>
+
+  <!-- Customer Search Modal -->
+  <app-search-modal
+    [isOpen]="customerModalOpen()"
+    [title]="'Buscar Cliente'"
+    [items]="customerItems()"
+    [isLoading]="isLoadingCustomers()"
+    [placeholder]="'Buscar por nombre, DNI, RUC...'"
+    (onClose)="customerModalOpen.set(false)"
+    (onSelect)="handleCustomerSelect($event)"
+    (onSearch)="handleCustomerSearch($event)"
+  />
+
+  <!-- Employee Search Modal -->
+  <app-search-modal
+    [isOpen]="employeeModalOpen()"
+    [title]="'Buscar Diseñador'"
+    [items]="employeeItems()"
+    [isLoading]="isLoadingEmployees()"
+    [placeholder]="'Buscar por nombre, código...'"
+    (onClose)="employeeModalOpen.set(false)"
+    (onSelect)="handleEmployeeSelect($event)"
+    (onSearch)="handleEmployeeSearch($event)"
+  />
+</div>

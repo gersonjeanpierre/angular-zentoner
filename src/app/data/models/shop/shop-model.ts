@@ -1,12 +1,12 @@
 export interface ShopModel {
-  id: string;
+  id?: string;
   name: string;
   address?: string | null;
   email?: string | null;
   mainPhone?: string | null;
   secondaryPhone?: string | null;
   companyData?: Record<string, CompanyData>;
-  basicServiceProviders?: Record<string, BasicServiceProvider>;
+  basicServiceProviders?: Record<string, BasicServiceProvider> | null;
   deletedAt?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;

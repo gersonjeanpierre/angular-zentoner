@@ -118,10 +118,12 @@ export default class SignUp implements OnInit {
     try {
       const result = await this.shopService.getShopDetails({ deletedAt: null });
       this.availableShops.set(
-        (result.data ?? []).map((shop: { id: string; name: string }) => ({
-          id: shop.id,
-          name: shop.name,
-        })),
+        (result.data ?? [])
+          .filter((shop) => shop.id)
+          .map((shop) => ({
+            id: shop.id!,
+            name: shop.name,
+          })),
       );
     } catch (error) {
       this.availableShops.set([]);

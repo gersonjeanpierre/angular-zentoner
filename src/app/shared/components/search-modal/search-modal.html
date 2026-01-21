@@ -1,0 +1,67 @@
+@if (isOpen()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-2xl">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-bold">{{ title() }}</h3>
+        <button class="btn btn-sm btn-circle btn-ghost" (click)="handleClose()">✕</button>
+      </div>
+
+      <!-- Search Input -->
+      <div class="form-control w-full mb-4">
+        <div class="input-group">
+          <span class="bg-base-200">
+            <i class="icon-[mdi--magnify] w-5 h-5"></i>
+          </span>
+          <input
+            type="text"
+            [value]="searchTerm()"
+            (input)="handleSearch($event)"
+            [placeholder]="placeholder()"
+            class="input input-bordered w-full"
+            autofocus
+          />
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      @if (isLoading()) {
+        <div class="flex justify-center py-8">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+      }
+
+      <!-- Results List -->
+      @if (!isLoading()) {
+        <div class="overflow-y-auto max-h-96">
+          @if (filteredItems().length === 0) {
+            <div class="text-center py-8 text-base-content/50">
+              <i class="icon-[mdi--alert-circle-outline] w-12 h-12 mx-auto mb-2"></i>
+              <p>No se encontraron resultados</p>
+            </div>
+          } @else {
+            @for (item of filteredItems(); track item.id) {
+              <div
+                class="card bg-base-200 hover:bg-base-300 cursor-pointer mb-2 transition-colors"
+                (click)="handleSelect(item)"
+              >
+                <div class="card-body p-4">
+                  <h4 class="card-title text-sm">{{ item.displayText }}</h4>
+                  @if (item.subtitle) {
+                    <p class="text-xs text-base-content/70">{{ item.subtitle }}</p>
+                  }
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Footer -->
+      <div class="modal-action">
+        <button class="btn btn-ghost" (click)="handleClose()">Cancelar</button>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="handleClose()"></div>
+  </div>
+}

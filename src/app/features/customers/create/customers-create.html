@@ -72,7 +72,11 @@
               <div class="flex gap-2 mb-2">
                 <label class="input input-neutral grow">
                   <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>
-                  <input class="grow" formControlName="customerCode" placeholder="Código de Cliente" />
+                  <input
+                    class="grow"
+                    formControlName="customerCode"
+                    placeholder="Código de Cliente"
+                  />
                 </label>
                 <button type="button" class="btn btn-neutral" (click)="generateCode()">
                   Generar

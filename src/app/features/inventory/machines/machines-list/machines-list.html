@@ -1,0 +1,133 @@
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-6 pt-4 pb-6">
+  <!-- Header con botón crear -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <button class="btn btn-ghost btn-sm mb-2" (click)="goBack()">
+        <span class="icon-[mdi--arrow-left] w-5 h-5"></span>
+        Volver
+      </button>
+      <h2 class="text-2xl font-bold">Máquinas</h2>
+      <p class="text-sm text-gray-500">Gestión de máquinas de producción</p>
+    </div>
+    <button class="btn btn-primary" (click)="navigateToCreate()">
+      <span class="icon-[mdi--plus] w-5 h-5"></span>
+      Crear Máquina
+    </button>
+  </div>
+
+  <!-- Filtros y búsqueda -->
+  <div class="mb-4 flex gap-4">
+    <input
+      type="text"
+      placeholder="Buscar por nombre o modelo..."
+      class="input input-bordered flex-1"
+      (input)="onSearchChange($event)"
+    />
+    <select class="select select-bordered w-48" (change)="onStatusFilterChange($event)">
+      <option value="ACTIVE">Activas</option>
+      <option value="INACTIVE">Inactivas</option>
+      <option value="ALL">Todas</option>
+    </select>
+  </div>
+
+  @if (loading()) {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else if (error()) {
+    <div class="alert alert-error">
+      <span class="icon-[mdi--alert-circle] w-6 h-6"></span>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (machines().length === 0) {
+    <div class="text-center py-12">
+      <span class="icon-[mdi--cog] w-16 h-16 text-gray-300 mb-4"></span>
+      <p class="text-gray-500 mb-4">No hay máquinas registradas</p>
+      <button class="btn btn-primary" (click)="navigateToCreate()">
+        <span class="icon-[mdi--plus] w-5 h-5"></span>
+        Crear primera máquina
+      </button>
+    </div>
+  } @else {
+    <!-- Tabla de máquinas -->
+    <div class="overflow-x-auto">
+      <table class="table table-zebra">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Modelo</th>
+            <th>Estado</th>
+            <th>Fecha de Creación</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (machine of machines(); track machine.id) {
+            <tr class="hover">
+              <td class="font-bold">{{ machine.name }}</td>
+              <td>
+                @if (machine.model) {
+                  <span class="badge badge-outline">{{ machine.model }}</span>
+                } @else {
+                  <span class="text-gray-400">Sin modelo</span>
+                }
+              </td>
+              <td>
+                @if (machine.is_active) {
+                  <span class="badge badge-success">Activa</span>
+                } @else {
+                  <span class="badge badge-error">Inactiva</span>
+                }
+              </td>
+              <td>
+                <span class="text-sm">{{ formatDate(machine.created_at) }}</span>
+              </td>
+              <td>
+                <div class="flex gap-2">
+                  <button
+                    class="btn btn-sm btn-ghost"
+                    (click)="navigateToEdit(machine.id)"
+                    title="Editar"
+                  >
+                    <span class="icon-[mdi--pencil] w-5 h-5"></span>
+                  </button>
+                  <button
+                    class="btn btn-sm btn-ghost text-error"
+                    (click)="deleteMachine(machine)"
+                    title="Eliminar"
+                    [disabled]="!machine.is_active"
+                  >
+                    <span class="icon-[mdi--delete] w-5 h-5"></span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Estadísticas -->
+    <div class="mt-6 stats shadow w-full">
+      <div class="stat">
+        <div class="stat-title">Total de Máquinas</div>
+        <div class="stat-value text-primary">{{ machines().length }}</div>
+        <div class="stat-desc">En el sistema</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Máquinas Activas</div>
+        <div class="stat-value text-success">
+          {{ activeMachinesCount() }}
+        </div>
+        <div class="stat-desc">Disponibles para producción</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Máquinas Inactivas</div>
+        <div class="stat-value text-error">
+          {{ inactiveMachinesCount() }}
+        </div>
+        <div class="stat-desc">Fuera de servicio</div>
+      </div>
+    </div>
+  }
+</div>

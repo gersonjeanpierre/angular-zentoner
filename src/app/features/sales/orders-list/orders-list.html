@@ -1,0 +1,137 @@
+<div class="container mx-auto p-4">
+  <!-- Header -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-3xl font-bold">Órdenes de Venta</h1>
+  </div>
+
+  <!-- Filters -->
+  <div class="card bg-base-200 mb-4">
+    <div class="card-body">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Search -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Buscar por número de orden</span>
+          </label>
+          <input
+            type="text"
+            [value]="searchTerm()"
+            (input)="handleSearch($event)"
+            placeholder="Ej: 777"
+            class="input input-bordered w-full"
+          />
+        </div>
+
+        <!-- Status Filter -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Filtrar por estado</span>
+          </label>
+          <select class="select select-bordered w-full" (change)="handleStatusFilter($event)">
+            <option value="">Todos los estados</option>
+            @for (status of orderStatuses(); track status.id) {
+              <option [value]="status.id">{{ status.name }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading()) {
+    <div class="flex justify-center py-12">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  }
+
+  <!-- Orders Table -->
+  @if (!isLoading()) {
+    <div class="card bg-base-100 shadow-xl">
+      <div class="overflow-x-auto">
+        <table class="table table-zebra">
+          <thead>
+            <tr>
+              <th>Orden N°</th>
+              <th>Estado</th>
+              <th>Cliente</th>
+              <th>Total</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (orders().length === 0) {
+              <tr>
+                <td colspan="6" class="text-center py-8 text-base-content/50">
+                  <i class="icon-[mdi--file-document-outline] w-12 h-12 mx-auto mb-2"></i>
+                  <p>No hay órdenes disponibles</p>
+                </td>
+              </tr>
+            } @else {
+              @for (order of orders(); track order.id) {
+                <tr class="hover">
+                  <td class="font-mono">{{ order.order_number }}</td>
+                  <td>
+                    <span class="badge" [class]="getStatusClass(order.status_id)">
+                      {{ getStatusName(order.status_id) }}
+                    </span>
+                  </td>
+                  <td>{{ order.customer_id }}</td>
+                  <td class="font-semibold">{{ formatCurrency(order.total_amount) }}</td>
+                  <td>{{ formatDate(order.created_at!) }}</td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button
+                        class="btn btn-sm btn-ghost"
+                        (click)="viewOrder(order.id!)"
+                        title="Ver detalles"
+                      >
+                        <i class="icon-[mdi--eye] w-4 h-4"></i>
+                      </button>
+                      <button
+                        class="btn btn-sm btn-ghost"
+                        (click)="editOrder(order.id!)"
+                        title="Editar"
+                      >
+                        <i class="icon-[mdi--pencil] w-4 h-4"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="card-body">
+          <div class="flex justify-between items-center">
+            <div class="text-sm text-base-content/70">
+              Mostrando {{ orders().length }} de {{ totalCount() }} órdenes
+            </div>
+            <div class="btn-group">
+              <button
+                class="btn btn-sm"
+                [disabled]="currentPage() === 1"
+                (click)="goToPage(currentPage() - 1)"
+              >
+                «
+              </button>
+              <button class="btn btn-sm btn-active">Página {{ currentPage() }}</button>
+              <button
+                class="btn btn-sm"
+                [disabled]="currentPage() === totalPages()"
+                (click)="goToPage(currentPage() + 1)"
+              >
+                »
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

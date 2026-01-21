@@ -206,7 +206,7 @@ export default class CustomersList implements OnInit {
   }
 
   protected onEdit(id: string) {
-    this.router.navigate(['/clientes/edit', id]);
+    this.router.navigate(['/clientes/editar', id]);
   }
 
   protected getFullName(customer: CustomerView): string {

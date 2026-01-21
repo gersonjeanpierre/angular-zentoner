@@ -1,19 +1,42 @@
-import { ChangeDetectionStrategy, Component, computed, HostListener, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  HostListener,
+  signal,
+  inject,
+} from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
-import { TicketDataModel, TicketItemModel } from '@data/models/tickets';
+import {
+  TicketDataModel,
+  TicketItemModel,
+  TicketTransformer,
+  Order,
+  OrderDetail,
+  OrderStatus,
+} from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
+import { SearchModal, SearchableItem } from '@shared/components/search-modal/search-modal';
 import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE, METHOD_PAYMENT } from '@data/constants';
 import { v7 as uuidv7 } from 'uuid';
 import { PRINTING_CATEGORIES } from '@data/constants/categories';
+import { CustomerService } from '@core/services/customer-service';
+import { EmployeeService } from '@core/services/employee-service';
+import { OrderService } from '@core/services/order-service';
 
 @Component({
   selector: 'app-tickets',
-  imports: [FormField, TicketPreview, ModalSearch],
+  imports: [FormField, TicketPreview, ModalSearch, SearchModal],
   templateUrl: './tickets.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Tickets {
+  // Services
+  private customerService = inject(CustomerService);
+  private employeeService = inject(EmployeeService);
+  private orderService = inject(OrderService);
+
   // Constants
   protected readonly sizes: string[] = ITEM_SIZE;
   protected readonly types: string[] = ITEM_TYPE;
@@ -30,6 +53,16 @@ export default class Tickets {
     | { field: 'methodOfPayment' }
     | null = null;
 
+  // Search Modals state
+  protected customerModalOpen = signal(false);
+  protected employeeModalOpen = signal(false);
+  protected customerItems = signal<SearchableItem[]>([]);
+  protected employeeItems = signal<SearchableItem[]>([]);
+  protected isLoadingCustomers = signal(false);
+  protected isLoadingEmployees = signal(false);
+  protected selectedCustomerId = signal<string>('');
+  protected selectedEmployeeId = signal<string>('');
+
   protected category = PRINTING_CATEGORIES;
 
   protected categories = this.category.map((c) => c.name);
@@ -41,8 +74,8 @@ export default class Tickets {
     socialReason: 'ASESORIAS GLOBALES EMPRESARIALES E.I.R.L.',
     ruc: '20607873411',
     correlative: 777,
-    designer: 'GERSON SALAS',
-    client: 'JHON WICK',
+    designer: '',
+    client: '',
     methodOfPayment: 'YAPE',
     creationDate: new Date(),
     saleDetails: [],
@@ -85,8 +118,11 @@ export default class Tickets {
     return this.totalPrice() - discount + this.igvAmount() - advance;
   });
 
-  // Access to ticketData for template compatibility
-  get ticketData(): TicketDataModel {
+  /**
+   * Getter reactivo para compatibilidad con template
+   * Combina modelo base con totales calculados
+   */
+  protected get ticketData(): TicketDataModel {
     return {
       ...this.ticketModel(),
       totalPrice: this.totalPrice(),
@@ -98,14 +134,20 @@ export default class Tickets {
 
   constructor() {
     this.updateTotalsInModel();
-    console.log(this.category);
   }
 
+  /**
+   * Genera UUID v7 para el código QR del ticket
+   */
   protected generateTicketQR(): void {
     this.ticketUuid.set(uuidv7());
   }
 
-  private updateTotalsInModel(): void {
+  /**
+   * Actualiza los totales calculados en el modelo signal
+   * Se llama después de cada cambio en items o descuentos
+   */
+  protected updateTotalsInModel(): void {
     this.ticketModel.update((data) => ({
       ...data,
       totalPrice: this.totalPrice(),
@@ -115,7 +157,11 @@ export default class Tickets {
     }));
   }
 
-  // Modal management
+  /**
+   * Abre modal de selección para campos de items de venta
+   * @param index - Índice del item en saleDetails
+   * @param field - Campo a editar (category, size, type, machine)
+   */
   protected openModalForField(
     index: number,
     field: 'category' | 'size' | 'type' | 'machine',
@@ -157,6 +203,9 @@ export default class Tickets {
     this.modalOpen.set(true);
   }
 
+  /**
+   * Abre modal de selección de método de pago
+   */
   protected openModalForMethodPayment(): void {
     this.modalTarget = { field: 'methodOfPayment' };
     this.modalList.set(this.methodsPayment);
@@ -164,35 +213,46 @@ export default class Tickets {
     this.modalOpen.set(true);
   }
 
+  /**
+   * Maneja la selección de un valor en el modal
+   * @param value - Valor seleccionado del modal
+   */
   protected onModalSelect(value: string): void {
-    if (this.modalTarget) {
-      if ('index' in this.modalTarget) {
-        const { index, field } = this.modalTarget;
-        const saleDetails = [...this.ticketForm.saleDetails().value()];
-        if (field === 'category') {
-          saleDetails[index].category = value;
-          saleDetails[index].size = '';
-          saleDetails[index].type = '';
-          saleDetails[index].machine = '';
-        } else {
-          saleDetails[index][field] = value;
-        }
-        this.ticketForm.saleDetails().value.set(saleDetails);
-        this.updateTotalsInModel();
-      } else if (this.modalTarget.field === 'methodOfPayment') {
-        this.ticketForm.methodOfPayment().value.set(value);
+    if (!this.modalTarget) return;
+
+    if ('index' in this.modalTarget) {
+      const { index, field } = this.modalTarget;
+      const saleDetails = [...this.ticketForm.saleDetails().value()];
+      if (field === 'category') {
+        saleDetails[index].category = value;
+        saleDetails[index].size = '';
+        saleDetails[index].type = '';
+        saleDetails[index].machine = '';
+      } else {
+        saleDetails[index][field] = value;
       }
-      this.modalOpen.set(false);
-      this.modalTarget = null;
+      this.ticketForm.saleDetails().value.set(saleDetails);
+      this.updateTotalsInModel();
+    } else if (this.modalTarget.field === 'methodOfPayment') {
+      this.ticketForm.methodOfPayment().value.set(value);
     }
+
+    this.modalOpen.set(false);
+    this.modalTarget = null;
   }
 
+  /**
+   * Maneja el cierre del modal sin selección
+   */
   protected onModalClosed(): void {
     this.modalOpen.set(false);
     this.modalTarget = null;
     this.isCustomSize.set(false);
   }
 
+  /**
+   * Previene el comportamiento por defecto de F1
+   */
   @HostListener('document:keydown', ['$event'])
   handleF1(event: KeyboardEvent): void {
     if (event.key === 'F1') {
@@ -200,7 +260,9 @@ export default class Tickets {
     }
   }
 
-  // Sale items management
+  /**
+   * Agrega un nuevo item vacío a la lista de venta
+   */
   protected addSaleItem(): void {
     const currentDetails = this.ticketForm.saleDetails().value();
     const newItem: TicketItemModel = {
@@ -216,6 +278,10 @@ export default class Tickets {
     this.updateTotalsInModel();
   }
 
+  /**
+   * Elimina un item de la lista de venta
+   * @param index - Índice del item a eliminar
+   */
   protected removeSaleItem(index: number): void {
     const currentDetails = this.ticketForm.saleDetails().value();
     const updated = currentDetails.filter((_, i) => i !== index);
@@ -223,6 +289,13 @@ export default class Tickets {
     this.updateTotalsInModel();
   }
 
+  /**
+   * Actualiza un campo específico de un item de venta
+   * Recalcula automáticamente el total del item
+   * @param index - Índice del item
+   * @param field - Campo a actualizar
+   * @param value - Nuevo valor
+   */
   protected updateSaleItem(
     index: number,
     field: keyof TicketItemModel,
@@ -245,30 +318,28 @@ export default class Tickets {
     this.updateTotalsInModel();
   }
 
-  protected calculateTotals(): void {
-    this.updateTotalsInModel();
-  }
-
-  // Form field updates
-  protected updateDesigner(value: string): void {
-    this.ticketForm.designer().value.set(value);
-  }
-
-  protected updateClient(value: string): void {
-    this.ticketForm.client().value.set(value);
-  }
-
+  /**
+   * Actualiza el monto de adelanto y recalcula totales
+   * @param value - Nuevo monto de adelanto
+   */
   protected updateAdvance(value: number): void {
     this.ticketForm.advance().value.set(value || 0);
     this.updateTotalsInModel();
   }
 
+  /**
+   * Actualiza el descuento y recalcula totales
+   * @param value - Nuevo monto de descuento
+   */
   protected updateDiscount(value: number): void {
     this.ticketForm.discount().value.set(value || 0);
     this.updateTotalsInModel();
   }
 
-  // Print functionality
+  /**
+   * Imprime el ticket en formato físico (76mm)
+   * Convierte canvas QR a imagen antes de clonar para impresión
+   */
   protected printTicket(): void {
     this.ticketModel.update((data) => ({ ...data, printDate: new Date() }));
     const preview = document.querySelector('.ticket-preview');
@@ -299,6 +370,11 @@ export default class Tickets {
     }
   }
 
+  /**
+   * Configura la ventana de impresión con estilos necesarios
+   * @param printWindow - Ventana de impresión
+   * @param preview - Elemento HTML del preview del ticket
+   */
   private setupPrintWindow(printWindow: Window, preview: Element): void {
     const doc = printWindow.document;
     doc.head.innerHTML = '';
@@ -342,6 +418,11 @@ export default class Tickets {
     });
   }
 
+  /**
+   * Formatea fecha para visualización en español
+   * @param date - Fecha a formatear
+   * @returns Fecha formateada (dd/mm/yyyy hh:mm)
+   */
   protected formatDate(date: Date): string {
     return date.toLocaleDateString('es-ES', {
       year: 'numeric',
@@ -350,5 +431,182 @@ export default class Tickets {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Abre modal de búsqueda de clientes
+   * Carga automáticamente la lista de clientes activos
+   */
+  protected async openCustomerModal() {
+    this.customerModalOpen.set(true);
+    await this.loadCustomers();
+  }
+
+  /**
+   * Carga lista de clientes desde Supabase
+   * @param searchTerm - Término de búsqueda opcional
+   */
+  protected async loadCustomers(searchTerm?: string) {
+    this.isLoadingCustomers.set(true);
+    try {
+      const response = await this.customerService.getCustomers({
+        status: 'ACTIVE',
+        search: searchTerm,
+        pageSize: 50,
+      });
+
+      const items: SearchableItem[] = response.data.map((customer) => ({
+        id: customer.id,
+        displayText: customer.legalName || `${customer.firstName} ${customer.lastName}`,
+        subtitle: customer.email || customer.phone || customer.dni || customer.ruc || undefined,
+        metadata: customer,
+      }));
+
+      this.customerItems.set(items);
+    } catch (error) {
+      console.error('Error al cargar clientes:', error);
+    } finally {
+      this.isLoadingCustomers.set(false);
+    }
+  }
+
+  /**
+   * Maneja la búsqueda de clientes en tiempo real
+   * @param searchTerm - Término de búsqueda
+   */
+  protected handleCustomerSearch(searchTerm: string) {
+    this.loadCustomers(searchTerm);
+  }
+
+  /**
+   * Maneja la selección de un cliente del modal
+   * @param item - Item seleccionado con datos del cliente
+   */
+  protected handleCustomerSelect(item: SearchableItem) {
+    this.selectedCustomerId.set(item.id);
+    this.ticketForm.client().value.set(item.displayText);
+    this.customerModalOpen.set(false);
+  }
+
+  /**
+   * Abre modal de búsqueda de empleados/diseñadores
+   * Carga automáticamente la lista de empleados
+   */
+  protected async openEmployeeModal() {
+    this.employeeModalOpen.set(true);
+    await this.loadEmployees();
+  }
+
+  /**
+   * Carga lista de empleados desde Supabase
+   * @param searchTerm - Término de búsqueda opcional
+   */
+  protected async loadEmployees(searchTerm?: string) {
+    this.isLoadingEmployees.set(true);
+    try {
+      const response = await this.employeeService.getEmployees({
+        search: searchTerm,
+        pageSize: 50,
+      });
+
+      const items: SearchableItem[] = response.data.map((employee) => ({
+        id: employee.id,
+        displayText: `${employee.firstName} ${employee.lastName}`,
+        subtitle: employee.employeeCode || employee.email || undefined,
+        metadata: employee,
+      }));
+
+      this.employeeItems.set(items);
+    } catch (error) {
+      console.error('Error al cargar empleados:', error);
+    } finally {
+      this.isLoadingEmployees.set(false);
+    }
+  }
+
+  /**
+   * Maneja la búsqueda de empleados en tiempo real
+   * @param searchTerm - Término de búsqueda
+   */
+  protected handleEmployeeSearch(searchTerm: string) {
+    this.loadEmployees(searchTerm);
+  }
+
+  /**
+   * Maneja la selección de un empleado del modal
+   * @param item - Item seleccionado con datos del empleado
+   */
+  protected handleEmployeeSelect(item: SearchableItem) {
+    this.selectedEmployeeId.set(item.id);
+    this.ticketForm.designer().value.set(item.displayText);
+    this.employeeModalOpen.set(false);
+  }
+
+  /**
+   * Guarda el ticket como orden en la base de datos
+   * Valida datos requeridos y transforma modelos usando TicketTransformer
+   * Genera QR con el ID de la orden creada
+   *
+   * @throws Error si falla la inserción en BD
+   */
+  protected async saveOrder() {
+    // Validaciones previas
+    if (!this.selectedCustomerId()) {
+      alert('Debe seleccionar un cliente');
+      return;
+    }
+
+    if (!this.selectedEmployeeId()) {
+      alert('Debe seleccionar un diseñador');
+      return;
+    }
+
+    if (this.ticketData.saleDetails.length === 0) {
+      alert('Debe agregar al menos un producto/servicio');
+      return;
+    }
+
+    // Validar que todos los items tengan precio y cantidad
+    const invalidItems = this.ticketData.saleDetails.filter(
+      (item) => item.quantity <= 0 || item.price <= 0,
+    );
+
+    if (invalidItems.length > 0) {
+      alert('Todos los items deben tener cantidad y precio válidos');
+      return;
+    }
+
+    try {
+      // TODO: Obtener shop_id de la sesión del usuario autenticado
+      const shopId = crypto.randomUUID(); // Temporal
+
+      // Transformar TicketDataModel a Order usando el helper
+      const order: Order = TicketTransformer.toOrder(
+        this.ticketData,
+        this.selectedCustomerId(),
+        this.selectedEmployeeId(),
+        shopId,
+        OrderStatus.PENDIENTE,
+      );
+
+      // Transformar TicketItemModel[] a OrderDetail[] usando el helper
+      const orderDetails: OrderDetail[] = TicketTransformer.toOrderDetails(
+        this.ticketData.saleDetails,
+      );
+
+      // Guardar en base de datos
+      const orderId = await this.orderService.createOrder(order, orderDetails);
+
+      // Éxito: generar QR con el ID de la orden
+      this.ticketUuid.set(orderId);
+
+      alert(`✅ Orden #${orderId} guardada exitosamente`);
+
+      // Opcional: Limpiar formulario o navegar a vista de órdenes
+      // this.resetForm();
+    } catch (error) {
+      console.error('Error al guardar orden:', error);
+      alert('❌ Error al guardar la orden. Por favor intente nuevamente.');
+    }
   }
 }

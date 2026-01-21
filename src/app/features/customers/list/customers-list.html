@@ -18,7 +18,7 @@
       </div>
       <a
         class="btn btn-primary gap-2 shadow-lg hover:shadow-xl transition-shadow"
-        [routerLink]="['/clientes/create']"
+        [routerLink]="['/clientes/crear_nuevo']"
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -219,7 +219,7 @@
             Comienza creando tu primer cliente
           }
         </p>
-        <a class="btn btn-primary" [routerLink]="['/clientes/create']">Crear Primer Cliente</a>
+        <a class="btn btn-primary" [routerLink]="['/clientes/crear_nuevo']">Crear Primer Cliente</a>
       </div>
     </div>
   }
@@ -294,7 +294,7 @@
                             d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
                           />
                         </svg>
-                        <span class="truncate max-w-[200px]">{{ customer.email }}</span>
+                        <span class="truncate max-w-50">{{ customer.email }}</span>
                       </div>
                     }
                   </div>

@@ -48,11 +48,7 @@ CREATE TABLE core.shops (
   basic_service_providers jsonb DEFAULT '{}'::jsonb,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  created_by_id uuid REFERENCES auth.users (id),
-  updated_by_id uuid REFERENCES auth.users (id),
-  deleted_by_id uuid REFERENCES auth.users (id)
-);
+  updated_at TIMESTAMPTZ DEFAULT NOW());
 -- Constraints para CORE.SHOPS
 ALTER TABLE core.shops
 ADD CONSTRAINT chk_shops_name_length CHECK (char_length(name) <= 150),
@@ -884,16 +880,61 @@ VALUES (
     'Developer',
     'Mantenimiento y desarrollo de la app.'
   ) ON CONFLICT (name) DO NOTHING;
--- Inicialización de Locales (Sin cambios)
-INSERT INTO core.shops (id, name, address)
-VALUES (
-    '019a1367-5dd3-79a4-a6cb-a3aa7a88612c',
-    'ORBEGOSO',
-    'JR. ORBEGOSO 243 PISO 1 STAND 243'
-  ) ON CONFLICT (name) DO NOTHING;
-INSERT INTO core.shops (id, name, address)
-VALUES (
-    '019a2cdf-56e9-7d92-8985-1256bfed4197',
-    'TIENDA TEST',
-    'AV. TEST 1234'
-  ) ON CONFLICT (name) DO NOTHING;
+
+
+INSERT INTO core.shops (
+  id,
+  name,
+  address,
+  email,
+  main_phone,
+  secondary_phone,
+  company_data,
+  basic_service_providers
+) VALUES (
+  '019bdc20-4e05-7cb7-81f5-634bdcbf826e',
+  'Stand 194',
+  'Jr. Huaraz 1717 - Piso 1 - Interior 194',
+  'laser.guizado.plaza@gmail.com',
+  '+51995558329',
+  NULL,
+  '{"default": 
+  {"legalName": "LASER VELOZ IMPORT E.I.R.L.", 
+  "ruc": "20610129910", 
+  "address": "Jr. Huaraz 1717 - Piso 1 - Interior 194", 
+  "bankAccount": "191-7075355-0-30", 
+  "cci": "00219100707535503053", 
+  "yape_primary": "903095920", 
+  "yape_secondary": null, 
+  "plin": null}}'::jsonb,
+  NULL
+);
+
+
+INSERT INTO core.shops ( 
+  id,
+  name,
+  address,
+  email,
+  main_phone,
+  secondary_phone,
+  company_data,
+  basic_service_providers
+) VALUES ( 
+  '019bdc22-b528-73b1-8956-763ab43828d8',
+  'Stand 243',
+  'Jr. Orbegoso 243 - Piso 1 - Interior 243',
+  'laser.guizado.orbegoso243@gmail.com',
+  '+51970899806',
+  NULL,
+  '{"default": {
+    "legalName": "ASESORIAS GLOBALES EMPRESARIALES E.I.R.L.",
+    "ruc": "20607873411",
+    "address": "Jr. Orbegoso 243 - Piso 1 - Interior 243",
+    "bankAccount": "191-2536428-0-83",
+    "cci": "00219100253642808351",
+    "yape_primary": "970899806",
+    "yape_secondary": null,
+    "plin": null}}'::jsonb,
+  NULL
+);

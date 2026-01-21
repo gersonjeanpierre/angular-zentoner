@@ -8,29 +8,41 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-lg">Diseñador</legend>
-            <label class="input input-neutral cursor-pointer">
-              <span class="icon-[noto--artist] h-7 w-7"></span>
-              <input
-                type="text"
-                class="grow cursor-pointer"
-                placeholder="Nombre del diseñador"
-                [formField]="ticketForm.designer"
-                autocomplete="off"
-              />
-            </label>
+            <div class="join w-full">
+              <label class="input input-neutral cursor-pointer join-item flex-1">
+                <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
+                <input
+                  type="text"
+                  class="grow cursor-pointer bg-base-200"
+                  placeholder="Nombre del diseñador"
+                  [value]="ticketForm.designer().value()"
+                  readonly
+                  (click)="openEmployeeModal()"
+                />
+              </label>
+              <button type="button" class="btn btn-primary join-item" (click)="openEmployeeModal()">
+                <span class="icon-[mdi--magnify] h-5 w-5"></span>
+              </button>
+            </div>
           </fieldset>
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-lg">Cliente</legend>
-            <label class="input input-neutral cursor-pointer">
-              <span class="icon-[noto--person-in-tuxedo] h-7 w-7"></span>
-              <input
-                type="text"
-                class="grow cursor-pointer"
-                placeholder="Nombre del cliente"
-                [formField]="ticketForm.client"
-                autocomplete="off"
-              />
-            </label>
+            <div class="join w-full">
+              <label class="input input-neutral cursor-pointer join-item flex-1">
+                <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
+                <input
+                  type="text"
+                  class="grow cursor-pointer bg-base-200"
+                  placeholder="Nombre del cliente"
+                  [value]="ticketForm.client().value()"
+                  readonly
+                  (click)="openCustomerModal()"
+                />
+              </label>
+              <button type="button" class="btn btn-primary join-item" (click)="openCustomerModal()">
+                <span class="icon-[mdi--magnify] h-5 w-5"></span>
+              </button>
+            </div>
           </fieldset>
         </div>
 
@@ -39,7 +51,7 @@
           <fieldset class="fieldset">
             <legend class="fieldset-legend text-lg">Método de Pago</legend>
             <label class="input input-neutral cursor-pointer">
-              <span class="icon-[noto--credit-card] h-7 w-7"></span>
+              <span class="icon-[streamline-ultimate--self-payment-touch-euro-bold] h-7 w-7"></span>
               <input
                 type="text"
                 class="grow cursor-pointer"
@@ -164,7 +176,7 @@
             <fieldset class="fieldset">
               <legend class="fieldset-legend text-lg">Adelanto</legend>
               <label class="input input-neutral cursor-pointer">
-                <span class="icon-[noto--dollar-banknote] h-7 w-7"></span>
+                <span class="icon-[streamline-ultimate--money-wallet-open-bold] h-7 w-7"></span>
                 <input
                   type="number"
                   class="grow cursor-pointer"
@@ -172,7 +184,7 @@
                   [formField]="ticketForm.advance"
                   autocomplete="off"
                   step="0.01"
-                  (input)="calculateTotals()"
+                  (input)="updateTotalsInModel()"
                 />
               </label>
             </fieldset>
@@ -180,7 +192,7 @@
             <fieldset class="fieldset">
               <legend class="fieldset-legend text-lg">Descuento</legend>
               <label class="input input-neutral cursor-pointer">
-                <span class="icon-[noto--label] h-7 w-7"></span>
+                <span class="icon-[ic--baseline-discount] h-7 w-7"></span>
                 <input
                   type="number"
                   class="grow cursor-pointer"
@@ -188,7 +200,7 @@
                   [formField]="ticketForm.discount"
                   autocomplete="off"
                   step="0.01"
-                  (input)="calculateTotals()"
+                  (input)="updateTotalsInModel()"
                 />
               </label>
             </fieldset>
@@ -200,7 +212,7 @@
               <input
                 type="checkbox"
                 [checked]="includeIGV()"
-                (change)="includeIGV.set($any($event.target).checked); calculateTotals()"
+                (change)="includeIGV.set($any($event.target).checked); updateTotalsInModel()"
                 class="checkbox checkbox-primary"
               />
               <span class="label-text font-semibold">Incluir IGV (18%)</span>
@@ -280,3 +292,27 @@
   (selectItem)="onModalSelect($event)"
   (closed)="onModalClosed()"
 ></modal-search>
+
+<!-- Customer Search Modal -->
+<app-search-modal
+  [isOpen]="customerModalOpen()"
+  [title]="'Buscar Cliente'"
+  [items]="customerItems()"
+  [isLoading]="isLoadingCustomers()"
+  [placeholder]="'Buscar por nombre, DNI, RUC...'"
+  (onClose)="customerModalOpen.set(false)"
+  (onSelect)="handleCustomerSelect($event)"
+  (onSearch)="handleCustomerSearch($event)"
+/>
+
+<!-- Employee Search Modal -->
+<app-search-modal
+  [isOpen]="employeeModalOpen()"
+  [title]="'Buscar Diseñador'"
+  [items]="employeeItems()"
+  [isLoading]="isLoadingEmployees()"
+  [placeholder]="'Buscar por nombre, código...'"
+  (onClose)="employeeModalOpen.set(false)"
+  (onSelect)="handleEmployeeSelect($event)"
+  (onSearch)="handleEmployeeSearch($event)"
+/>

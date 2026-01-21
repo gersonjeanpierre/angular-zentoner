@@ -55,6 +55,23 @@ const inventoryRoutes: Routes = [
       },
     ],
   },
+  {
+    path: 'maquinas',
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./machines/machines-list/machines-list'),
+      },
+      {
+        path: 'crear',
+        loadComponent: () => import('./machines/machines-create/machines-create'),
+      },
+      {
+        path: 'editar/:id',
+        loadComponent: () => import('./machines/machines-edit/machines-edit'),
+      },
+    ],
+  },
 ];
 
 export default inventoryRoutes;

@@ -1,0 +1,145 @@
+<div class="card rounded-lg shadow-md border border-base-200 bg-white mr-2 my-1 px-6 pt-4 pb-6">
+  <!-- Header -->
+  <div class="mb-6">
+    <button class="btn btn-ghost btn-sm mb-2" (click)="goBack()">
+      <span class="icon-[mdi--arrow-left] w-5 h-5"></span>
+      Volver
+    </button>
+    <h2 class="text-2xl font-bold">Editar Máquina</h2>
+    <p class="text-sm text-gray-500">Actualiza la información de la máquina</p>
+  </div>
+
+  <!-- Loading inicial -->
+  @if (loadingData()) {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else {
+    <!-- Mensajes de estado -->
+    @if (error()) {
+      <div class="alert alert-error mb-4">
+        <span class="icon-[mdi--alert-circle] w-6 h-6"></span>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    @if (success()) {
+      <div class="alert alert-success mb-4">
+        <span class="icon-[mdi--check-circle] w-6 h-6"></span>
+        <span>Máquina actualizada exitosamente. Redirigiendo...</span>
+      </div>
+    }
+
+    <!-- Formulario -->
+    <form (submit)="onSubmit($event)" class="space-y-6">
+      <!-- Información básica -->
+      <div class="card bg-base-100 shadow-sm">
+        <div class="card-body">
+          <h3 class="card-title text-lg mb-4">Información Básica</h3>
+
+          <!-- Tienda -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text font-semibold">
+                Tienda
+                <span class="text-error">*</span>
+              </span>
+            </label>
+            @if (loadingShops()) {
+              <div class="flex items-center gap-2">
+                <span class="loading loading-spinner loading-sm"></span>
+                <span>Cargando tiendas...</span>
+              </div>
+            } @else {
+              <select
+                [formField]="machineForm.shop_id"
+                class="select select-bordered w-full"
+                [class.select-error]="
+                  machineForm.shop_id().touched() && machineForm.shop_id().invalid()
+                "
+              >
+                <option value="">Selecciona una tienda</option>
+                @for (shop of shops(); track shop.id) {
+                  <option [value]="shop.id">{{ shop.name }}</option>
+                }
+              </select>
+            }
+            @if (machineForm.shop_id().touched() && machineForm.shop_id().invalid()) {
+              <div class="label">
+                @for (error of machineForm.shop_id().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Nombre -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text font-semibold">
+                Nombre de la Máquina
+                <span class="text-error">*</span>
+              </span>
+            </label>
+            <input
+              type="text"
+              [formField]="machineForm.name"
+              placeholder="Ej: Impresora Roland VS-640"
+              class="input input-bordered w-full"
+              [class.input-error]="machineForm.name().touched() && machineForm.name().invalid()"
+            />
+            @if (machineForm.name().touched() && machineForm.name().invalid()) {
+              <div class="label">
+                @for (error of machineForm.name().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Modelo -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text font-semibold">Modelo</span>
+            </label>
+            <input
+              type="text"
+              [formField]="machineForm.model"
+              placeholder="Ej: VS-640"
+              class="input input-bordered w-full"
+            />
+            <label class="label">
+              <span class="label-text-alt">Campo opcional</span>
+            </label>
+          </div>
+
+          <!-- Estado activo/inactivo -->
+          <div class="form-control">
+            <label class="label cursor-pointer justify-start gap-2">
+              <input type="checkbox" [formField]="machineForm.is_active" class="checkbox" />
+              <span class="label-text">Máquina activa</span>
+            </label>
+            <label class="label">
+              <span class="label-text-alt">
+                Las máquinas activas están disponibles para asignar a producción
+              </span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="flex gap-4 justify-end">
+        <button type="button" class="btn btn-ghost" (click)="goBack()" [disabled]="loading()">
+          Cancelar
+        </button>
+        <button type="submit" class="btn btn-primary" [disabled]="loading() || success()">
+          @if (loading()) {
+            <span class="loading loading-spinner loading-sm"></span>
+          }
+          Guardar Cambios
+        </button>
+      </div>
+    </form>
+  }
+</div>

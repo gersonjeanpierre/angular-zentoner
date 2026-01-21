@@ -566,3 +566,33 @@ CREATE POLICY "authenticated_can_update_items"
   WITH CHECK (
     auth_management.is_universal_manager((SELECT auth.uid()))
   );
+
+-- machines
+DROP POLICY IF EXISTS "authenticated_can_select_machines" ON inventory.machines;
+CREATE POLICY "authenticated_can_select_machines"
+  ON inventory.machines
+  FOR SELECT
+  TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "authenticated_can_insert_machines" ON inventory.machines;
+CREATE POLICY "authenticated_can_insert_machines"
+  ON inventory.machines
+  FOR INSERT
+  TO authenticated
+  WITH CHECK (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  );
+
+DROP POLICY IF EXISTS "authenticated_can_update_machines" ON inventory.machines;
+CREATE POLICY "authenticated_can_update_machines"
+  ON inventory.machines
+  FOR UPDATE
+  TO authenticated
+  USING (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  )
+  WITH CHECK (
+    auth_management.is_universal_manager((SELECT auth.uid()))
+  );
+  
