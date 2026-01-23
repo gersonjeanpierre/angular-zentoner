@@ -24,6 +24,7 @@ import { PRINTING_CATEGORIES } from '@data/constants/categories';
 import { CustomerService } from '@core/services/customer-service';
 import { EmployeeService } from '@core/services/employee-service';
 import { OrderService } from '@core/services/order-service';
+import { AuthService } from '@core/services/auth-service';
 
 @Component({
   selector: 'app-tickets',
@@ -36,6 +37,7 @@ export default class Tickets {
   private customerService = inject(CustomerService);
   private employeeService = inject(EmployeeService);
   private orderService = inject(OrderService);
+  private authService = inject(AuthService);
 
   // Constants
   protected readonly sizes: string[] = ITEM_SIZE;
@@ -62,6 +64,8 @@ export default class Tickets {
   protected isLoadingEmployees = signal(false);
   protected selectedCustomerId = signal<string>('');
   protected selectedEmployeeId = signal<string>('');
+
+  protected isDesignerFixed = signal(false);
 
   protected category = PRINTING_CATEGORIES;
 
@@ -132,8 +136,23 @@ export default class Tickets {
     };
   }
 
-  constructor() {
+  ngOnInit() {
+    this.initUser();
     this.updateTotalsInModel();
+  }
+
+  private async initUser() {
+    try {
+      const userProfile = await this.authService.getUserProfileData();
+      if (userProfile.roles.includes(4)) {
+        console.log('Diseñador fijo asignado:', userProfile);
+        this.isDesignerFixed.set(true);
+        this.selectedEmployeeId.set(userProfile.id);
+        this.ticketForm.designer().value.set(userProfile.name);
+      }
+    } catch (error) {
+      console.error('Error obteniendo perfil de usuario:', error);
+    }
   }
 
   /**
@@ -493,6 +512,7 @@ export default class Tickets {
    * Carga automáticamente la lista de empleados
    */
   protected async openEmployeeModal() {
+    if (this.isDesignerFixed()) return;
     this.employeeModalOpen.set(true);
     await this.loadEmployees();
   }

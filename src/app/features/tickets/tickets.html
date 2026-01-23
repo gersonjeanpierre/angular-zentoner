@@ -1,4 +1,5 @@
 <div class="flex flex-col lg:flex-row gap-2 w-full px-2 lg:pl-0 mb-2">
+  <link rel="stylesheet" href="./tickets-fix.css" />
   <!-- Formulario principal -->
   <div class="w-full">
     <div class="card bg-base-100 shadow-lg rounded-lg">
@@ -17,10 +18,15 @@
                   placeholder="Nombre del diseñador"
                   [value]="ticketForm.designer().value()"
                   readonly
-                  (click)="openEmployeeModal()"
+                  [disabled]="isDesignerFixed()"
                 />
               </label>
-              <button type="button" class="btn btn-primary join-item" (click)="openEmployeeModal()">
+              <button
+                type="button"
+                class="btn btn-primary join-item"
+                [disabled]="isDesignerFixed()"
+                (click)="openEmployeeModal()"
+              >
                 <span class="icon-[mdi--magnify] h-5 w-5"></span>
               </button>
             </div>
@@ -253,7 +259,7 @@
                 class="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
+                stroke="current-color"
               >
                 <path
                   stroke-linecap="round"
@@ -291,7 +297,7 @@
   [isCustomSize]="isCustomSize()"
   (selectItem)="onModalSelect($event)"
   (closed)="onModalClosed()"
-></modal-search>
+/>
 
 <!-- Customer Search Modal -->
 <app-search-modal

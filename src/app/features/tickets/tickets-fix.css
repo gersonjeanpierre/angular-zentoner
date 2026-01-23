@@ -1,0 +1,17 @@
+.input:focus-within {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15), 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  border-color: #2796d7;
+  /* tailwind sky-400 */
+  transition: box-shadow 0.2s, border-color 0.2s;
+}
+
+.input input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: none !important;
+  --tw-ring-color: transparent !important;
+  border-color: #2796d7;
+}
