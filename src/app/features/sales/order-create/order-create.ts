@@ -142,9 +142,8 @@ export default class OrderCreate {
       });
 
       const items: SearchableItem[] = response.data.map((employee) => ({
-        id: employee.id,
-        displayText: `${employee.firstName} ${employee.lastName}`,
-        subtitle: employee.employeeCode || employee.email || undefined,
+        id: employee.employee_id,
+        displayText: `${employee.first_name} ${employee.last_name}`,
         metadata: employee,
       }));
 

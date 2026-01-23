@@ -65,7 +65,7 @@ export class AuthService {
     return this.authSupabase.getSession();
   }
 
-  async getInforForHeader() {
+  async getUserProfileData() {
     const key = localStorage.key(0);
     const value = localStorage.getItem(key!);
     const session = value ? JSON.parse(value) : null;
@@ -74,7 +74,13 @@ export class AuthService {
       user_metadata.first_name && user_metadata.last_name
         ? user_metadata.first_name + ' ' + user_metadata.last_name
         : 'SuperAdmin';
-    const email = session['user'].email;
-    return { name: response, email };
+    const roles = user_metadata.roleAssignmentResults[0].roles_assigned;
+
+    return {
+      id: session['user'].id,
+      name: response,
+      email: session['user'].email,
+      roles: roles,
+    };
   }
 }

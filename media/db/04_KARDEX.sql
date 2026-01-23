@@ -493,6 +493,40 @@ $$ LANGUAGE plpgsql;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 -- CREATE TABLE IF NOT EXISTS inventory.roll_tracking (
 --   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 --   item_id UUID REFERENCES inventory.items(id) NOT NULL,

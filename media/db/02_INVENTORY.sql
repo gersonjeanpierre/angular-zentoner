@@ -11,8 +11,7 @@ DROP TABLE IF EXISTS inventory.machines CASCADE;
 -- CATEGORIAS 
 -- ======================================================================
 CREATE TABLE IF NOT EXISTS inventory.categories (
-  id SMALLSERIAL PRIMARY KEY,  
-  shop_id UUID REFERENCES core.shops(id),
+  id SMALLSERIAL PRIMARY KEY,
   parent_id SMALLINT REFERENCES inventory.categories(id),
   name TEXT NOT NULL,
   slug TEXT,
@@ -58,7 +57,6 @@ ALTER TABLE inventory.categories ENABLE ROW LEVEL SECURITY;
 -- ======================================================================
 DO $$ 
 DECLARE 
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
     -- IDs de Nivel 0
     id_materiales INT;
     -- IDs de Nivel 1 (para crear Nivel 2)
@@ -80,40 +78,40 @@ DECLARE
 
 BEGIN 
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Materiales y Soportes', 'Papeles, vinilos, acrílicos, listones de madera, entre otros.', 1)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Materiales y Soportes', 'Papeles, vinilos, acrílicos, listones de madera, entre otros.', 1)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_materiales  FROM inventory.categories WHERE name = 'Materiales y Soportes'    AND shop_id = shop_uuid;
+    SELECT id INTO id_materiales  FROM inventory.categories WHERE name = 'Materiales y Soportes';    
 
     -- =================================================================================
     -- NIVEL 1: PAPELES Y CARTULINAS
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) 
-    VALUES (shop_uuid, id_materiales, 'Papeles y Cartulinas', 1) RETURNING id INTO sub_papel;
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) 
+    VALUES ( id_materiales, 'Papeles y Cartulinas', 1) RETURNING id INTO sub_papel;
 
     -- NIVEL 2: Tipos de papel (De tu constante de código)
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_papel, 'Adhesivo', 1),
-    (shop_uuid, sub_papel, 'Bond', 2),
-    (shop_uuid, sub_papel, 'Canson', 3),
-    (shop_uuid, sub_papel, 'Couche', 4),
-    (shop_uuid, sub_papel, 'Folkote', 5),
-    (shop_uuid, sub_papel, 'Fotografía', 6),
-    (shop_uuid, sub_papel, 'Hilo', 7),
-    (shop_uuid, sub_papel, 'Opalina', 8);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( sub_papel, 'Adhesivo', 1),
+    ( sub_papel, 'Bond', 2),
+    ( sub_papel, 'Canson', 3),
+    ( sub_papel, 'Couche', 4),
+    ( sub_papel, 'Folkote', 5),
+    ( sub_papel, 'Fotografía', 6),
+    ( sub_papel, 'Hilo', 7),
+    ( sub_papel, 'Opalina', 8);
   
 
     -- =================================================================================
     -- NIVEL 1: VINILOS Y GIGANTOGRAFÍA
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id,parent_id,name,sort_order)
-    VALUES (shop_uuid, id_materiales, 'Vinilos y Gigantografía', 2) RETURNING id INTO sub_vinil;
+    INSERT INTO inventory.categories (parent_id,name,sort_order)
+    VALUES ( id_materiales, 'Vinilos y Gigantografía', 2) RETURNING id INTO sub_vinil;
     -- -- NIVEL 2: Tipos de Vinilo
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_vinil, 'Gigantografias', 1),
-    (shop_uuid, sub_vinil, 'Vinilos', 2),
-    (shop_uuid, sub_vinil, 'Rigidos', 3);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( sub_vinil, 'Gigantografias', 1),
+    ( sub_vinil, 'Vinilos', 2),
+    ( sub_vinil, 'Rigidos', 3);
 END $$;
 -- ======================================================================
 
@@ -122,29 +120,29 @@ END $$;
 -- =====================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     id_insumos INT;
     sub_tintas INT;
     sub_consumibles INT;
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Insumos y Consumibles', 'Tintas UV, toners, polvos DTF, tintas sublimación, entre otros.', 2)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Insumos y Consumibles', 'Tintas UV, toners, polvos DTF, tintas sublimación, entre otros.', 2)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_insumos FROM inventory.categories WHERE name = 'Insumos y Consumibles' AND shop_id = shop_uuid;
+    SELECT id INTO id_insumos FROM inventory.categories WHERE name = 'Insumos y Consumibles'; 
 
     -- =================================================================================
     -- NIVEL 1 Y 2: INSUMOS (Lo que consumen tus máquinas)
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_insumos, 'Tintas y Toners', 1) RETURNING id INTO sub_tintas;
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_tintas, 'Toners', 1),
-    (shop_uuid, sub_tintas, 'Tintas Ecosolventes', 2),
-    (shop_uuid, sub_tintas, 'Tintas UV', 3),
-    (shop_uuid, sub_tintas, 'Tintas Hibridas', 4),
-    (shop_uuid, sub_tintas, 'Cartuchos', 5);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_insumos, 'Tintas y Toners', 1) RETURNING id INTO sub_tintas;
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( sub_tintas, 'Toners', 1),
+    ( sub_tintas, 'Tintas Ecosolventes', 2),
+    ( sub_tintas, 'Tintas UV', 3),
+    ( sub_tintas, 'Tintas Hibridas', 4),
+    ( sub_tintas, 'Cartuchos', 5);
 END $$;
 
 -- ======================================================================
@@ -152,39 +150,39 @@ END $$;
 -- ======================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     id_acabados INT;
     id_lam_plas_enmi INT;
     id_acabados_fisico INT;
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Acabados y Postimpresión', 'Laminados, enmicados, ojalillos, entre otros.', 3)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Acabados y Postimpresión', 'Laminados, enmicados, ojalillos, entre otros.', 3)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_acabados FROM inventory.categories WHERE name = 'Acabados y Postimpresión' AND shop_id = shop_uuid;
+    SELECT id INTO id_acabados FROM inventory.categories WHERE name = 'Acabados y Postimpresión'; 
 
     -- =================================================================================
     -- NIVEL 1 Y 2: ACABADOS (Tu enmicadora, troqueladora y manuales)
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_acabados, 'Laminado, Plastificado y Enmicado', 1) RETURNING id INTO id_lam_plas_enmi;
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_lam_plas_enmi, 'Rollos BOPP (Laminación)', 1),
-    (shop_uuid, id_lam_plas_enmi, 'Micas/Pouches (Enmicado)', 2),
-    (shop_uuid, id_lam_plas_enmi, 'Plastificado Mate/Brillo', 3);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_acabados, 'Laminado, Plastificado y Enmicado', 1) RETURNING id INTO id_lam_plas_enmi;
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( id_lam_plas_enmi, 'Rollos BOPP (Laminación)', 1),
+    ( id_lam_plas_enmi, 'Micas/Pouches (Enmicado)', 2),
+    ( id_lam_plas_enmi, 'Plastificado Mate/Brillo', 3);
 
     -- =================================================================================
     -- NIVEL 1 Y 2: POST-IMPRESIÓN FÍSICO (Tu encuadernadora y manuales)
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_acabados, 'Post-Impresión Físico', 2)  RETURNING id INTO id_acabados_fisico;
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_acabados_fisico, 'Ojalillos y Accesorios', 1),
-    (shop_uuid, id_acabados_fisico, 'Encuadernación', 2),
-    (shop_uuid, id_acabados_fisico, 'Anillado y Espiralado', 3),
-    (shop_uuid, id_acabados_fisico, 'Empastado', 4),
-    (shop_uuid, id_acabados_fisico, 'Otros', 5);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_acabados, 'Post-Impresión Físico', 2)  RETURNING id INTO id_acabados_fisico;
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( id_acabados_fisico, 'Ojalillos y Accesorios', 1),
+    ( id_acabados_fisico, 'Encuadernación', 2),
+    ( id_acabados_fisico, 'Anillado y Espiralado', 3),
+    ( id_acabados_fisico, 'Empastado', 4),
+    ( id_acabados_fisico, 'Otros', 5);
 END $$;
 
 -- =====================================================================
@@ -192,7 +190,7 @@ END $$;
 -- =====================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     -- IDs de Nivel 0
     id_merch INT;
     -- IDs de Nivel 1 (para crear Nivel 2)
@@ -201,37 +199,37 @@ DECLARE
     -- Ids de Nivel 2 para textil
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Merchandising', 'Tazas para sublimar, lapiceros para UV, llaveros, bolsas, agendas, entre otros.', 4) ON CONFLICT DO NOTHING;
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Merchandising', 'Tazas para sublimar, lapiceros para UV, llaveros, bolsas, agendas, entre otros.', 4) ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_merch FROM inventory.categories WHERE name = 'Merchandising' AND shop_id = shop_uuid;
+    SELECT id INTO id_merch FROM inventory.categories WHERE name = 'Merchandising';
     -- =================================================================================
     -- NIVEL 1 Y 2: MERCHANDISING (Tu impresora UV y sublimación)
     -- =================================================================================
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_merch, 'Merchandising Textil', 1) RETURNING id INTO sub_merch_textil; 
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_merch_textil, 'Polos y Poleras', 1),
-    (shop_uuid, sub_merch_textil, 'Gorras y Sombreros', 2),
-    (shop_uuid, sub_merch_textil, 'Bolsas y Mochilas', 3),
-    (shop_uuid, sub_merch_textil, 'Mousepads', 4),
-    (shop_uuid, sub_merch_textil, 'Lanyards', 5);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_merch, 'Merchandising Textil', 1) RETURNING id INTO sub_merch_textil; 
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( sub_merch_textil, 'Polos y Poleras', 1),
+    ( sub_merch_textil, 'Gorras y Sombreros', 2),
+    ( sub_merch_textil, 'Bolsas y Mochilas', 3),
+    ( sub_merch_textil, 'Mousepads', 4),
+    ( sub_merch_textil, 'Lanyards', 5);
     
 
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_merch, 'Merchandising Rígido', 2) RETURNING id INTO sub_merch_rigido;
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, sub_merch_rigido, 'Copas, Tazas y Vasos', 1),
-    (shop_uuid, sub_merch_rigido, 'Mugs, Tomatodos y Thermos', 2),
-    (shop_uuid, sub_merch_rigido, 'Sellos', 3),
-    (shop_uuid, sub_merch_rigido, 'Llaveros y Pines', 4),
-    (shop_uuid, sub_merch_rigido, 'Libretas, Agendas, Block y Folders', 5),
-    (shop_uuid, sub_merch_rigido, 'Lapiceros y Resaltadores', 6),
-    (shop_uuid, sub_merch_rigido, 'Alcancías y Antiestrés', 7),
-    (shop_uuid, sub_merch_rigido, 'Foto Roca y Rompecabezas', 8),
-    (shop_uuid, sub_merch_rigido, 'Fotoshecks y Credenciales', 9),
-    (shop_uuid, sub_merch_rigido, 'Paletas, Toppers y Ruletas', 10),
-    (shop_uuid, sub_merch_rigido, 'Otros', 12);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_merch, 'Merchandising Rígido', 2) RETURNING id INTO sub_merch_rigido;
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( sub_merch_rigido, 'Copas, Tazas y Vasos', 1),
+    ( sub_merch_rigido, 'Mugs, Tomatodos y Thermos', 2),
+    ( sub_merch_rigido, 'Sellos', 3),
+    ( sub_merch_rigido, 'Llaveros y Pines', 4),
+    ( sub_merch_rigido, 'Libretas, Agendas, Block y Folders', 5),
+    ( sub_merch_rigido, 'Lapiceros y Resaltadores', 6),
+    ( sub_merch_rigido, 'Alcancías y Antiestrés', 7),
+    ( sub_merch_rigido, 'Foto Roca y Rompecabezas', 8),
+    ( sub_merch_rigido, 'Fotoshecks y Credenciales', 9),
+    ( sub_merch_rigido, 'Paletas, Toppers y Ruletas', 10),
+    ( sub_merch_rigido, 'Otros', 12);
 END $$;
 
 -- ======================================================================
@@ -239,72 +237,72 @@ END $$;
 -- ======================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     id_dtf INT;
     sub_dtf_textil INT;
     sub_dtf_merch INT;
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Tecnología DTF', 'Categoría principal de productos DTF para las impresiones.', 5)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Tecnología DTF', 'Categoría principal de productos DTF para las impresiones.', 5)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_dtf FROM inventory.categories WHERE name = 'Tecnología DTF' AND shop_id = shop_uuid;
+    SELECT id INTO id_dtf FROM inventory.categories WHERE name = 'Tecnología DTF'; 
     -- solo nivel 1
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_dtf, 'DTF Textil', 1);
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order)
-    VALUES (shop_uuid, id_dtf, 'DTF Merchandising', 2);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_dtf, 'DTF Textil', 1);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order)
+    VALUES ( id_dtf, 'DTF Merchandising', 2);
 END $$;
 
--- ======================================================================
--- M A Q U I N A R I A   Y   E Q U I P O S
--- ======================================================================
-DO $$
-DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
-    id_maquinaria INT;
-    id_printers INT;
-BEGIN
-    -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Maquinaria y Equipos', 'Maquinaria y equipos para las impresiones. Hibrida UV, Laminadora, enmicadora, entre otros.', 6)
-    ON CONFLICT DO NOTHING;
+-- -- ======================================================================
+-- -- M A Q U I N A R I A   Y   E Q U I P O S
+-- -- ======================================================================
+-- DO $$
+-- DECLARE
+--     
+--     id_maquinaria INT;
+--     id_printers INT;
+-- BEGIN
+--     -- Insertar Nivel 0 si no existen
+--     INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+--     ( 'Maquinaria y Equipos', 'Maquinaria y equipos para las impresiones. Hibrida UV, Laminadora, enmicadora, entre otros.', 6)
+--     ON CONFLICT DO NOTHING;
     
-    SELECT id INTO id_maquinaria FROM inventory.categories WHERE name = 'Maquinaria y Equipos' AND shop_id = shop_uuid;  
+--     SELECT id INTO id_maquinaria FROM inventory.categories WHERE name = 'Maquinaria y Equipos'   
 
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_maquinaria, 'Impresoras', 1),
-    (shop_uuid, id_maquinaria, 'DTF', 2),
-    (shop_uuid, id_maquinaria, 'Laminadoras', 3),
-    (shop_uuid, id_maquinaria, 'Enmicadoras', 4),
-    (shop_uuid, id_maquinaria, 'Plastificadoras', 5),
-    (shop_uuid, id_maquinaria, 'Troqueladoras', 6),
-    (shop_uuid, id_maquinaria, 'Corte y Grabado Láser', 7 ),
-    (shop_uuid, id_maquinaria, 'Sublimadoras', 8),
-    (shop_uuid, id_maquinaria, 'Otros Equipos', 9);
-END $$;
+--     INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+--     ( id_maquinaria, 'Impresoras', 1),
+--     ( id_maquinaria, 'DTF', 2),
+--     ( id_maquinaria, 'Laminadoras', 3),
+--     ( id_maquinaria, 'Enmicadoras', 4),
+--     ( id_maquinaria, 'Plastificadoras', 5),
+--     ( id_maquinaria, 'Troqueladoras', 6),
+--     ( id_maquinaria, 'Corte y Grabado Láser', 7 ),
+--     ( id_maquinaria, 'Sublimadoras', 8),
+--     ( id_maquinaria, 'Otros Equipos', 9);
+-- END $$;
 
 -- ======================================================================
 -- E S T R U C T U R A S   Y   D I S P L A Y S
 -- ======================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     id_estructuras INT;
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Estructuras y Displays', 'Estructuras y displays para las impresiones, Roll ups, marcos, entre otros.', 7)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Estructuras y Displays', 'Estructuras y displays para las impresiones, Roll ups, marcos, entre otros.',6)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_estructuras FROM inventory.categories WHERE name = 'Estructuras y Displays' AND shop_id = shop_uuid;
+    SELECT id INTO id_estructuras FROM inventory.categories WHERE name = 'Estructuras y Displays';
 
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_estructuras, 'Roll Ups', 1),
-    (shop_uuid, id_estructuras, 'Marcos y Estructuras', 2),
-    (shop_uuid, id_estructuras, 'Stands y Exhibidores', 3),
-    (shop_uuid, id_estructuras, 'Otros', 4);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( id_estructuras, 'Roll Ups', 1),
+    ( id_estructuras, 'Marcos y Estructuras', 2),
+    ( id_estructuras, 'Stands y Exhibidores', 3),
+    ( id_estructuras, 'Otros', 4);
 END $$;
 
 -- ======================================================================
@@ -312,19 +310,19 @@ END $$;
 -- ======================================================================
 DO $$
 DECLARE
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
+    
     id_servicios INT;
 BEGIN
     -- Insertar Nivel 0 si no existen
-    INSERT INTO inventory.categories (shop_id, name, description, sort_order) VALUES
-    (shop_uuid, 'Servicios y Otros', 'Servicios y otros relacionados con las impresiones.', 8)
+    INSERT INTO inventory.categories ( name, description, sort_order) VALUES
+    ( 'Servicios y Otros', 'Servicios y otros relacionados con las impresiones.', 7)
     ON CONFLICT DO NOTHING;
 
-    SELECT id INTO id_servicios FROM inventory.categories WHERE name = 'Servicios y Otros' AND shop_id = shop_uuid;
+    SELECT id INTO id_servicios FROM inventory.categories WHERE name = 'Servicios y Otros' ;
 
-    INSERT INTO inventory.categories (shop_id, parent_id, name, sort_order) VALUES
-    (shop_uuid, id_servicios, 'Servicios de Impresión', 1),
-    (shop_uuid, id_servicios, 'Otros', 2);
+    INSERT INTO inventory.categories ( parent_id, name, sort_order) VALUES
+    ( id_servicios, 'Servicios de Impresión', 1),
+    ( id_servicios, 'Otros', 2);
 END $$;
 
 -- ######################################################################
@@ -442,91 +440,6 @@ ALTER TABLE inventory.machines
   );
 
 ALTER TABLE inventory.machines ENABLE ROW LEVEL SECURITY;
-
--- LONAS
-DO $$ 
-DECLARE 
-    shop_uuid UUID := '019a1367-5dd3-79a4-a6cb-a3aa7a88612c';
-    frontlit_id SMALLINT;
-    backlight_id SMALLINT;
-    blackout_id SMALLINT;
-BEGIN 
-    -- Buscamos la categoría de Lona Frontlit
-    SELECT id INTO frontlit_id FROM inventory.categories WHERE name = 'Lona Frontlit' AND shop_id = shop_uuid LIMIT 1;
-
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, width_mm, length_m, printable_width_mm) VALUES
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 3.20m', 'LONA-FRONT-320', 3200, 50, 3180),
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 2.50m', 'LONA-FRONT-250', 2500, 50, 2480),
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 2.20m', 'LONA-FRONT-220', 2200, 50, 2180),
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 1.80m', 'LONA-FRONT-180', 1800, 50, 1780),
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 1.60m', 'LONA-FRONT-160', 1600, 50, 1580),
-    (gen_random_uuid(), frontlit_id, 'lona', 'metro-cuadrado', 'Lona Frontlit 12oz - 1.10m', 'LONA-FRONT-110', 1100, 50, 1080);
-
-    -- Buscamos la categoría de Lona Backlight
-    SELECT id INTO backlight_id FROM inventory.categories WHERE name = 'Lona Backlight'
-    AND shop_id = shop_uuid LIMIT 1;
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, width_mm, length_m, printable_width_mm) VALUES
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 3.20m', 'LONA-BACK-320', 3200, 50, 3180),
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 2.50m', 'LONA-BACK-250', 2500, 50, 2480),
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 2.20m', 'LONA-BACK-220', 2200, 50, 2180),
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 1.80m', 'LONA-BACK-180', 1800, 50, 1780),
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 1.60m', 'LONA-BACK-160', 1600, 50, 1580),
-    (gen_random_uuid(), backlight_id, 'lona', 'metro-cuadrado', 'Lona Backlight 12oz - 1.10m', 'LONA-BACK-110', 1100, 50, 1080);
-    -- Buscamos la categoría de Lona Blackout
-    SELECT id INTO blackout_id FROM inventory.categories WHERE name = 'Lona Blackout'
-    AND shop_id = shop_uuid LIMIT 1;
-    INSERT INTO inventory.items (id, category_id, supply_type, unit_type, name, sku, width_mm, length_m, printable_width_mm) VALUES
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 3.20m', 'LONA-BLACK-320', 3200, 50, 3180),
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 2.50m', 'LONA-BLACK-250', 2500, 50, 2480),
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 2.20m', 'LONA-BLACK-220', 2200, 50, 2180),
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 1.80m', 'LONA-BLACK-180', 1800, 50, 1780),
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 1.60m', 'LONA-BLACK-160', 1600, 50, 1580),
-    (gen_random_uuid(), blackout_id, 'lona', 'metro-cuadrado', 'Lona Blackout 12oz - 1.10m', 'LONA-BLACK-110', 1100, 50, 1080); 
-END $$;
-
--- Insertando 2 rollos de 3.20m como ejemplo
-DO $$ 
-DECLARE 
-    v_item_id UUID;
-    v_ent SMALLINT := (SELECT id FROM inventory.movement_type WHERE name = 'ENTRADA');
-    v_compra SMALLINT := (SELECT id FROM inventory.movement_reason WHERE name = 'COMPRA');
-BEGIN 
-    SELECT id INTO v_item_id FROM inventory.items WHERE sku = 'LONA-BACK-320' LIMIT 1;
-
-    -- Rollo A
-    INSERT INTO inventory.kardex (id, item_id, movement_type_id, movement_reason_id, quantity, previous_balance, subsequent_balance, batch_code, notes)
-    VALUES (gen_random_uuid(), v_item_id, v_ent, v_compra, 50.00, 0, 50.00, '26-ENE-001','Lote Proveedor XYZ');
-
-    -- Rollo B
-    INSERT INTO inventory.kardex (id, item_id, movement_type_id, movement_reason_id, quantity, previous_balance, subsequent_balance, batch_code, notes)
-    VALUES (gen_random_uuid(), v_item_id, v_ent, v_compra, 50.00, 0, 50.00, '26-ENE-002','Lote Proveedor XYZ');
-END $$;
-
--- CONSUMIR 12 metros del primer rollo
-DO $$
-DECLARE 
-    v_item_id UUID;
-    v_ent SMALLINT := (SELECT id FROM inventory.movement_type WHERE name = 'SALIDA');
-    v_venta SMALLINT := (SELECT id FROM inventory.movement_reason WHERE name = 'VENTA');
-    v_current_balance DECIMAL := (SELECT previous_balance FROM inventory.kardex WHERE batch_code = '26-ENE-001' );
-BEGIN
-    SELECT id INTO v_item_id FROM inventory.items WHERE sku = 'LONA-BACK-320' LIMIT 1;
-
-    -- Obtener el balance actual
-    SELECT SUM(CASE 
-      WHEN movement_type_id = v_ent THEN quantity 
-      WHEN movement_type_id = (SELECT id FROM inventory.movement_type WHERE name = 'SALIDA') THEN -quantity 
-      ELSE 0 
-    END)
-    INTO v_current_balance
-    FROM inventory.kardex
-    WHERE item_id = v_item_id;
-
-    -- Registrar la salida de 12 metros
-    INSERT INTO inventory.kardex (id, item_id, movement_type_id, movement_reason_id, quantity, previous_balance, subsequent_balance, batch_code, notes)
-    VALUES (gen_random_uuid(), v_item_id, v_ent, v_venta, 12.00, v_current_balance, v_current_balance - 12.00, '26-ENE-001', 'Venta a Cliente ABC');
-END $$;
-
 
 
 -- #######################################

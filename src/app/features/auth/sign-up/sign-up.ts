@@ -6,7 +6,7 @@ import {
   signal,
   OnInit,
 } from '@angular/core';
-import { LogoLaserVeloz } from '../../../shared/components/logo-laser-veloz/logo-laser-veloz';
+import { LogoLaserVeloz } from '@shared/components/logo-laser-veloz/logo-laser-veloz';
 import {
   form,
   FormField,
@@ -22,6 +22,7 @@ import { TranslateService } from '@ngx-translate/core';
 
 import { ShopService } from '@core/services/shop-service';
 import { ROLE_USER } from 'src/app/data/constants/role-user';
+import { Router } from '@angular/router';
 
 interface SignUpData {
   email: string;
@@ -47,6 +48,7 @@ export default class SignUp implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly translate = inject(TranslateService);
   private readonly shopService = inject(ShopService);
+  private readonly router = inject(Router);
 
   protected readonly availableShops = signal<{ id: string; name: string }[]>([]);
   protected readonly availableRoles = signal<RoleType[]>([]);
@@ -185,7 +187,7 @@ export default class SignUp implements OnInit {
         `La cuenta del empleado ha sido creada con éxito. ID: ${result.user_id}.`,
         'success',
       );
-      this.resetForm();
+      this.router.navigate(['/configuracion']);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'GENERIC_SERVER_ERROR';
       this.showAlert('¡Error al registrar!', this.getErrorTranslation(errorMessage), 'error');

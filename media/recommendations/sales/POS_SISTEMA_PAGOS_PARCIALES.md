@@ -80,7 +80,8 @@ CREATE TABLE sales.orders (
   fully_paid_at TIMESTAMPTZ,                          -- Fecha de pago completo
 
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ```
 
@@ -119,18 +120,20 @@ CREATE TABLE sales.payments (
   -- 👤 AUDITORÍA
   received_by_id UUID,                               -- Empleado que recibió
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 ```
 
 **Métodos de Pago Soportados:**
 
 - `EFECTIVO`
+- `YAPE`
 - `TARJETA_DEBITO`
 - `TARJETA_CREDITO`
 - `TRANSFERENCIA`
-- `YAPE`
-- `PLIN`
+- `DEPOSITO`
+- `DOLARES`
 - `OTRO`
 
 **Características Clave:**

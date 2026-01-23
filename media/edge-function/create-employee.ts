@@ -6,7 +6,7 @@ import { serve } from 'https://deno.land/std@0.224.0/http/server.ts';
 // @ts-ignore
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
 // @ts-ignore
-const SUPABASE_SERVICE_ROLE_KEY = '';
+const SUPABASE_SERVICE_ROLE_KEY = 'sb_secret_c-nXvPVJLaChofFUkVyMAw_VvbfdJ8Q';
 if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
   console.error('Faltan claves de entorno SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY.');
   throw new Error('Missing environment variables.');
@@ -33,8 +33,64 @@ function corsHeaders(origin) {
   }
   return headers;
 }
-console.info('Empezando el servicio de creación de empleados autenticados...');
-//--- Función Principal ---
+//--- Función para generar código de cliente ---
+function generateCustomerCode(firstName: string, lastName: string): string {
+  const getWords = (str: string) =>
+    str
+      .trim()
+      .toUpperCase()
+      .split(/\s+/)
+      .filter((w) => w.length > 0);
+
+  // Helper to pad or slice.
+  // Note: Original logic used 'X' padding. New requirements mention 'Z' for strange cases.
+  // We will use 'Z' for padding in new cases to be safe/consistent with "strange cases".
+  const pad = (str: string, len: number, char = 'Z') => str.padEnd(len, char).slice(0, len);
+
+  const fWords = getWords(firstName);
+  const lWords = getWords(lastName);
+
+  let nameCode = '';
+
+  if (fWords.length === 1 && lWords.length === 1) {
+    // Case 1: 1 word each. Use current logic (3 chars each, padded with X as per original)
+    // Original logic: const pad = (str: string) => str.padEnd(3, 'X').slice(0, 3);
+    const padOriginal = (str: string) => str.padEnd(3, 'Z').slice(0, 3);
+    nameCode = padOriginal(fWords[0]) + padOriginal(lWords[0]);
+  } else if (fWords.length === 1 && lWords.length >= 2) {
+    // Case 2: 1 first, 2+ last.
+    // "se debe agregar las 2 primeras letras de cada palabra" -> First(2) + Last1(2) + Last2(2)
+    const f1 = pad(fWords[0], 2);
+    const l1 = pad(lWords[0], 2);
+    const l2 = pad(lWords[1], 2);
+    nameCode = f1 + l1 + l2;
+  } else if (fWords.length >= 2 && lWords.length >= 2) {
+    // Case 3: 2+ first, 2+ last.
+    // First: 1st letter of first 2 words.
+    // Last: 2st letters of first 2 words.
+    const f1 = fWords[0].charAt(0) || 'Z';
+    const f2 = fWords[1].charAt(0) || 'Z';
+    const l1 = pad(lWords[0], 2);
+    const l2 = pad(lWords[1], 2);
+    nameCode = f1 + f2 + l1 + l2;
+  } else {
+    // Case 4: Strange case (e.g. fWords >= 2 && lWords == 1, or empty inputs)
+    // "Agregar 'Z' si algun caso extraño se presenta"
+    // We fall back to taking the first available words and padding with Z to ensure 6 chars.
+    const f = fWords.length > 0 ? fWords[0] : 'Z';
+    const l = lWords.length > 0 ? lWords[0] : 'Z';
+    // If we have extra first name words but only 1 last name, maybe we should use them?
+    // But to be safe and simple as a fallback:
+    nameCode = pad(f, 3, 'Z') + pad(l, 3, 'Z');
+  }
+
+  const now = new Date();
+  const day = String(now.getDate()).padStart(2, '0');
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const year = now.getFullYear();
+
+  return `${nameCode}${day}${month}${year}`;
+}
 serve(async (req) => {
   const origin = req.headers.get('origin');
   // Manejo de OPTIONS (CORS Preflight)
@@ -180,6 +236,7 @@ serve(async (req) => {
     // -----------------------------------------------------------
     let peopleCreated = false;
     let employeeCreated = false;
+    let customerCreated = false;
     // Intentar crear People (Email personal/público)
     const { error: peopleErr } = await supabaseAdmin
       .schema('core')
@@ -217,6 +274,26 @@ serve(async (req) => {
       throw new Error(`DB_EMPLOYEE_FAILED: ${employeeErr.message}`);
     }
     employeeCreated = true;
+
+    //Customer
+    const { error: customerErr } = await supabaseAdmin
+      .schema('sales')
+      .from('customers')
+      .insert([
+        {
+          id: newUserId,
+          customer_code: generateCustomerCode(firstName, lastName),
+          customer_type_code: 'IMPRENTERO_NUEVO',
+          notes:
+            // es un jsonb
+            JSON.stringify({ created_via: 'Edge Function: create-employee' }),
+          created_by_id: actorId,
+        },
+      ]);
+    if (customerErr) {
+      throw new Error(`DB_CUSTOMER_FAILED: ${customerErr.message}`);
+    }
+    customerCreated = true;
     // -----------------------------------------------------------
     // 4. ASIGNACIÓN DE ROLES (employee_roles)
     // -----------------------------------------------------------
@@ -273,6 +350,17 @@ serve(async (req) => {
         message: 'No roles provided in payload.',
       });
     }
+    const { error: updateMetaError } = await supabaseAdmin.auth.admin.updateUserById(newUserId, {
+      user_metadata: {
+        ...userData.user.user_metadata, // Preservar metadatos existentes (first_name, last_name)
+        roleAssignmentResults, // Agregar resultados de asignación de roles
+      },
+    });
+    if (updateMetaError) {
+      console.error('Error updating user metadata:', updateMetaError);
+      // Opcional: Podrías loguear o manejar el error, pero no lanzamos excepción para no romper el flujo
+    }
+
     // -----------------------------------------------------------
     // 5. FINALIZACIÓN Y AUDITORÍA
     // -----------------------------------------------------------
@@ -292,6 +380,7 @@ serve(async (req) => {
             first_name: firstName,
             last_name: lastName,
             roleAssignmentResults,
+            customer_created: customerCreated, // Agregado: Indicar si se creó el customer
           },
         },
       ]);
@@ -300,6 +389,7 @@ serve(async (req) => {
         user_id: newUserId,
         email: email,
         roleAssignmentResults,
+        customer_created: customerCreated, // Agregado: Confirmar creación del customer
       }),
       {
         status: 201,
@@ -314,7 +404,9 @@ serve(async (req) => {
     //  🚨 Lógica de Limpieza (Rollback): Si falla la DB, eliminamos el usuario de Auth.
     if (
       newUserId &&
-      (errorMsg.includes('DB_PEOPLE_FAILED') || errorMsg.includes('DB_EMPLOYEE_FAILED'))
+      (errorMsg.includes('DB_PEOPLE_FAILED') ||
+        errorMsg.includes('DB_EMPLOYEE_FAILED') ||
+        errorMsg.includes('DB_CUSTOMER_FAILED')) // Agregado: Incluir DB_CUSTOMER_FAILED para rollback completo
     ) {
       await supabaseAdmin.auth.admin
         .deleteUser(newUserId)

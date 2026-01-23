@@ -86,11 +86,12 @@ export interface CreateOrderDetailPayload {
 ```typescript
 export type PaymentMethod =
   | 'EFECTIVO'
+  | 'YAPE'
   | 'TARJETA_DEBITO'
   | 'TARJETA_CREDITO'
   | 'TRANSFERENCIA'
-  | 'YAPE'
-  | 'PLIN'
+  | 'DEPOSITO'
+  | 'DOLARES'
   | 'OTRO';
 
 export interface Payment {

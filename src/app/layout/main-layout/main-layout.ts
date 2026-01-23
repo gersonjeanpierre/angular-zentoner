@@ -72,7 +72,7 @@ export default class MainLayout implements OnInit {
   }
 
   private async loadUserInfo(): Promise<void> {
-    const response = await this.authService.getInforForHeader();
+    const response = await this.authService.getLiteUserInfor();
     this.userName.set(response.name);
     this.authEmail.set(response.email);
   }

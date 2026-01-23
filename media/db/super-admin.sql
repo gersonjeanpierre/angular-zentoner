@@ -10,11 +10,11 @@ DECLARE
     super_admin_role_id bigint;
     active_status_id smallint;
 BEGIN
-    -- 0. Obtener el ID del Local por defecto (Usando 'ORBEGOSO')
-    SELECT id INTO default_shop_id FROM core.shops WHERE name = 'ORBEGOSO';
+    -- 0. Obtener el ID del Local por defecto (Usando 'Stand 194')
+    SELECT id INTO default_shop_id FROM core.shops WHERE name = 'Stand 194';
 
     IF default_shop_id IS NULL THEN
-        RAISE EXCEPTION 'El local "ORBEGOSO" no existe. Por favor, asegúrese de poblar core.shops primero.';
+        RAISE EXCEPTION 'El local "Stand 194" no existe. Por favor, asegúrese de poblar core.shops primero.';
     END IF;
 
     -- 1. Obtener el ID del usuario registrado en Auth

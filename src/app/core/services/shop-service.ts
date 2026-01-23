@@ -29,6 +29,7 @@ export class ShopService {
     }
 
     const { data, error } = await query;
+
     return {
       data: (data as ShopModel[]) ?? undefined,
       error: error ?? undefined,

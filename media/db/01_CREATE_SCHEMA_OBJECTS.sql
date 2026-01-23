@@ -11,31 +11,31 @@ DROP TABLE IF EXISTS hr.employees CASCADE;
 DROP TABLE IF EXISTS core.persons CASCADE;
 DROP TABLE IF EXISTS core.audit_logs CASCADE;
 DROP TABLE IF EXISTS core.shops CASCADE;
-DROP SCHEMA IF EXISTS app_private CASCADE;
 DROP SCHEMA IF EXISTS core CASCADE;
 DROP SCHEMA IF EXISTS hr CASCADE;
 DROP SCHEMA IF EXISTS sales CASCADE;
 DROP SCHEMA IF EXISTS auth_management CASCADE;
-DROP FUNCTION IF EXISTS public.set_updated_at () CASCADE;
-DROP FUNCTION IF EXISTS public.set_audit_updated_by () CASCADE;
+DROP SCHEMA IF EXISTS inventory CASCADE;
+DROP SCHEMA IF EXISTS production CASCADE;
+DROP FUNCTION IF EXISTS core.set_updated_at () CASCADE;
+DROP FUNCTION IF EXISTS core.set_audit_updated_by() () CASCADE;
 DROP FUNCTION IF EXISTS auth_management.is_super_admin (uuid) CASCADE;
 DROP FUNCTION IF EXISTS auth_management.is_creator (uuid) CASCADE;
 DROP FUNCTION IF EXISTS auth_management.can_manage_hr (uuid) CASCADE;
 DROP FUNCTION IF EXISTS auth_management.is_employee (uuid) CASCADE;
 DROP FUNCTION IF EXISTS auth_management.is_universal_manager (uuid) CASCADE;
 DROP FUNCTION IF EXISTS sales.soft_delete_customer (uuid) CASCADE;
-DROP TYPE IF EXISTS public.person_type_enum;
+DROP TYPE IF EXISTS core.person_type_enum;
 -- ######################################################################
 -- # 2. CREACIÓN DE TABLAS BASE (CORE)
 -- ######################################################################
 -- Creación de Schemas
-CREATE SCHEMA IF NOT EXISTS app_private;
 CREATE SCHEMA IF NOT EXISTS core;
 CREATE SCHEMA IF NOT EXISTS hr;
 CREATE SCHEMA IF NOT EXISTS sales;
 CREATE SCHEMA IF NOT EXISTS auth_management;
 -- Tipo ENUM para reutilización
-CREATE TYPE public.person_type_enum AS ENUM ('JURIDICA', 'NATURAL');
+CREATE TYPE core.person_type_enum AS ENUM ('JURIDICA', 'NATURAL');
 -- =  =  = CORE.SHOPS (Locales de Imprenta Láser) =  =  =
 CREATE TABLE core.shops (
   id uuid PRIMARY KEY,
@@ -82,7 +82,7 @@ CREATE TABLE core.persons (
   dni TEXT,
   ruc TEXT UNIQUE,
   ce TEXT,
-  person_type public.person_type_enum NOT NULL,
+  person_type core.person_type_enum NOT NULL,
   metadata jsonb DEFAULT '{}'::jsonb,
   deleted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -171,6 +171,7 @@ CREATE TABLE hr.employee_statuses (
 ALTER TABLE hr.employee_statuses
 ADD CONSTRAINT chk_employee_statuses_code_length CHECK (char_length(code) <= 30),
   ADD CONSTRAINT chk_employee_statuses_name_length CHECK (char_length(name) <= 50);
+
 -- =  =  = HR.ROLES =  =  =
 CREATE TABLE hr.roles (
   id SMALLSERIAL PRIMARY KEY,
@@ -218,6 +219,35 @@ CREATE TABLE hr.employee_roles (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   PRIMARY KEY (employee_id, role_id)
 );
+
+DROP VIEW IF EXISTS hr.active_employees;
+CREATE OR REPLACE VIEW hr.active_employees WITH (security_invoker = ON) AS
+SELECT 
+  e.id AS employee_id,
+  p.first_name,
+  p.last_name,
+  e.employee_code,
+  e.auth_email,
+  e.hire_date,
+  e.salary,
+  e.status_id,
+  e.work_notes,
+  e.shop_id,
+  e.updated_at AS employee_updated_at,
+  p.email AS person_email,
+  p.phone,
+  p.dni,
+  p.ruc,
+  p.ce,
+  p.person_type,
+  p.legal_name,
+  p.deleted_at AS person_deleted_at,
+  p.updated_at AS person_updated_at
+FROM hr.employees e
+JOIN core.persons p ON e.id = p.id
+WHERE p.deleted_at IS NULL AND p.first_name <> 'Super';
+
+
 -- ######################################################################
 -- # 4. CREACIÓN DE TABLAS SALES (VENTAS/CLIENTES)
 -- ######################################################################
@@ -309,14 +339,9 @@ RETURN NEW;
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.set_updated_at() 
-RETURNS TRIGGER LANGUAGE plpgsql 
-AS $$ BEGIN NEW.updated_at = now();
-RETURN NEW;
-END;
-$$;
+
 -- Función de Auditoría: Establece el usuario que actualiza
-CREATE OR REPLACE FUNCTION public.set_audit_updated_by() 
+CREATE OR REPLACE FUNCTION core.set_audit_updated_by()
 RETURNS TRIGGER LANGUAGE plpgsql 
 AS $$ BEGIN NEW.updated_by_id = auth.uid();
 RETURN NEW;
@@ -324,31 +349,31 @@ END;
 $$;
 -- TRIGGERS PARA UPDATED_AT
 CREATE TRIGGER trg_shops_set_updated_at BEFORE
-UPDATE ON core.shops FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON core.shops FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_persons_set_updated_at BEFORE
-UPDATE ON core.persons FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON core.persons FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_employees_set_updated_at BEFORE
-UPDATE ON hr.employees FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON hr.employees FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_customers_set_updated_at BEFORE
-UPDATE ON sales.customers FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON sales.customers FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_roles_set_updated_at BEFORE
-UPDATE ON hr.roles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON hr.roles FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_employee_roles_set_updated_at BEFORE
-UPDATE ON hr.employee_roles FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON hr.employee_roles FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 CREATE TRIGGER trg_employee_statuses_set_updated_at BEFORE
-UPDATE ON hr.employee_statuses FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+UPDATE ON hr.employee_statuses FOR EACH ROW EXECUTE FUNCTION core.set_updated_at();
 -- TRIGGERS PARA UPDATED_BY_ID
 CREATE TRIGGER trg_shops_set_updated_by BEFORE
-UPDATE ON core.shops FOR EACH ROW EXECUTE FUNCTION public.set_audit_updated_by();
+UPDATE ON core.shops FOR EACH ROW EXECUTE FUNCTION core.set_audit_updated_by();
 CREATE TRIGGER trg_persons_set_updated_by BEFORE
-UPDATE ON core.persons FOR EACH ROW EXECUTE FUNCTION public.set_audit_updated_by();
+UPDATE ON core.persons FOR EACH ROW EXECUTE FUNCTION core.set_audit_updated_by();
 -- < --- Trigger para core.persons
 CREATE TRIGGER trg_employees_set_updated_by BEFORE
-UPDATE ON hr.employees FOR EACH ROW EXECUTE FUNCTION public.set_audit_updated_by();
+UPDATE ON hr.employees FOR EACH ROW EXECUTE FUNCTION core.set_audit_updated_by();
 CREATE TRIGGER trg_customers_set_updated_by BEFORE
-UPDATE ON sales.customers FOR EACH ROW EXECUTE FUNCTION public.set_audit_updated_by();
+UPDATE ON sales.customers FOR EACH ROW EXECUTE FUNCTION core.set_audit_updated_by();
 -- FUNCIONES DE CHECKEO DE ROLES (auth_management)
--- 🔥 AÑADIDO: Función para verificar roles que tienen acceso universal a gestión (Gestores)
+-- Función para verificar roles que tienen acceso universal a gestión (Gestores)
 
 CREATE OR REPLACE FUNCTION auth_management.is_universal_manager(user_id uuid) 
 RETURNS BOOLEAN 
@@ -414,7 +439,7 @@ CREATE OR REPLACE FUNCTION sales.create_customer(
     p_user_id uuid,
     p_first_name TEXT,
     p_last_name TEXT,
-    p_person_type public.person_type_enum,
+    p_person_type core.person_type_enum,
     p_legal_name TEXT DEFAULT NULL,
     p_email TEXT DEFAULT NULL,
     p_phone TEXT DEFAULT NULL,
@@ -655,26 +680,15 @@ ALTER TABLE hr.employees ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hr.roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE hr.employee_roles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE sales.customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE hr.employee_statuses ENABLE ROW LEVEL SECURITY;
 ALTER VIEW sales.active_customers
 SET (security_barrier = true);
 -- POLÍTICAS REFINADAS
 -- CORE.SHOPS: Se permite a todos los empleados ver los locales (metadato).
 DROP POLICY IF EXISTS "hr_employees_select_consolidated" ON hr.employees;
 CREATE POLICY "hr_employees_select_consolidated" ON hr.employees FOR
-SELECT TO authenticated USING (
-    id = (
-      (
-        SELECT auth.uid()
-      )::uuid
-    )
-    OR auth_management.can_manage_hr(
-      (
-        (
-          SELECT auth.uid()
-        )::uuid
-      )
-    )
-  );
+SELECT TO authenticated USING (true);
+
 DROP POLICY IF EXISTS "hr_employees_insert_managers" ON hr.employees;
 CREATE POLICY "hr_employees_insert_managers" ON hr.employees FOR
 INSERT TO authenticated WITH CHECK (
@@ -811,36 +825,31 @@ UPDATE TO authenticated USING (
 -- Las políticas de HR ya son universales si usas can_manage_hr. No necesitan shop_id.
 -- SALES.CUSTOMERS (Gestión de Clientes)
 -- 🔥 REFINADO: Solo roles de creación/administración pueden gestionar clientes, no todos los empleados. -- Eliminamos la anterior
-DROP POLICY IF EXISTS "Creator/Managers can manage customers" ON sales.customers;
-CREATE POLICY "Creator/Managers can manage customers" ON sales.customers FOR ALL TO authenticated USING (
-  auth_management.is_creator (
-    (
-      SELECT auth.uid()
-    )::uuid
-  )
-) WITH CHECK (
-  auth_management.is_creator (
-    (
-      SELECT auth.uid()
-    )::uuid
-  )
-);
-CREATE POLICY "customers_select_consolidated" ON sales.customers FOR
-SELECT TO authenticated USING (
-    auth_management.is_creator(
-      (
-        SELECT auth.uid()
-      )::uuid
-    )
-    OR auth_management.is_employee(
-      (
-        SELECT auth.uid()
-      )::uuid
-    )
-    OR id = (
-      SELECT auth.uid()
-    )::uuid
+
+DROP POLICY IF EXISTS "customers_select_consolidated" ON sales.customers;
+CREATE POLICY "customers_select_consolidated" ON sales.customers FOR 
+SELECT TO authenticated USING ( 
+  auth_management.is_creator((SELECT auth.uid())::uuid) 
+  OR auth_management.is_employee((SELECT auth.uid())::uuid) 
+  OR id = (SELECT auth.uid())::uuid 
   );
+
+DROP POLICY IF EXISTS "creator_can_insert_customers" ON sales.customers;
+CREATE POLICY "creator_can_insert_customers" ON sales.customers 
+FOR INSERT TO authenticated WITH CHECK( 
+  auth_management.is_creator((SELECT auth.uid())::uuid) 
+  );
+
+DROP POLICY IF EXISTS "creator_can_update_customers" ON sales.customers;
+CREATE POLICY "creator_can_update_customers" ON sales.customers 
+FOR  UPDATE TO authenticated USING ( 
+  auth_management.is_creator((SELECT auth.uid())::uuid) 
+  ) WITH CHECK ( 
+    auth_management.is_creator((SELECT auth.uid())::uuid) 
+  );
+
+
+
 -- ######################################################################
 -- # 8. INICIALIZACIÓN DE DATOS (ROLES, LOCALES Y STATUSES)
 -- ######################################################################

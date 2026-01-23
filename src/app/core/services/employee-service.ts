@@ -25,50 +25,40 @@ export class EmployeeService {
   /**
    * Obtener empleados con filtros y paginación
    */
-  async getEmployees(params: GetEmployeesParams = {}): Promise<GetEmployeesResponse> {
+  async getEmployees(params: GetEmployeesParams = {}) {
     const { shopId, statusId, search, page = 1, pageSize = 20 } = params;
 
     // Nota: Asumiendo que existe una vista similar a active_customers
     // Si no existe, necesitarás crear una vista o hacer un JOIN manual
     let query = this.supabaseClient
       .schema('hr')
-      .from('employees')
-      .select(
-        `
-        *,
-        persons:id (
-          first_name,
-          last_name,
-          legal_name,
-          email,
-          phone,
-          dni,
-          ruc,
-          ce,
-          person_type
-        )
-      `,
-        { count: 'exact', head: false },
-      );
+      .from('active_employees')
+      .select('employee_id,first_name, last_name');
 
     // Filtro por tienda
-    if (shopId) {
-      query = query.eq('shop_id', shopId);
-    }
+    // if (shopId) {
+    //   query = query.eq('shop_id', shopId);
+    // }
 
     // Filtro por estado
-    if (statusId) {
-      query = query.eq('status_id', statusId);
-    }
+    // if (statusId) {
+    //   query = query.eq('status_id', statusId);
+    // }
 
     // Búsqueda por texto (nombre, código de empleado, email)
+    // if (search && search.trim()) {
+    //   const searchTerm = search.trim();
+    //   query = query.or(`employee_code.ilike.%${searchTerm}%,auth_email.ilike.%${searchTerm}%`);
+    // }
+
+    // Búsqueda por texto (solo first_name y last_name)
     if (search && search.trim()) {
       const searchTerm = search.trim();
-      query = query.or(`employee_code.ilike.%${searchTerm}%,auth_email.ilike.%${searchTerm}%`);
+      query = query.or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%`);
     }
 
     // Ordenar por fecha de actualización
-    query = query.order('updated_at', { ascending: false });
+    // query = query.order('updated_at', { ascending: false });
 
     // Paginación
     const from = (page - 1) * pageSize;
@@ -83,32 +73,35 @@ export class EmployeeService {
     }
 
     // Transformar datos para aplanar la estructura
-    const transformedData =
-      data?.map((emp: any) => ({
-        id: emp.id,
-        shopId: emp.shop_id,
-        employeeCode: emp.employee_code,
-        authEmail: emp.auth_email,
-        hireDate: emp.hire_date,
-        salary: emp.salary,
-        statusId: emp.status_id,
-        workNotes: emp.work_notes,
-        firstName: emp.persons?.first_name || null,
-        lastName: emp.persons?.last_name || null,
-        legalName: emp.persons?.legal_name || null,
-        email: emp.persons?.email || null,
-        phone: emp.persons?.phone || null,
-        dni: emp.persons?.dni || null,
-        ruc: emp.persons?.ruc || null,
-        ce: emp.persons?.ce || null,
-        personType: emp.persons?.person_type || 'NATURAL',
-        employeeUpdatedAt: emp.updated_at,
-        personDeletedAt: null,
-        personUpdatedAt: null,
-      })) || [];
+    // const transformedData =
+    //   data?.map((emp: any) => ({
+    //     id: emp.id,
+    //     shopId: emp.shop_id,
+    //     employeeCode: emp.employee_code,
+    //     authEmail: emp.auth_email,
+    //     hireDate: emp.hire_date,
+    //     salary: emp.salary,
+    //     statusId: emp.status_id,
+    //     workNotes: emp.work_notes,
+    //     firstName: emp.persons?.first_name || null,
+    //     lastName: emp.persons?.last_name || null,
+    //     legalName: emp.persons?.legal_name || null,
+    //     email: emp.persons?.email || null,
+    //     phone: emp.persons?.phone || null,
+    //     dni: emp.persons?.dni || null,
+    //     ruc: emp.persons?.ruc || null,
+    //     ce: emp.persons?.ce || null,
+    //     personType: emp.persons?.person_type || 'NATURAL',
+    //     employeeUpdatedAt: emp.updated_at,
+    //     personDeletedAt: null,
+    //     personUpdatedAt: null,
+    //   })) || [];
+
+    console.log('Empleados obtenidos employee-service:', data);
 
     return {
-      data: transformedData,
+      // data: transformedData,
+      data,
       count: count || 0,
       page,
       pageSize,
