@@ -20,6 +20,8 @@ import { AuthService } from '@core/services/auth-service';
 import { AlertModal } from '@shared/components/alert-modal/alert-modal';
 import { TranslateService } from '@ngx-translate/core';
 
+import { toSignal } from '@angular/core/rxjs-interop';
+
 import { ShopService } from '@core/services/shop-service';
 import { ROLE_USER } from 'src/app/data/constants/role-user';
 import { Router } from '@angular/router';
@@ -50,7 +52,18 @@ export default class SignUp implements OnInit {
   private readonly shopService = inject(ShopService);
   private readonly router = inject(Router);
 
-  protected readonly availableShops = signal<{ id: string; name: string }[]>([]);
+  protected readonly shopsSignal = toSignal(this.shopService.dataShops$, { initialValue: [] });
+
+  protected readonly availableShops = computed(() => {
+    const result = this.shopsSignal();
+    return (result ?? [])
+      .filter((shop) => shop.id)
+      .map((shop) => ({
+        id: shop.id,
+        name: shop.name,
+      }));
+  });
+
   protected readonly availableRoles = signal<RoleType[]>([]);
 
   // Modal de alerta
@@ -111,32 +124,7 @@ export default class SignUp implements OnInit {
   });
 
   async ngOnInit() {
-    this.loadShops();
     this.setTranslateRoles();
-  }
-
-  protected async loadShops() {
-    this.isLoading.set(true);
-    try {
-      const result = await this.shopService.getShopDetails({ deletedAt: null });
-      this.availableShops.set(
-        (result.data ?? [])
-          .filter((shop) => shop.id)
-          .map((shop) => ({
-            id: shop.id!,
-            name: shop.name,
-          })),
-      );
-    } catch (error) {
-      this.availableShops.set([]);
-      this.showAlert(
-        'Error al cargar tiendas',
-        'No se pudieron cargar las tiendas disponibles',
-        'error',
-      );
-    } finally {
-      this.isLoading.set(false);
-    }
   }
 
   protected onRoleChange(roleName: string, event: Event) {

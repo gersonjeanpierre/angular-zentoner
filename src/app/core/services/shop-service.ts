@@ -1,12 +1,53 @@
 import { inject, Injectable } from '@angular/core';
+import { dexieDB } from '@core/dexie/db';
 import { Supabase } from '@core/supabase/supabase';
-import { ShopModel } from '../../data/models/shop/shop-model';
+import { ShopModel } from '@data/models/shop/shop-model';
+import { liveQuery } from 'dexie';
+import { BehaviorSubject, from, map, Observable, tap } from 'rxjs';
 
 @Injectable({
   providedIn: 'root',
 })
 export class ShopService {
   private readonly supabase = inject(Supabase).client;
+  private STORAGE_KEY = 'cache_shops';
+  private shopsSubject = new BehaviorSubject<ShopModel[]>(this.getShopStoredData());
+  public dataShops$: Observable<ShopModel[]> = from(liveQuery(() => dexieDB.shops.toArray()));
+
+  constructor() {
+    this.initShopsStore();
+  }
+
+  private async initShopsStore() {
+    const count = await dexieDB.shops.count();
+    if (count === 0) {
+      console.log('[ShopService] Realizando GET desde Supabase');
+      await this.fetchShopsFromSupabase();
+      return;
+    }
+    console.log('[ShopService] Cache Local: Datos almacenados en Dexie');
+  }
+
+  async fetchShopsFromSupabase() {
+    try {
+      const { data, error } = await this.supabase
+        .schema('core')
+        .from('shops')
+        .select('*')
+        .is('deleted_at', null);
+
+      if (error) {
+        console.error('Error al obtener las tiendas:', error);
+        throw error;
+      }
+
+      if (data) {
+        await dexieDB.shops.bulkPut(data as ShopModel[]);
+      }
+    } catch (error) {
+      console.error('Error en getShops:', error);
+    }
+  }
 
   /**
    * Obtener los detalles de todas las tiendas.
@@ -34,6 +75,35 @@ export class ShopService {
       data: (data as ShopModel[]) ?? undefined,
       error: error ?? undefined,
     };
+  }
+
+  loadShops(): void {
+    console.log('[ShopService] loadShops: start');
+    if (this.shopsSubject.value && this.shopsSubject.value.length > 0) {
+      console.log('[ShopService] loadShops: cache hit, skipping fetch');
+      return;
+    }
+    from(this.getShopDetails()).pipe(
+      map((response) => response.data || []),
+      tap((data) => {
+        console.log('[ShopService] loadShops: fetched', data);
+        this.saveToStorage(data);
+        this.shopsSubject.next(data);
+      }),
+    );
+  }
+
+  private saveToStorage(shops: ShopModel[]): void {
+    sessionStorage.setItem(this.STORAGE_KEY, JSON.stringify(shops));
+  }
+
+  private getShopStoredData(): ShopModel[] {
+    const shopData = sessionStorage.getItem(this.STORAGE_KEY);
+    return shopData ? JSON.parse(shopData) : [];
+  }
+
+  private clearCache(): void {
+    sessionStorage.removeItem(this.STORAGE_KEY);
   }
 
   async insertShops(shops: ShopModel[]) {
