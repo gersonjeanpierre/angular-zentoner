@@ -30,6 +30,11 @@ export class Sidebar {
       routeLink: '/ventas',
     },
     {
+      name: 'Caja',
+      icon: 'icon-[fa6-solid--cash-register]',
+      routeLink: '/caja',
+    },
+    {
       name: 'Inventario',
       icon: 'icon-[fa7-solid--boxes]',
       routeLink: '/inventario',

@@ -1,4 +1,4 @@
-import { inject, Injectable } from '@angular/core';
+import { computed, inject, Injectable } from '@angular/core';
 import { Supabase } from '@core/supabase/supabase';
 import { SignUpWithPasswordCredentials } from '@supabase/supabase-js';
 import {
@@ -8,12 +8,30 @@ import {
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { environment } from '@env/environment';
+import { ShopService } from './shop-service';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
+  //Services
   private readonly authSupabase = inject(Supabase).client.auth;
+  private readonly shopsService = inject(ShopService);
+
+  protected readonly shops = toSignal(this.shopsService.dataShops$, { initialValue: [] });
+
+  protected readonly availableShops = computed(() => {
+    const result = this.shops();
+    return (result ?? [])
+      .filter((shop) => shop.id)
+      .map((shop) => ({
+        id: shop.id,
+        name: shop.name,
+      }));
+  });
+
+  // HttpClient for Edge Functions
   private readonly http = inject(HttpClient);
   private readonly edgeFunctionUrl = `${environment.SUPABASE_URL}/functions/v1/create-employee`;
 
@@ -65,6 +83,10 @@ export class AuthService {
     return this.authSupabase.getSession();
   }
 
+  updateMetadata(metadata: { [key: string]: any }) {
+    return this.authSupabase.updateUser({ data: metadata });
+  }
+
   async getUserProfileData() {
     const key = localStorage.key(0);
     const value = localStorage.getItem(key!);
@@ -75,12 +97,16 @@ export class AuthService {
         ? user_metadata.first_name + ' ' + user_metadata.last_name
         : 'SuperAdmin';
     const roles = user_metadata.roleAssignmentResults[0].roles_assigned;
-
+    // console.log('metadata', session);
     return {
       id: session['user'].id,
       name: response,
       email: session['user'].email,
       roles: roles,
+      shopName: this.availableShops().filter((shop) => shop.id === user_metadata.shopId)[0]?.name,
+      shopId: user_metadata.shopId,
     };
   }
+
+  getShopName() {}
 }

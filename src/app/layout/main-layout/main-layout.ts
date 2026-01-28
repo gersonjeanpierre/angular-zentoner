@@ -20,6 +20,7 @@ export default class MainLayout implements OnInit {
   // State Signals (protected readonly - used in template)
   protected readonly userName = signal<string>('');
   protected readonly authEmail = signal<string>('');
+  protected readonly shopName = signal<string>('');
   protected readonly activeMenu = signal('Dashboard');
   protected readonly fontSize = signal('1.2em');
 
@@ -75,6 +76,7 @@ export default class MainLayout implements OnInit {
     const response = await this.authService.getUserProfileData();
     this.userName.set(response.name);
     this.authEmail.set(response.email);
+    this.shopName.set(response.shopName);
   }
 
   protected setActiveMenuByRoute(url: string): void {

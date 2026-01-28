@@ -73,6 +73,27 @@
           }
         </div>
 
+        <!-- Tienda a asignar -->
+        <div class="form-control w-full mb-4">
+          <select
+            class="select select-bordered w-full"
+            [formField]="loginForm.shopId"
+            [class.select-error]="loginForm.shopId().touched() && loginForm.shopId().invalid()"
+          >
+            <option value="" disabled>Seleccione una tienda</option>
+            @for (shop of availableShops(); track shop.id) {
+              <option [value]="shop.id">{{ shop.name }}</option>
+            }
+          </select>
+          @if (loginForm.shopId().touched() && loginForm.shopId().invalid()) {
+            <div class="label">
+              @for (error of loginForm.shopId().errors(); track error) {
+                <span class="label-text-alt text-error">{{ error.message }}</span>
+              }
+            </div>
+          }
+        </div>
+
         <div class="card-actions">
           <button class="btn btn-neutral" type="submit">Iniciar sesión</button>
         </div>
