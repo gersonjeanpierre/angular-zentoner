@@ -1,7 +1,7 @@
 export interface CustomerPayload {
   id: string; // UUIDv7
 
-  // Datos de la tabla 'people' (Asegúrate de que todos los tipos de campo sean opcionales si lo son en la DB)
+  // Datos de la tabla 'people'
   firstName: string;
   lastName: string;
   legalName: string | null;
@@ -44,7 +44,34 @@ export interface CustomerView {
   customerUpdatedAt: string | null;
 }
 
-export interface ReturnListCustomers {
-  data?: CustomerView[];
-  error?: any;
+export interface GetCustomersParams {
+  status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
+  customerType?: 'NUEVO' | 'FRECUENTE' | 'IMPRENTERO_NUEVO' | 'IMPRENTERO_FRECUENTE';
+  personType?: 'JURIDICA' | 'NATURAL';
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface UpdateCustomerPayload {
+  personType?: 'JURIDICA' | 'NATURAL';
+  firstName?: string;
+  lastName?: string;
+  legalName?: string;
+  email?: string;
+  phone?: string;
+  dni?: string;
+  ruc?: string;
+  ce?: string;
+  customerCode?: string;
+  customerType?: 'NUEVO' | 'FRECUENTE' | 'IMPRENTERO_NUEVO' | 'IMPRENTERO_FRECUENTE';
+  notes?: any;
+}
+
+export interface GetCustomersResponse {
+  data: CustomerView[];
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }

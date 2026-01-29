@@ -13,7 +13,7 @@ export interface Employee {
 
 export interface EmployeeView {
   // --- Campos de People ---
-  id: string; // UUID
+  employeeId: string; // UUID
   firstName: string | null;
   lastName: string | null;
   legalName: string | null;
@@ -37,4 +37,20 @@ export interface EmployeeView {
   personDeletedAt: string | null;
   personUpdatedAt: string | null;
   employeeUpdatedAt: string | null;
+}
+
+export interface GetEmployeesParams {
+  shopId?: string;
+  statusId?: number;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export interface GetEmployeesResponse {
+  data: EmployeeView[];
+  count: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
