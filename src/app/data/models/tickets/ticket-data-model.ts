@@ -18,21 +18,20 @@ export interface TicketDataModel {
   id?: string;
   correlative?: number;
   designer: string; // Nombre visible en UI
-  client: string; // Nombre visible en UI
-  methodOfPayment: string;
+  customer: string; // Nombre visible en UI
   creationDate: Date;
   printDate: Date;
 
   // Detalles de venta (UI)
   saleDetails: TicketItemModel[];
 
-  // Totales calculados
-  totalPrice: number;
-  discount: number;
-  advance: number;
-  igv: number;
-  saldo: number;
-  finalAmount: number;
+  // Totales calculados (sincronizados con nuevo schema POS)
+  totalPrice: number; // Suma de subtotales de items
+  discount: number; // Descuento aplicado
+  advance: number; // Anticipo/Adelanto
+  igv: number; // IGV calculado
+  saldo: number; // remaining_balance (final_amount - advance)
+  finalAmount: number; // Monto final con IGV y descuento
 }
 
 /**
@@ -54,8 +53,17 @@ export class TicketTransformer {
       employee_id: employeeId,
       shop_id: shopId,
       status_id: statusId,
-      total_amount: ticket.finalAmount,
-      tax_amount: ticket.igv,
+
+      // Campos financieros según nuevo schema POS
+      total_price: ticket.totalPrice,
+      discount: ticket.discount,
+      igv: ticket.igv,
+      final_amount: ticket.finalAmount,
+
+      // Control de pagos
+      advance: ticket.advance,
+      remaining_balance: ticket.saldo,
+      payment_status: 'PENDIENTE', // Default al crear
     };
   }
 

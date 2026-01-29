@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { Order, OrderDetail } from '@data/models/tickets/order-model';
 import { Supabase } from '@core/supabase/supabase';
+import { v7 as uuidv7 } from 'uuid';
 
 export interface GetOrdersParams {
   statusId?: number;
@@ -38,7 +39,7 @@ export class OrderService {
    */
   async createOrder(order: Order, details: OrderDetail[]): Promise<string> {
     // Generar UUID para la orden
-    const orderId = crypto.randomUUID();
+    const orderId = uuidv7();
 
     // Insertar la orden
     const { error: orderError } = await this.supabaseClient
@@ -50,9 +51,16 @@ export class OrderService {
         employee_id: order.employee_id,
         shop_id: order.shop_id,
         status_id: order.status_id || 1,
-        total_amount: order.total_amount,
-        tax_amount: order.tax_amount,
+        total_price: order.total_price,
+        discount: order.discount || 0,
+        igv: order.igv || 0,
+        final_amount: order.final_amount,
+        advance: order.advance || 0,
+        remaining_balance: order.remaining_balance,
+        payment_status: order.payment_status || 'PENDIENTE',
       });
+    console.log('[Order Service] Order:', order);
+    console.log('[Order Service] Order Details:', details);
 
     if (orderError) {
       console.error('Error al crear orden:', orderError);
@@ -235,8 +243,13 @@ export class OrderService {
         employee_id: order.employee_id,
         shop_id: order.shop_id,
         status_id: order.status_id,
-        total_amount: order.total_amount,
-        tax_amount: order.tax_amount,
+        total_price: order.total_price,
+        discount: order.discount,
+        igv: order.igv,
+        final_amount: order.final_amount,
+        advance: order.advance,
+        remaining_balance: order.remaining_balance,
+        payment_status: order.payment_status,
       })
       .eq('id', orderId);
 

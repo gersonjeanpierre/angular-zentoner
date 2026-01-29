@@ -8,23 +8,25 @@ import {
 } from '@angular/core';
 import { form, FormField } from '@angular/forms/signals';
 import {
-  TicketDataModel,
-  TicketItemModel,
-  TicketTransformer,
+  OrderFormModel,
+  OrderItemModel,
+  OrderItemValidator,
+  OrderTransformer,
   Order,
   OrderDetail,
-  OrderStatus,
 } from '@data/models/tickets';
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
 import { SearchModal, SearchableItem } from '@shared/components/search-modal/search-modal';
-import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE, METHOD_PAYMENT } from '@data/constants';
+import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE } from '@data/constants';
 import { v7 as uuidv7 } from 'uuid';
 import { PRINTING_CATEGORIES } from '@data/constants/categories';
 import { CustomerService } from '@core/services/customer-service';
 import { EmployeeService } from '@core/services/employee-service';
 import { OrderService } from '@core/services/order-service';
 import { AuthService } from '@core/services/auth-service';
+import { splitNamesForDisplayFitText } from '@shared/utils/functions/split-names';
+import { ShopService } from '@core/services/shop-service';
 
 @Component({
   selector: 'app-tickets',
@@ -43,17 +45,16 @@ export default class Tickets {
   protected readonly sizes: string[] = ITEM_SIZE;
   protected readonly types: string[] = ITEM_TYPE;
   protected readonly machines: string[] = ITEM_MACHINE;
-  protected readonly methodsPayment: string[] = METHOD_PAYMENT;
 
-  // Modal state
+  // Modal state para selección de campos de items
   protected modalOpen = signal(false);
   protected modalList = signal<string[]>([]);
   protected modalTitle = signal('');
   protected isCustomSize = signal(false);
-  private modalTarget:
-    | { index: number; field: 'category' | 'size' | 'type' | 'machine' }
-    | { field: 'methodOfPayment' }
-    | null = null;
+  private modalTarget: {
+    index: number;
+    field: 'category' | 'size' | 'type' | 'machine';
+  } | null = null;
 
   // Search Modals state
   protected customerModalOpen = signal(false);
@@ -71,84 +72,144 @@ export default class Tickets {
 
   protected categories = this.category.map((c) => c.name);
 
-  // Form model
-  ticketModel = signal<TicketDataModel>({
+  // === Form Model ===
+  // Modelo de formulario para crear órdenes (alineado con sales.orders)
+  protected orderFormModel = signal<OrderFormModel>({
+    // Información de empresa (estática)
     companyName: 'LASER COLOR VELOZ',
     address: 'JR. ORBEGOSO 243 PISO 1 STAND 243',
     socialReason: 'ASESORIAS GLOBALES EMPRESARIALES E.I.R.L.',
     ruc: '20607873411',
-    correlative: 777,
-    designer: '',
-    client: '',
-    methodOfPayment: 'YAPE',
-    creationDate: new Date(),
-    saleDetails: [],
-    totalPrice: 0,
-    advance: 0,
-    discount: 0,
-    igv: 0,
-    saldo: 0,
-    finalAmount: 0,
+
+    // Referencias
+    orderNumber: 777,
+    employeeName: '',
+    customerName: '',
+
+    // Fechas
+    createdAt: new Date(),
     printDate: new Date(),
+
+    // Items de la orden (sales.order_details)
+    items: [],
+
+    // Totales financieros (sales.orders)
+    totalPrice: 0, // total_price
+    discount: 0, // discount
+    igv: 0, // igv
+    finalAmount: 0, // final_amount
+    advance: 0, // advance
+    remainingBalance: 0, // remaining_balance
   });
 
-  // Form instance
-  ticketForm = form(this.ticketModel);
+  // Signal Form instance
+  protected orderForm = form(this.orderFormModel);
 
   // IGV checkbox
   includeIGV = signal(true);
 
-  // Ticket UUID for QR code
-  protected ticketUuid = signal<string | null>(null);
+  // === Computed Totals (Alineados con sales.orders schema) ===
 
-  // Computed values for totals
+  /**
+   * total_price: Suma de subtotales de todos los items
+   * Equivale a: SUM(order_details.subtotal)
+   */
   protected totalPrice = computed(() => {
-    const details = this.ticketForm.saleDetails().value();
-    return details.reduce((sum, item) => sum + (item.total || 0), 0);
-  });
-
-  protected igvAmount = computed(() => {
-    return this.includeIGV() ? this.totalPrice() * 0.18 : 0;
-  });
-
-  protected saldoAmount = computed(() => {
-    const advance = this.ticketForm.advance().value();
-    return this.totalPrice() - advance;
-  });
-
-  protected finalAmount = computed(() => {
-    const discount = this.ticketForm.discount().value();
-    const advance = this.ticketForm.advance().value();
-    return this.totalPrice() - discount + this.igvAmount() - advance;
+    const items = this.orderForm.items().value();
+    return items.reduce((sum, item) => sum + (item.total || 0), 0);
   });
 
   /**
-   * Getter reactivo para compatibilidad con template
-   * Combina modelo base con totales calculados
+   * igv: Impuesto calculado (18% en Perú)
+   * Fórmula: (total_price - discount) × 0.18
+   * Constraint: igv >= 0
    */
-  protected get ticketData(): TicketDataModel {
+  protected igvAmount = computed(() => {
+    if (!this.includeIGV()) return 0;
+
+    const totalPrice = this.totalPrice();
+    const discount = this.orderForm.discount().value();
+    return (totalPrice - discount) * 0.18;
+  });
+
+  /**
+   * remaining_balance: Saldo pendiente de pago
+   * Fórmula: final_amount - advance
+   * Constraint: remaining_balance >= 0
+   *
+   * Usado para calcular payment_status:
+   * - remaining_balance = 0 → PAGADO
+   * - remaining_balance > 0 && advance > 0 → PARCIAL
+   * - remaining_balance > 0 && advance = 0 → PENDIENTE
+   */
+  protected remainingBalance = computed(() => {
+    const finalAmount = this.finalAmount();
+    const advance = this.orderForm.advance().value();
+    return finalAmount - advance;
+  });
+
+  /**
+   * final_amount: Monto final de la orden
+   * Fórmula: total_price - discount + igv
+   * Constraint: final_amount >= 0
+   */
+  protected finalAmount = computed(() => {
+    const totalPrice = this.totalPrice();
+    const discount = this.orderForm.discount().value();
+    const igv = this.igvAmount();
+    return totalPrice - discount + igv;
+  });
+
+  /**
+   * payment_status: Estado del pago de la orden
+   * Valores: 'PENDIENTE' | 'PARCIAL' | 'PAGADO'
+   * Calculado según lógica del backend (05_SALES.sql)
+   */
+  protected paymentStatus = computed((): 'PENDIENTE' | 'PARCIAL' | 'PAGADO' => {
+    const remaining = this.remainingBalance();
+    const advance = this.orderForm.advance().value();
+
+    if (remaining <= 0) return 'PAGADO';
+    if (advance > 0) return 'PARCIAL';
+    return 'PENDIENTE';
+  });
+
+  // UUID de la orden para código QR
+  protected orderUuid = signal<string | null>(null);
+
+  /**
+   * Getter reactivo para datos de la orden combinando modelo + totales calculados
+   * Usado para preview y validaciones
+   */
+  protected get orderData(): OrderFormModel {
     return {
-      ...this.ticketModel(),
+      ...this.orderFormModel(),
       totalPrice: this.totalPrice(),
       igv: this.igvAmount(),
-      saldo: this.saldoAmount(),
+      remainingBalance: this.remainingBalance(),
       finalAmount: this.finalAmount(),
     };
   }
 
   ngOnInit() {
     this.initUser();
-    this.updateTotalsInModel();
+    this.syncTotalsToModel();
   }
 
+  /**
+   * Inicializa el usuario actual
+   * Si es diseñador (role 4), lo fija automáticamente en el formulario
+   */
   private async initUser() {
     try {
       const userProfile = await this.authService.getUserProfileData();
+
+      // Si el usuario es diseñador, fijarlo automáticamente
       if (userProfile.roles.includes(4)) {
         console.log('Diseñador fijo asignado:', userProfile);
         this.isDesignerFixed.set(true);
         this.selectedEmployeeId.set(userProfile.id);
-        this.ticketForm.designer().value.set(userProfile.name);
+        this.orderForm.employeeName().value.set(userProfile.name);
       }
     } catch (error) {
       console.error('Error obteniendo perfil de usuario:', error);
@@ -156,29 +217,31 @@ export default class Tickets {
   }
 
   /**
-   * Genera UUID v7 para el código QR del ticket
+   * Genera UUID v7 para el código QR de la orden
    */
-  protected generateTicketQR(): void {
-    this.ticketUuid.set(uuidv7());
+  protected generateOrderQR(): void {
+    this.orderUuid.set(uuidv7());
   }
 
   /**
-   * Actualiza los totales calculados en el modelo signal
-   * Se llama después de cada cambio en items o descuentos
+   * Sincroniza los totales calculados (computed) al modelo del formulario
+   * Esto es necesario para que los totales estén disponibles al guardar
+   *
+   * Protected porque se llama desde el template en eventos (input)
    */
-  protected updateTotalsInModel(): void {
-    this.ticketModel.update((data) => ({
+  protected syncTotalsToModel(): void {
+    this.orderFormModel.update((data) => ({
       ...data,
       totalPrice: this.totalPrice(),
       igv: this.igvAmount(),
-      saldo: this.saldoAmount(),
+      remainingBalance: this.remainingBalance(),
       finalAmount: this.finalAmount(),
     }));
   }
 
   /**
-   * Abre modal de selección para campos de items de venta
-   * @param index - Índice del item en saleDetails
+   * Abre modal de selección para campos de items de la orden
+   * @param index - Índice del item en el array de items
    * @param field - Campo a editar (category, size, type, machine)
    */
   protected openModalForField(
@@ -191,13 +254,13 @@ export default class Tickets {
       this.modalTitle.set('Seleccionar Categoría');
       this.isCustomSize.set(false);
     } else if (field === 'type') {
-      const item = this.ticketForm.saleDetails().value()[index];
+      const item = this.orderForm.items().value()[index];
       const category = this.category.find((c) => c.name === item.category);
       this.modalList.set(category ? category.itemTypes : this.types);
       this.modalTitle.set('Seleccionar Tipo');
       this.isCustomSize.set(false);
     } else if (field === 'size') {
-      const item = this.ticketForm.saleDetails().value()[index];
+      const item = this.orderForm.items().value()[index];
       const category = this.category.find((c) => c.name === item.category);
       if (category && category.id === 2) {
         if (item.type && item.type.toUpperCase().includes('VINIL')) {
@@ -213,22 +276,12 @@ export default class Tickets {
         this.isCustomSize.set(false);
       }
     } else if (field === 'machine') {
-      const item = this.ticketForm.saleDetails().value()[index];
+      const item = this.orderForm.items().value()[index];
       const category = this.category.find((c) => c.name === item.category);
       this.modalList.set(category ? category.compatibleMachines : this.machines);
       this.modalTitle.set('Seleccionar Máquina');
       this.isCustomSize.set(false);
     }
-    this.modalOpen.set(true);
-  }
-
-  /**
-   * Abre modal de selección de método de pago
-   */
-  protected openModalForMethodPayment(): void {
-    this.modalTarget = { field: 'methodOfPayment' };
-    this.modalList.set(this.methodsPayment);
-    this.modalTitle.set('Seleccionar Método de Pago');
     this.modalOpen.set(true);
   }
 
@@ -239,22 +292,18 @@ export default class Tickets {
   protected onModalSelect(value: string): void {
     if (!this.modalTarget) return;
 
-    if ('index' in this.modalTarget) {
-      const { index, field } = this.modalTarget;
-      const saleDetails = [...this.ticketForm.saleDetails().value()];
-      if (field === 'category') {
-        saleDetails[index].category = value;
-        saleDetails[index].size = '';
-        saleDetails[index].type = '';
-        saleDetails[index].machine = '';
-      } else {
-        saleDetails[index][field] = value;
-      }
-      this.ticketForm.saleDetails().value.set(saleDetails);
-      this.updateTotalsInModel();
-    } else if (this.modalTarget.field === 'methodOfPayment') {
-      this.ticketForm.methodOfPayment().value.set(value);
+    const { index, field } = this.modalTarget;
+    const items = [...this.orderForm.items().value()];
+    if (field === 'category') {
+      items[index].category = value;
+      items[index].size = '';
+      items[index].type = '';
+      items[index].machine = '';
+    } else {
+      items[index][field] = value;
     }
+    this.orderForm.items().value.set(items);
+    this.syncTotalsToModel();
 
     this.modalOpen.set(false);
     this.modalTarget = null;
@@ -280,70 +329,70 @@ export default class Tickets {
   }
 
   /**
-   * Agrega un nuevo item vacío a la lista de venta
+   * Agrega un nuevo item vacío a la orden
    */
-  protected addSaleItem(): void {
-    const currentDetails = this.ticketForm.saleDetails().value();
-    const newItem: TicketItemModel = {
-      category: '',
-      size: '',
-      type: '',
-      machine: '',
-      quantity: 1,
-      price: 0,
-      total: 0,
-    };
-    this.ticketForm.saleDetails().value.set([...currentDetails, newItem]);
-    this.updateTotalsInModel();
+  protected addOrderItem(): void {
+    const currentItems = this.orderForm.items().value();
+    const newItem: OrderItemModel = OrderItemValidator.createEmpty();
+    this.orderForm.items().value.set([...currentItems, newItem]);
+    this.syncTotalsToModel();
   }
 
   /**
-   * Elimina un item de la lista de venta
+   * Elimina un item de la orden
    * @param index - Índice del item a eliminar
    */
-  protected removeSaleItem(index: number): void {
-    const currentDetails = this.ticketForm.saleDetails().value();
-    const updated = currentDetails.filter((_, i) => i !== index);
-    this.ticketForm.saleDetails().value.set(updated);
-    this.updateTotalsInModel();
+  protected removeOrderItem(index: number): void {
+    const currentItems = this.orderForm.items().value();
+    const updated = currentItems.filter((_, i) => i !== index);
+    this.orderForm.items().value.set(updated);
+    this.syncTotalsToModel();
   }
 
   /**
-   * Actualiza un campo específico de un item de venta
-   * Recalcula automáticamente el total del item
+   * Actualiza un campo específico de un item de la orden
+   * Recalcula automáticamente el subtotal del item
+   *
    * @param index - Índice del item
    * @param field - Campo a actualizar
    * @param value - Nuevo valor
    */
-  protected updateSaleItem(
+  protected updateOrderItem(
     index: number,
-    field: keyof TicketItemModel,
+    field: keyof OrderItemModel,
     value: string | number,
   ): void {
-    const saleDetails = [...this.ticketForm.saleDetails().value()];
-    const item = saleDetails[index];
+    const items = [...this.orderForm.items().value()];
+    const item = items[index];
 
-    if (field === 'size' || field === 'type' || field === 'machine') {
+    if (
+      field === 'size' ||
+      field === 'type' ||
+      field === 'machine' ||
+      field === 'category' ||
+      field === 'description'
+    ) {
       item[field] = value as string;
     } else if (field === 'quantity' || field === 'price') {
       const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
       item[field] = numValue;
-      item.total = item.quantity * item.price;
+      // Recalcular subtotal usando el helper
+      item.total = OrderItemValidator.calculateSubtotal(item);
     } else if (field === 'total') {
       item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
     }
 
-    this.ticketForm.saleDetails().value.set(saleDetails);
-    this.updateTotalsInModel();
+    this.orderForm.items().value.set(items);
+    this.syncTotalsToModel();
   }
 
   /**
    * Actualiza el monto de adelanto y recalcula totales
-   * @param value - Nuevo monto de adelanto
+   * @param value - Nuevo monto de adelanto (advance)
    */
   protected updateAdvance(value: number): void {
-    this.ticketForm.advance().value.set(value || 0);
-    this.updateTotalsInModel();
+    this.orderForm.advance().value.set(value || 0);
+    this.syncTotalsToModel();
   }
 
   /**
@@ -351,16 +400,16 @@ export default class Tickets {
    * @param value - Nuevo monto de descuento
    */
   protected updateDiscount(value: number): void {
-    this.ticketForm.discount().value.set(value || 0);
-    this.updateTotalsInModel();
+    this.orderForm.discount().value.set(value || 0);
+    this.syncTotalsToModel();
   }
 
   /**
-   * Imprime el ticket en formato físico (76mm)
+   * Imprime la orden en formato físico (76mm)
    * Convierte canvas QR a imagen antes de clonar para impresión
    */
-  protected printTicket(): void {
-    this.ticketModel.update((data) => ({ ...data, printDate: new Date() }));
+  protected printOrder(): void {
+    this.orderFormModel.update((data) => ({ ...data, printDate: new Date() }));
     const preview = document.querySelector('.ticket-preview');
     if (!preview) return;
 
@@ -392,7 +441,7 @@ export default class Tickets {
   /**
    * Configura la ventana de impresión con estilos necesarios
    * @param printWindow - Ventana de impresión
-   * @param preview - Elemento HTML del preview del ticket
+   * @param preview - Elemento HTML del preview de la orden
    */
   private setupPrintWindow(printWindow: Window, preview: Element): void {
     const doc = printWindow.document;
@@ -400,7 +449,7 @@ export default class Tickets {
     doc.body.innerHTML = '';
 
     const title = doc.createElement('title');
-    title.textContent = `Ticket - ${this.ticketData.companyName}`;
+    title.textContent = `Orden - ${this.orderData.companyName}`;
     doc.head.appendChild(title);
 
     // Copiar todos los estilos inline desde el documento actual
@@ -477,7 +526,9 @@ export default class Tickets {
       const items: SearchableItem[] = response.data.map((customer) => ({
         id: customer.id,
         displayText: customer.legalName || `${customer.firstName} ${customer.lastName}`,
-        subtitle: customer.email || customer.phone || customer.dni || customer.ruc || undefined,
+        subtitle:
+          customer.phone || customer.email || customer.dni || customer.ruc || 'Sin contacto',
+        displayFitText: splitNamesForDisplayFitText(customer.firstName!, customer.lastName!),
         metadata: customer,
       }));
 
@@ -503,7 +554,7 @@ export default class Tickets {
    */
   protected handleCustomerSelect(item: SearchableItem) {
     this.selectedCustomerId.set(item.id);
-    this.ticketForm.client().value.set(item.displayText);
+    this.orderForm.customerName().value.set(item.displayText);
     this.customerModalOpen.set(false);
   }
 
@@ -528,8 +579,6 @@ export default class Tickets {
         search: searchTerm,
         pageSize: 50,
       });
-
-      console.log('Empleados cargados en order-create:', response);
 
       const items: SearchableItem[] = response.data.map((employee) => ({
         id: employee.employee_id,
@@ -559,75 +608,89 @@ export default class Tickets {
    */
   protected handleEmployeeSelect(item: SearchableItem) {
     this.selectedEmployeeId.set(item.id);
-    this.ticketForm.designer().value.set(item.displayText);
+    this.orderForm.employeeName().value.set(item.displayText);
     this.employeeModalOpen.set(false);
   }
 
   /**
-   * Guarda el ticket como orden en la base de datos
-   * Valida datos requeridos y transforma modelos usando TicketTransformer
-   * Genera QR con el ID de la orden creada
+   * Guarda la orden en la base de datos
    *
-   * @throws Error si falla la inserción en BD
+   * Flujo:
+   * 1. Valida datos requeridos (cliente, empleado, items)
+   * 2. Transforma OrderFormModel → Order + OrderDetail[]
+   * 3. Inserta en sales.orders y sales.order_details
+   * 4. Genera QR con el UUID de la orden creada
+   *
+   * @throws Error si falla la validación o inserción en BD
    */
-  protected async saveOrder() {
-    // Validaciones previas
+  protected async saveOrder(): Promise<void> {
+    // === Validaciones ===
+
     if (!this.selectedCustomerId()) {
-      alert('Debe seleccionar un cliente');
+      alert('⚠️ Debe seleccionar un cliente');
       return;
     }
 
     if (!this.selectedEmployeeId()) {
-      alert('Debe seleccionar un diseñador');
+      alert('⚠️ Debe seleccionar un empleado/diseñador');
       return;
     }
 
-    if (this.ticketData.saleDetails.length === 0) {
-      alert('Debe agregar al menos un producto/servicio');
+    const items = this.orderData.items;
+
+    if (items.length === 0) {
+      alert('⚠️ Debe agregar al menos un item a la orden');
       return;
     }
 
-    // Validar que todos los items tengan precio y cantidad
-    const invalidItems = this.ticketData.saleDetails.filter(
-      (item) => item.quantity <= 0 || item.price <= 0,
-    );
+    // Validar cada item usando el validator
+    const invalidItems = items.filter((item) => {
+      const validation = OrderItemValidator.validate(item);
+      return !validation.hasValidQuantity || !validation.hasValidPrice;
+    });
 
     if (invalidItems.length > 0) {
-      alert('Todos los items deben tener cantidad y precio válidos');
+      alert('⚠️ Todos los items deben tener cantidad y precio válidos (mayores a 0)');
       return;
     }
+
+    // === Transformación y Persistencia ===
 
     try {
       // TODO: Obtener shop_id de la sesión del usuario autenticado
-      const shopId = crypto.randomUUID(); // Temporal
+      // Por ahora usamos un UUID temporal
+      const shopId = (await this.authService.getUserProfileData()).shopId;
 
-      // Transformar TicketDataModel a Order usando el helper
-      const order: Order = TicketTransformer.toOrder(
-        this.ticketData,
+      // Sincronizar totales calculados antes de guardar
+      this.syncTotalsToModel();
+
+      // Transformar OrderFormModel → Order (según schema sales.orders)
+      const order: Order = OrderTransformer.toOrder(
+        this.orderData,
         this.selectedCustomerId(),
         this.selectedEmployeeId(),
         shopId,
-        OrderStatus.PENDIENTE,
+        1, // status_id = 1 (PENDIENTE)
       );
 
-      // Transformar TicketItemModel[] a OrderDetail[] usando el helper
-      const orderDetails: OrderDetail[] = TicketTransformer.toOrderDetails(
-        this.ticketData.saleDetails,
-      );
+      // Transformar OrderItemModel[] → OrderDetail[] (según schema sales.order_details)
+      const orderDetails: OrderDetail[] = OrderTransformer.toOrderDetails(items);
 
-      // Guardar en base de datos
+      // Insertar en base de datos
       const orderId = await this.orderService.createOrder(order, orderDetails);
 
-      // Éxito: generar QR con el ID de la orden
-      this.ticketUuid.set(orderId);
+      // Generar QR con el UUID de la orden
+      this.orderUuid.set(orderId);
 
-      alert(`✅ Orden #${orderId} guardada exitosamente`);
+      alert(`✅ Orden guardada exitosamente\\nID: ${orderId}`);
 
-      // Opcional: Limpiar formulario o navegar a vista de órdenes
+      // TODO: Opcional - Limpiar formulario o navegar a vista de órdenes
       // this.resetForm();
+      // this.router.navigate(['/orders', orderId]);
     } catch (error) {
-      console.error('Error al guardar orden:', error);
+      console.error('❌ Error al guardar orden:', error);
       alert('❌ Error al guardar la orden. Por favor intente nuevamente.');
+      throw error;
     }
   }
 }

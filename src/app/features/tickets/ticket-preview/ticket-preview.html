@@ -14,30 +14,26 @@
     <div class="mt-2"></div>
 
     <div class="flex justify-between text-xs">
-      <span class="font-bold">TICKET N°:</span>
-      <span class="font-semibold">{{ ticketData().correlative || '000' }}</span>
+      <span class="font-bold">ORDEN N°:</span>
+      <span class="font-semibold">{{ getOrderNumber() || '000' }}</span>
     </div>
     <div class="flex justify-between text-xs">
-      <span class="font-bold">DISEÑADOR:</span>
-      <span class="font-semibold">{{ ticketData().designer || 'N/A' }}</span>
+      <span class="font-bold">EMPLEADO:</span>
+      <span class="font-semibold">{{ getEmployeeName() }}</span>
     </div>
     <div class="flex justify-between text-xs">
       <span class="font-bold">CLIENTE:</span>
-      <span class="font-semibold">{{ ticketData().client || 'N/A' }}</span>
-    </div>
-    <div class="flex justify-between text-xs">
-      <span class="font-bold">MÉTODO DE PAGO:</span>
-      <span class="font-semibold">{{ ticketData().methodOfPayment || 'N/A' }}</span>
+      <span class="font-semibold">{{ getCustomerName() }}</span>
     </div>
 
-    <div class="font-bold text-xs my-1">DETALLE DE VENTA</div>
+    <div class="font-bold text-xs my-1">ITEMS DE LA ORDEN</div>
     <div class="grid grid-cols-4 gap-1 text-xs font-semibold">
       <span class="text-left">DESCRIPCIÓN</span>
       <span class="text-right">CANT</span>
       <span class="text-right">P. UNIT</span>
-      <span class="text-right">IMPORTE</span>
+      <span class="text-right">SUBTOTAL</span>
     </div>
-    @for (item of ticketData().saleDetails; track $index) {
+    @for (item of getItems(); track $index) {
       <div class="grid grid-cols-4 text-xs">
         <span class="col-span-4 text-left">{{ getItemDescription(item) }}</span>
         <span class="col-start-2 text-right">x{{ item.quantity }}</span>
@@ -60,8 +56,8 @@
       <span class="font-bold">S/ {{ ticketData().discount.toFixed(2) }}</span>
     </div>
     <div class="flex justify-between text-xs">
-      <span class="font-bold">SALDO:</span>
-      <span class="font-bold"> S/ {{ ticketData().saldo.toFixed(2) }} </span>
+      <span class="font-bold">SALDO PENDIENTE:</span>
+      <span class="font-bold text-error"> S/ {{ getRemainingBalance().toFixed(2) }} </span>
     </div>
     @if (includeIGV()) {
       <div class="flex justify-between text-xs">

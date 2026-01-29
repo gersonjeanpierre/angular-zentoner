@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { CustomerPayload, CustomerView } from '@data/models/customer/customer.model';
 import { Supabase } from '@core/supabase/supabase';
+import camelcaseKeys from 'camelcase-keys';
 
 export interface GetCustomersParams {
   status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
@@ -112,7 +113,7 @@ export class CustomerService {
     const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
     return {
-      data: (data as any[]) || [],
+      data: (camelcaseKeys(data || [], { deep: true }) as any[]) || [],
       count: count || 0,
       page,
       pageSize,
@@ -133,7 +134,7 @@ export class CustomerService {
     if (error) throw error;
     if (!data) throw new Error('Cliente no encontrado');
 
-    return data as CustomerView;
+    return camelcaseKeys(data, { deep: true }) as CustomerView;
   }
 
   async updateCustomer(customerId: string, payload: UpdateCustomerPayload): Promise<CustomerView> {

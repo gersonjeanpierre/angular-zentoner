@@ -4,19 +4,19 @@
   <div class="w-full">
     <div class="card bg-base-100 shadow-lg rounded-lg">
       <div class="card-body">
-        <h2 class="card-title text-2xl mb-4">Generar Ticket</h2>
-        <!-- Diseñador y Cliente en una fila mejorada -->
+        <h2 class="card-title text-2xl mb-4">Crear Orden</h2>
+        <!-- Empleado y Cliente -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
           <fieldset class="fieldset">
-            <legend class="fieldset-legend text-lg">Diseñador</legend>
+            <legend class="fieldset-legend text-lg">Empleado/Diseñador</legend>
             <div class="join w-full">
               <label class="input input-neutral cursor-pointer join-item flex-1">
                 <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
                 <input
                   type="text"
                   class="grow cursor-pointer bg-base-200"
-                  placeholder="Nombre del diseñador"
-                  [value]="ticketForm.designer().value()"
+                  placeholder="Seleccionar empleado"
+                  [value]="orderForm.employeeName().value()"
                   readonly
                   [disabled]="isDesignerFixed()"
                 />
@@ -39,8 +39,8 @@
                 <input
                   type="text"
                   class="grow cursor-pointer bg-base-200"
-                  placeholder="Nombre del cliente"
-                  [value]="ticketForm.client().value()"
+                  placeholder="Seleccionar cliente"
+                  [value]="orderForm.customerName().value()"
                   readonly
                   (click)="openCustomerModal()"
                 />
@@ -52,32 +52,12 @@
           </fieldset>
         </div>
 
-        <!-- Método de Pago -->
-        <div class="form-control w-full mb-4">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend text-lg">Método de Pago</legend>
-            <label class="input input-neutral cursor-pointer">
-              <span class="icon-[streamline-ultimate--self-payment-touch-euro-bold] h-7 w-7"></span>
-              <input
-                type="text"
-                class="grow cursor-pointer"
-                placeholder="Seleccionar método de pago"
-                readonly
-                [value]="ticketForm.methodOfPayment().value()"
-                (focus)="openModalForMethodPayment()"
-                (click)="openModalForMethodPayment()"
-                autocomplete="off"
-              />
-            </label>
-          </fieldset>
-        </div>
-
-        <!-- Detalle de Venta -->
+        <!-- Items de la Orden -->
         <div class="form-control w-full">
           <label class="label">
-            <span class="text-xl font-semibold">Detalle de Venta:</span>
+            <span class="text-xl font-semibold">Items de la Orden:</span>
           </label>
-          <!-- Items a agregar -->
+          <!-- Tabla de items -->
           <div class="w-full overflow-x-auto md:overflow-visible">
             <div
               class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-125 md:min-w-0"
@@ -85,13 +65,13 @@
               <span class="text-left">Categoría</span>
               <span class="text-left">Tipo</span>
               <span class="text-left">Tamaño</span>
-              <span class="text-left">Maquina</span>
+              <span class="text-left">Máquina</span>
               <span class="text-left">Cantidad</span>
               <span class="text-left">P.Unitario</span>
-              <span class="text-left">Importe</span>
+              <span class="text-left">Subtotal</span>
             </div>
             <div class="space-y-2">
-              @for (item of ticketData.saleDetails; track $index) {
+              @for (item of orderData.items; track $index) {
                 <div class="grid grid-cols-2 md:grid-cols-7 gap-2 mt-3 mb-3">
                   <!-- Categoría -->
                   <input
@@ -141,7 +121,7 @@
                     placeholder="Cantidad"
                     [value]="item.quantity"
                     min="1"
-                    (input)="updateSaleItem($index, 'quantity', $event.target.value)"
+                    (input)="updateOrderItem($index, 'quantity', $event.target.value)"
                   />
                   <!-- Precio Unitario -->
                   <input
@@ -151,7 +131,7 @@
                     [value]="item.price"
                     min="0"
                     step="0.01"
-                    (input)="updateSaleItem($index, 'price', $event.target.value)"
+                    (input)="updateOrderItem($index, 'price', $event.target.value)"
                   />
                   <!-- Importe -->
                   <div class="flex lg:justify-end justify-center items-center">
@@ -159,7 +139,7 @@
                       S/ {{ item.total.toFixed(2) }}
                     </div>
                     <button
-                      (click)="removeSaleItem($index)"
+                      (click)="removeOrderItem($index)"
                       class="btn btn-error w-9 h-9 btn-circle ml-1"
                       title="Eliminar"
                     >
@@ -171,7 +151,7 @@
                 </div>
               }
             </div>
-            <button (click)="addSaleItem()" class="btn btn-success btn-md mt-2 w-full md:w-auto">
+            <button (click)="addOrderItem()" class="btn btn-success btn-md mt-2 w-full md:w-auto">
               <span class="icon-[material-symbols--add-circle-rounded] w-6 h-6"></span>
               <span class="text-lg">Agregar</span>
             </button>
@@ -187,10 +167,10 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese adelanto"
-                  [formField]="ticketForm.advance"
+                  [formField]="orderForm.advance"
                   autocomplete="off"
                   step="0.01"
-                  (input)="updateTotalsInModel()"
+                  (input)="syncTotalsToModel()"
                 />
               </label>
             </fieldset>
@@ -203,10 +183,10 @@
                   type="number"
                   class="grow cursor-pointer"
                   placeholder="Ingrese descuento"
-                  [formField]="ticketForm.discount"
+                  [formField]="orderForm.discount"
                   autocomplete="off"
                   step="0.01"
-                  (input)="updateTotalsInModel()"
+                  (input)="syncTotalsToModel()"
                 />
               </label>
             </fieldset>
@@ -218,7 +198,7 @@
               <input
                 type="checkbox"
                 [checked]="includeIGV()"
-                (change)="includeIGV.set($any($event.target).checked); updateTotalsInModel()"
+                (change)="includeIGV.set($any($event.target).checked); syncTotalsToModel()"
                 class="checkbox checkbox-primary"
               />
               <span class="label-text font-semibold">Incluir IGV (18%)</span>
@@ -229,46 +209,40 @@
           <div class="bg-base-200 p-4 rounded-lg space-y-2 mt-4">
             <div class="flex justify-between text-sm">
               <span class="font-semibold">Precio Total:</span>
-              <span>S/ {{ ticketData.totalPrice.toFixed(2) }}</span>
+              <span>S/ {{ orderData.totalPrice.toFixed(2) }}</span>
             </div>
             <div class="flex justify-between text-sm">
-              <span class="font-semibold">Saldo:</span>
-              <span class="text-error font-bold"> S/ {{ ticketData.saldo.toFixed(2) }} </span>
+              <span class="font-semibold">Saldo Pendiente:</span>
+              <span class="text-error font-bold">
+                S/ {{ orderData.remainingBalance.toFixed(2) }}
+              </span>
             </div>
             @if (includeIGV()) {
               <div class="flex justify-between text-md">
                 <span class="font-semibold">IGV (18%):</span>
-                <span>S/ {{ ticketData.igv.toFixed(2) }}</span>
+                <span>S/ {{ orderData.igv.toFixed(2) }}</span>
               </div>
             }
             <div class="flex justify-between text-lg font-bold border-t border-base-300 pt-2">
               <span>Monto Final:</span>
-              <span class="text-primary">S/ {{ ticketData.finalAmount.toFixed(2) }}</span>
+              <span class="text-primary">S/ {{ orderData.finalAmount.toFixed(2) }}</span>
             </div>
           </div>
 
-          <!-- Botón Generar QR y Botón Imprimir -->
+          <!-- Botones de Acción -->
           <div class="card-actions justify-end mt-4 gap-2">
-            <button class="btn btn-secondary w-full md:w-auto" (click)="generateTicketQR()">
+            <button class="btn btn-secondary w-full md:w-auto" (click)="generateOrderQR()">
               <span class="icon-[mdi--qrcode] w-5 h-5"></span>
               Generar QR
             </button>
-            <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printTicket()">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                class="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="current-color"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
-                />
-              </svg>
-              Imprimir Ticket
+            <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printOrder()">
+              <span class="icon-[mdi--printer] w-5 h-5"></span>
+              Imprimir Orden
+            </button>
+            <!-- boton generar orden -->
+            <button class="btn btn-primary btn-wid w-full md:w-auto" (click)="saveOrder()">
+              <span class="icon-[mdi--file-document-edit-outline] w-5 h-5"></span>
+              Generar Orden
             </button>
           </div>
         </div>
@@ -280,10 +254,10 @@
     <div class="card bg-white shadow-lg rounded-lg">
       <div class="card-body h-full w-full px-0">
         <app-ticket-preview
-          [ticketData]="ticketData"
-          [printDate]="ticketData.printDate"
+          [ticketData]="orderData"
+          [printDate]="orderData.printDate"
           [includeIGV]="includeIGV()"
-          [ticketUuid]="ticketUuid()"
+          [ticketUuid]="orderUuid()"
         ></app-ticket-preview>
       </div>
     </div>

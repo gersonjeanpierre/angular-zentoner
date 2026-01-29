@@ -10,11 +10,37 @@ export interface Order {
   employee_id: string; // FK a hr.employees (diseñador, requerido)
   shop_id: string; // FK a core.shops (requerido)
   status_id: number; // FK a sales.order_status (default: 1 - Pendiente)
-  total_amount: number; // Total final con IGV y descuentos
-  tax_amount: number; // Monto del IGV (18%)
+
+  // Campos financieros (nuevo schema POS)
+  total_price: number; // Suma de subtotales de order_details
+  discount: number; // Descuento aplicado
+  igv: number; // Impuesto (18% en Perú)
+  final_amount: number; // total_price - discount + igv
+
+  // Control de pagos
+  advance: number; // Total pagado hasta ahora
+  remaining_balance: number; // final_amount - advance
+  payment_status?: string; // PENDIENTE, PARCIAL, PAGADO (default: PENDIENTE)
+  fully_paid_at?: string | null; // Cuando se completó el pago
+
   created_at?: string; // Timestamp generado por BD
   updated_at?: string; // Timestamp actualizado por BD
 }
+
+/**
+ * Estados de pago de una orden
+ */
+export type PaymentStatus = 'PENDIENTE' | 'PARCIAL' | 'PAGADO';
+
+/**
+ * Estados de orden
+ */
+export type OrderStatusType =
+  | 'PENDIENTE'
+  | 'EN_PRODUCCION'
+  | 'COMPLETADO'
+  | 'ENTREGADO'
+  | 'CANCELADO';
 
 /**
  * Modelo de Detalle de Orden (Base de Datos)

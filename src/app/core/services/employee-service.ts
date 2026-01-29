@@ -1,6 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { EmployeeView } from '@data/models/employee/employee.model';
 import { Supabase } from '@core/supabase/supabase';
+import { from, Observable } from 'rxjs';
+import { liveQuery } from 'dexie';
 
 export interface GetEmployeesParams {
   shopId?: string;
@@ -21,6 +23,9 @@ export interface GetEmployeesResponse {
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
   private supabaseClient = inject(Supabase).client;
+  // public dataEmployees$: Observable<EmployeeView[]> = from(
+  //   liveQuery(() => )
+  // )
 
   /**
    * Obtener empleados con filtros y paginación
@@ -71,32 +76,6 @@ export class EmployeeService {
       console.error('Error al obtener empleados:', error);
       throw error;
     }
-
-    // Transformar datos para aplanar la estructura
-    // const transformedData =
-    //   data?.map((emp: any) => ({
-    //     id: emp.id,
-    //     shopId: emp.shop_id,
-    //     employeeCode: emp.employee_code,
-    //     authEmail: emp.auth_email,
-    //     hireDate: emp.hire_date,
-    //     salary: emp.salary,
-    //     statusId: emp.status_id,
-    //     workNotes: emp.work_notes,
-    //     firstName: emp.persons?.first_name || null,
-    //     lastName: emp.persons?.last_name || null,
-    //     legalName: emp.persons?.legal_name || null,
-    //     email: emp.persons?.email || null,
-    //     phone: emp.persons?.phone || null,
-    //     dni: emp.persons?.dni || null,
-    //     ruc: emp.persons?.ruc || null,
-    //     ce: emp.persons?.ce || null,
-    //     personType: emp.persons?.person_type || 'NATURAL',
-    //     employeeUpdatedAt: emp.updated_at,
-    //     personDeletedAt: null,
-    //     personUpdatedAt: null,
-    //   })) || [];
-
     console.log('Empleados obtenidos employee-service:', data);
 
     return {
