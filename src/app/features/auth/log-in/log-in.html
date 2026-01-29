@@ -1,105 +1,151 @@
 <main class="flex justify-center items-center min-h-screen bg-base-200">
-  <div class="card bg-base-100 w-80 shadow-lg">
-    <form (submit)="onSubmit($event)">
-      <div class="card-body items-center text-center gap-4">
-        <app-logo-laser-veloz />
-        <h2 class="card-title">Iniciar sesión</h2>
+  <!-- Paso 1: Credenciales -->
+  @if (currentStep() === 'credentials') {
+    <div class="card bg-base-100 w-80 shadow-lg">
+      <form (submit)="onCredentialsSubmit($event)">
+        <div class="card-body items-center text-center gap-4">
+          <app-logo-laser-veloz />
+          <h2 class="card-title">Iniciar sesión</h2>
 
-        <div class="w-full">
-          <label
-            class="input validator"
-            [class.input-error]="loginForm.email().touched() && loginForm.email().invalid()"
-          >
-            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <g
-                stroke-linejoin="round"
-                stroke-linecap="round"
-                stroke-width="2.5"
-                fill="none"
-                stroke="currentColor"
+          <div class="w-full">
+            <label
+              class="input validator"
+              [class.input-error]="
+                credentialsForm.email().touched() && credentialsForm.email().invalid()
+              "
+            >
+              <svg
+                class="h-[1em] opacity-50"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
               >
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </g>
-            </svg>
-            <input
-              type="text"
-              [formField]="loginForm.email"
-              placeholder="Email"
-              autocomplete="new-email"
-            />
-          </label>
-          @if (loginForm.email().touched() && loginForm.email().invalid()) {
-            <div class="label">
-              @for (error of loginForm.email().errors(); track error) {
-                <span class="label-text-alt text-error">{{ error.message }}</span>
-              }
-            </div>
-          }
-        </div>
-
-        <div class="w-full">
-          <label
-            class="input validator"
-            [class.input-error]="loginForm.password().touched() && loginForm.password().invalid()"
-          >
-            <svg class="h-[1em] opacity-50" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-              <g
-                stroke-linejoin="round"
-                stroke-linecap="round"
-                stroke-width="2.5"
-                fill="none"
-                stroke="currentColor"
-              >
-                <path
-                  d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
-                ></path>
-                <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
-              </g>
-            </svg>
-            <input
-              type="password"
-              [formField]="loginForm.password"
-              placeholder="Contraseña"
-              autocomplete="new-password"
-            />
-          </label>
-          @if (loginForm.password().touched() && loginForm.password().invalid()) {
-            <div class="label">
-              @for (error of loginForm.password().errors(); track error) {
-                <span class="label-text-alt text-error">{{ error.message }}</span>
-              }
-            </div>
-          }
-        </div>
-
-        <!-- Tienda a asignar -->
-        <div class="form-control w-full mb-4">
-          <select
-            class="select select-bordered w-full"
-            [formField]="loginForm.shopId"
-            [class.select-error]="loginForm.shopId().touched() && loginForm.shopId().invalid()"
-          >
-            <option value="" disabled>Seleccione una tienda</option>
-            @for (shop of availableShops(); track shop.id) {
-              <option [value]="shop.id">{{ shop.name }}</option>
+                <g
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  stroke-width="2.5"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </g>
+              </svg>
+              <input
+                type="text"
+                [formField]="credentialsForm.email"
+                placeholder="Email"
+                autocomplete="email"
+              />
+            </label>
+            @if (credentialsForm.email().touched() && credentialsForm.email().invalid()) {
+              <div class="label">
+                @for (error of credentialsForm.email().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
             }
-          </select>
-          @if (loginForm.shopId().touched() && loginForm.shopId().invalid()) {
-            <div class="label">
-              @for (error of loginForm.shopId().errors(); track error) {
-                <span class="label-text-alt text-error">{{ error.message }}</span>
-              }
-            </div>
-          }
-        </div>
+          </div>
 
-        <div class="card-actions">
-          <button class="btn btn-neutral" type="submit">Iniciar sesión</button>
+          <div class="w-full">
+            <label
+              class="input validator"
+              [class.input-error]="
+                credentialsForm.password().touched() && credentialsForm.password().invalid()
+              "
+            >
+              <svg
+                class="h-[1em] opacity-50"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <g
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                  stroke-width="2.5"
+                  fill="none"
+                  stroke="currentColor"
+                >
+                  <path
+                    d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"
+                  ></path>
+                  <circle cx="16.5" cy="7.5" r=".5" fill="currentColor"></circle>
+                </g>
+              </svg>
+              <input
+                type="password"
+                [formField]="credentialsForm.password"
+                placeholder="Contraseña"
+                autocomplete="current-password"
+              />
+            </label>
+            @if (credentialsForm.password().touched() && credentialsForm.password().invalid()) {
+              <div class="label">
+                @for (error of credentialsForm.password().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="card-actions">
+            <button class="btn btn-neutral" type="submit" [disabled]="isLoadingShops()">
+              @if (isLoadingShops()) {
+                <span class="loading loading-spinner loading-sm"></span>
+                Cargando...
+              } @else {
+                Continuar
+              }
+            </button>
+          </div>
         </div>
-      </div>
-    </form>
-  </div>
+      </form>
+    </div>
+  }
+
+  <!-- Paso 2: Selección de Tienda -->
+  @if (currentStep() === 'shop-selection') {
+    <div class="card bg-base-100 w-80 shadow-lg">
+      <form (submit)="onShopSelectionSubmit($event)">
+        <div class="card-body items-center text-center gap-4">
+          <app-logo-laser-veloz />
+          <h2 class="card-title">Selecciona tu tienda</h2>
+          <p class="text-sm text-base-content/70">{{ credentialsModel().email }}</p>
+
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="label-text">Tienda</span>
+            </label>
+            <select
+              class="select select-bordered w-full"
+              [formField]="shopSelectionForm.shopId"
+              [class.select-error]="
+                shopSelectionForm.shopId().touched() && shopSelectionForm.shopId().invalid()
+              "
+            >
+              <option value="" disabled>Seleccione una tienda</option>
+              @for (shop of availableShops(); track shop.id) {
+                <option [value]="shop.id">{{ shop.name }}</option>
+              }
+            </select>
+            @if (shopSelectionForm.shopId().touched() && shopSelectionForm.shopId().invalid()) {
+              <div class="label">
+                @for (error of shopSelectionForm.shopId().errors(); track error) {
+                  <span class="label-text-alt text-error">{{ error.message }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="card-actions flex-col w-full gap-2">
+            <button class="btn btn-neutral w-full" type="submit">Iniciar sesión</button>
+            <button class="btn btn-ghost btn-sm" type="button" (click)="goBackToCredentials()">
+              Cambiar usuario
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  }
 
   @if (showAlert()) {
     <app-alert-modal
