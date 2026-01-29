@@ -1,50 +1,72 @@
 import { Injectable, inject } from '@angular/core';
-import { CustomerPayload, CustomerView } from '@data/models/customer/customer.model';
+import {
+  CustomerPayload,
+  CustomerView,
+  GetCustomersParams,
+  GetCustomersResponse,
+  UpdateCustomerPayload,
+} from '@data/models/customer/customer.model';
 import { Supabase } from '@core/supabase/supabase';
+import { dexieDB } from '@core/dexie/db';
 import camelcaseKeys from 'camelcase-keys';
-
-export interface GetCustomersParams {
-  status?: 'ACTIVE' | 'INACTIVE' | 'ALL';
-  customerType?: 'NUEVO' | 'FRECUENTE' | 'IMPRENTERO_NUEVO' | 'IMPRENTERO_FRECUENTE';
-  personType?: 'JURIDICA' | 'NATURAL';
-  search?: string;
-  page?: number;
-  pageSize?: number;
-}
-
-export interface UpdateCustomerPayload {
-  personType?: 'JURIDICA' | 'NATURAL';
-  firstName?: string;
-  lastName?: string;
-  legalName?: string;
-  email?: string;
-  phone?: string;
-  dni?: string;
-  ruc?: string;
-  ce?: string;
-  customerCode?: string;
-  customerType?: 'NUEVO' | 'FRECUENTE' | 'IMPRENTERO_NUEVO' | 'IMPRENTERO_FRECUENTE';
-  notes?: any;
-}
-
-export interface GetCustomersResponse {
-  data: CustomerView[];
-  count: number;
-  page: number;
-  pageSize: number;
-  totalPages: number;
-}
+import { from, Observable } from 'rxjs';
+import { liveQuery } from 'dexie';
 
 @Injectable({ providedIn: 'root' })
 export class CustomerService {
-  private supabaseClient = inject(Supabase).client;
+  private readonly supabase = inject(Supabase).client;
+  public dataCustomers$: Observable<CustomerView[]> = from(
+    liveQuery(() => dexieDB.customers.toArray()),
+  );
+
+  /**
+   * Carga todos los clientes activos desde Supabase y los almacena en Dexie.
+   */
+  async fetchCustomersFromSupabase(): Promise<void> {
+    try {
+      const { data, error } = await this.supabase
+        .schema('sales')
+        .from('active_customers')
+        .select('*')
+        .is('customer_deleted_at', null)
+        .is('person_deleted_at', null);
+
+      if (error) {
+        console.error('Error al obtener los clientes:', error);
+        throw error;
+      }
+
+      if (data) {
+        const customers = camelcaseKeys(data, { deep: true }) as CustomerView[];
+        await dexieDB.customers.bulkPut(customers);
+        console.log(`[CustomerService] ${customers.length} clientes almacenados en Dexie`);
+      }
+    } catch (error) {
+      console.error('Error en fetchCustomersFromSupabase:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Asegura que los clientes estén cargados en Dexie.
+   * Solo hace fetch si Dexie está vacío (primera vez después de autenticación).
+   */
+  async ensureCustomersLoaded(): Promise<void> {
+    const count = await dexieDB.customers.count();
+    if (count === 0) {
+      console.log('[CustomerService] Cargando clientes desde Supabase (primera vez)');
+      await this.fetchCustomersFromSupabase();
+    } else {
+      console.log('[CustomerService] Usando caché de Dexie (', count, 'clientes)');
+    }
+  }
 
   async createCustomer(payload: CustomerPayload) {
     if (payload.dni && payload.ce) {
       throw new Error("No se puede tener ambos campos 'dni' y 'ce' al mismo tiempo.");
     }
 
-    const { data, error } = await this.supabaseClient.schema('sales').rpc('create_customer', {
+    const { data, error } = await this.supabase.schema('sales').rpc('create_customer', {
       p_user_id: payload.id,
       p_first_name: payload.firstName,
       p_last_name: payload.lastName,
@@ -68,7 +90,34 @@ export class CustomerService {
   async getCustomers(params: GetCustomersParams = {}): Promise<GetCustomersResponse> {
     const { status = 'ACTIVE', customerType, personType, search, page = 1, pageSize = 20 } = params;
 
-    let query = this.supabaseClient
+    // Si hay filtros complejos o búsqueda, usar Supabase directamente
+    const hasComplexFilters = customerType || personType || search || status !== 'ACTIVE';
+
+    if (hasComplexFilters) {
+      return this.getCustomersFromSupabase(params);
+    }
+
+    // Para listados simples, usar Dexie
+    const allCustomers = await dexieDB.customers.toArray();
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize;
+    const paginatedData = allCustomers.slice(from, to);
+
+    return {
+      data: paginatedData,
+      count: allCustomers.length,
+      page,
+      pageSize,
+      totalPages: Math.ceil(allCustomers.length / pageSize),
+    };
+  }
+
+  private async getCustomersFromSupabase(
+    params: GetCustomersParams,
+  ): Promise<GetCustomersResponse> {
+    const { status = 'ACTIVE', customerType, personType, search, page = 1, pageSize = 20 } = params;
+
+    let query = this.supabase
       .schema('sales')
       .from('active_customers')
       .select('*', { count: 'exact', head: false });
@@ -113,7 +162,7 @@ export class CustomerService {
     const totalPages = count ? Math.ceil(count / pageSize) : 0;
 
     return {
-      data: (camelcaseKeys(data || [], { deep: true }) as any[]) || [],
+      data: (camelcaseKeys(data || [], { deep: true }) as CustomerView[]) || [],
       count: count || 0,
       page,
       pageSize,
@@ -122,7 +171,15 @@ export class CustomerService {
   }
 
   async getCustomerById(customerId: string): Promise<CustomerView> {
-    const { data, error } = await this.supabaseClient
+    // Intentar primero desde Dexie
+    const cachedCustomer = await dexieDB.customers.get(customerId);
+    if (cachedCustomer) {
+      console.log('[CustomerService] Cliente obtenido desde caché');
+      return cachedCustomer;
+    }
+
+    // Si no está en caché, consultar Supabase
+    const { data, error } = await this.supabase
       .schema('sales')
       .from('active_customers')
       .select('*')
@@ -134,7 +191,12 @@ export class CustomerService {
     if (error) throw error;
     if (!data) throw new Error('Cliente no encontrado');
 
-    return camelcaseKeys(data, { deep: true }) as CustomerView;
+    const customer = camelcaseKeys(data, { deep: true }) as CustomerView;
+
+    // Guardar en caché para futuras consultas
+    await dexieDB.customers.put(customer);
+
+    return customer;
   }
 
   async updateCustomer(customerId: string, payload: UpdateCustomerPayload): Promise<CustomerView> {
@@ -142,26 +204,43 @@ export class CustomerService {
       throw new Error("No se puede tener ambos campos 'dni' y 'ce' al mismo tiempo.");
     }
 
-    const { error } = await this.supabaseClient.schema('sales').rpc('update_customer', {
+    // Convertir undefined a null explícitamente para PostgreSQL
+    const { error } = await this.supabase.schema('sales').rpc('update_customer', {
       p_customer_id: customerId,
-      p_first_name: payload.firstName,
-      p_last_name: payload.lastName,
-      p_legal_name: payload.legalName,
-      p_email: payload.email,
-      p_phone: payload.phone,
-      p_dni: payload.dni,
-      p_ruc: payload.ruc,
-      p_ce: payload.ce,
-      p_customer_code: payload.customerCode,
-      p_customer_type_code: payload.customerType,
-      p_notes: payload.notes,
+      p_first_name: payload.firstName ?? null,
+      p_last_name: payload.lastName ?? null,
+      p_legal_name: payload.legalName ?? null,
+      p_email: payload.email ?? null,
+      p_phone: payload.phone ?? null,
+      p_dni: payload.dni ?? null,
+      p_ruc: payload.ruc ?? null,
+      p_ce: payload.ce ?? null,
+      p_customer_code: payload.customerCode ?? null,
+      p_customer_type_code: payload.customerType ?? null,
+      p_notes: payload.notes ?? null,
     });
-    console.log('Update customer error:', error);
-    if (error) throw error;
 
-    // Return the updated customer
-    return this.getCustomerById(customerId);
+    if (error) {
+      console.error('[CustomerService] Error al actualizar cliente:', error);
+      throw error;
+    }
+
+    // Obtener el cliente actualizado (esto también actualizará el caché)
+    const updatedCustomer = await this.getCustomerById(customerId);
+
+    // Actualizar el caché de Dexie
+    await dexieDB.customers.put(updatedCustomer);
+
+    console.log('[CustomerService] Cliente actualizado correctamente');
+    return updatedCustomer;
   }
 
   async softDeleteCustomer(customerId: string): Promise<void> {}
+
+  async syncCustomers(): Promise<void> {
+    console.log('[CustomerService] Iniciando sincronización...');
+    await dexieDB.customers.clear();
+    await this.fetchCustomersFromSupabase();
+    console.log('[CustomerService] Sincronización completada');
+  }
 }

@@ -7,14 +7,14 @@ import { map, tap } from 'rxjs/operators';
   providedIn: 'root',
 })
 export class CategoryService {
-  private readonly supabaseClient = inject(Supabase).client;
+  private readonly supabase = inject(Supabase).client;
   private STORAGE_KEY = 'cache_categorias';
 
   private categoriesSubject = new BehaviorSubject<any[] | null>(this.getStoredData());
   public categories$ = this.categoriesSubject.asObservable();
 
   async getCategoriesRaw() {
-    const { data, error } = await this.supabaseClient
+    const { data, error } = await this.supabase
       .schema('inventory')
       .from('categories')
       .select('id,parent_id, name, slug, sort_order');

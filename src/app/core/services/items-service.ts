@@ -28,16 +28,13 @@ export interface GetItemsResponse {
 
 @Injectable({ providedIn: 'root' })
 export class ItemsService {
-  private supabaseClient = inject(Supabase).client;
+  private readonly supabase = inject(Supabase).client;
 
   /**
    * Crear un nuevo item en el inventario
    */
   async createItem(payload: ItemPayload) {
-    const { data, error } = await this.supabaseClient
-      .schema('inventory')
-      .from('items')
-      .insert(payload);
+    const { data, error } = await this.supabase.schema('inventory').from('items').insert(payload);
 
     if (error) {
       console.error('Error al crear item:', error);
@@ -61,7 +58,7 @@ export class ItemsService {
       pageSize = 20,
     } = params;
 
-    let query = this.supabaseClient
+    let query = this.supabase
       .schema('inventory')
       .from('items')
       .select('*', { count: 'exact', head: false });
@@ -121,7 +118,7 @@ export class ItemsService {
    * Obtener un item por su ID
    */
   async getItemById(itemId: string): Promise<ItemView> {
-    const { data, error } = await this.supabaseClient
+    const { data, error } = await this.supabase
       .schema('inventory')
       .from('items')
       .select('*')
@@ -138,7 +135,7 @@ export class ItemsService {
    * Actualizar un item existente
    */
   async updateItem(itemId: string, payload: UpdateItemPayload): Promise<ItemView> {
-    const { data, error } = await this.supabaseClient
+    const { data, error } = await this.supabase
       .schema('inventory')
       .from('items')
       .update(payload)
@@ -156,7 +153,7 @@ export class ItemsService {
    * Eliminación lógica de un item (is_active = false)
    */
   async deleteItem(itemId: string): Promise<void> {
-    const { error } = await this.supabaseClient
+    const { error } = await this.supabase
       .schema('inventory')
       .from('items')
       .update({ is_active: false })
@@ -169,7 +166,7 @@ export class ItemsService {
    * Reactivar un item (is_active = true)
    */
   async reactivateItem(itemId: string): Promise<void> {
-    const { error } = await this.supabaseClient
+    const { error } = await this.supabase
       .schema('inventory')
       .from('items')
       .update({ is_active: true })
@@ -182,7 +179,7 @@ export class ItemsService {
    * Verificar si un SKU ya existe
    */
   async checkSkuExists(sku: string, excludeItemId?: string): Promise<boolean> {
-    let query = this.supabaseClient.schema('inventory').from('items').select('id').eq('sku', sku);
+    let query = this.supabase.schema('inventory').from('items').select('id').eq('sku', sku);
 
     if (excludeItemId) {
       query = query.neq('id', excludeItemId);

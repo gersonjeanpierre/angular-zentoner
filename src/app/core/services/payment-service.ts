@@ -18,7 +18,7 @@ export class PaymentService {
    * Llama a la función RPC register_payment
    */
   async registerPayment(payload: RegisterPaymentPayload): Promise<RegisterPaymentResponse> {
-    const { data, error } = await this.supabaseClient.rpc('register_payment', {
+    const { data, error } = await this.supabaseClient.schema('sales').rpc('register_payment', {
       p_order_id: payload.order_id,
       p_amount: payload.amount,
       p_payment_method: payload.payment_method,
@@ -41,9 +41,11 @@ export class PaymentService {
    * Llama a la función RPC get_order_payment_history
    */
   async getOrderPaymentHistory(orderId: string): Promise<PaymentView[]> {
-    const { data, error } = await this.supabaseClient.rpc('get_order_payment_history', {
-      p_order_id: orderId,
-    });
+    const { data, error } = await this.supabaseClient
+      .schema('sales')
+      .rpc('get_order_payment_history', {
+        p_order_id: orderId,
+      });
 
     if (error) {
       console.error('Error al obtener historial de pagos:', error);

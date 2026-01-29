@@ -14,20 +14,6 @@ export class ShopService {
   private shopsSubject = new BehaviorSubject<ShopModel[]>(this.getShopStoredData());
   public dataShops$: Observable<ShopModel[]> = from(liveQuery(() => dexieDB.shops.toArray()));
 
-  constructor() {
-    this.initShopsStore();
-  }
-
-  private async initShopsStore() {
-    const count = await dexieDB.shops.count();
-    if (count === 0) {
-      console.log('[ShopService] Realizando GET desde Supabase');
-      await this.fetchShopsFromSupabase();
-      return;
-    }
-    console.log('[ShopService] Cache Local: Datos almacenados en Dexie');
-  }
-
   async fetchShopsFromSupabase() {
     try {
       const { data, error } = await this.supabase
@@ -46,6 +32,20 @@ export class ShopService {
       }
     } catch (error) {
       console.error('Error en getShops:', error);
+    }
+  }
+
+  /**
+   * Asegura que las tiendas estén cargadas en Dexie.
+   * Solo hace fetch si Dexie está vacío (primera vez después de autenticación).
+   */
+  async ensureShopsLoaded(): Promise<void> {
+    const count = await dexieDB.shops.count();
+    if (count === 0) {
+      console.log('[ShopService] Cargando tiendas desde Supabase (primera vez)');
+      await this.fetchShopsFromSupabase();
+    } else {
+      console.log('[ShopService] Usando caché de Dexie (', count, 'tiendas)');
     }
   }
 
