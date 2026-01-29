@@ -4,6 +4,14 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
       <div>
         <h1 class="text-3xl font-bold text-base-content">Gestión de Clientes</h1>
+        <button class="btn btn-primary" (click)="onSync()" [disabled]="syncing()" type="button">
+          @if (syncing()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            Sincronizando...
+          } @else {
+            Sync
+          }
+        </button>
         <p class="text-base-content/60 mt-1 flex items-center gap-2">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path

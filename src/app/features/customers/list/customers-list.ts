@@ -2,36 +2,25 @@ import {
   Component,
   inject,
   signal,
-  OnInit,
-  effect,
   computed,
+  resource,
   ChangeDetectionStrategy,
 } from '@angular/core';
-import { FormsModule } from '@angular/forms';
 import { CommonModule, NgClass } from '@angular/common';
-import { CustomerService, GetCustomersParams } from '../../../core/services/customer-service';
+import { CustomerService } from '@core/services/customer-service';
 import { CustomerView } from '@data/models/customer/customer.model';
 import { Router, RouterModule } from '@angular/router';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import camelCase from 'camelcase-keys';
+import { toSignal } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-customers-list',
-  imports: [CommonModule, RouterModule, FormsModule, NgClass],
+  imports: [CommonModule, RouterModule, NgClass],
   templateUrl: './customers-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class CustomersList implements OnInit {
+export default class CustomersList {
   private readonly customersService = inject(CustomerService);
   private readonly router = inject(Router);
-  private readonly searchSubject = new Subject<string>();
-
-  // State signals
-  protected readonly customers = signal<CustomerView[]>([]);
-  protected readonly loading = signal(true);
-  protected readonly error = signal<string | null>(null);
-  protected readonly deleteSuccess = signal(false);
 
   // Filter signals
   protected readonly statusFilter = signal<'ALL' | 'ACTIVE' | 'INACTIVE'>('ACTIVE');
@@ -40,26 +29,80 @@ export default class CustomersList implements OnInit {
   >('ALL');
   protected readonly personTypeFilter = signal<'ALL' | 'JURIDICA' | 'NATURAL'>('ALL');
   protected readonly searchTerm = signal('');
-
-  // Pagination signals
   protected readonly currentPage = signal(1);
   protected readonly pageSize = signal(10);
-  protected readonly totalCount = signal(0);
-  protected readonly totalPages = signal(0);
 
-  // Computed signals
+  // UI state signals
+  protected readonly deleteSuccess = signal(false);
+  protected readonly syncing = signal(false);
+
+  // Observable reactivo de Dexie - se actualiza automáticamente
+  private readonly allCustomers = toSignal(this.customersService.dataCustomers$, {
+    initialValue: [],
+  });
+
+  // Computed: filtra los datos de Dexie
+  protected readonly filteredCustomers = computed(() => {
+    let customers = this.allCustomers();
+
+    // Filtro por estado
+    if (this.statusFilter() === 'ACTIVE') {
+      customers = customers.filter((c) => !c.customerDeletedAt && !c.personDeletedAt);
+    } else if (this.statusFilter() === 'INACTIVE') {
+      customers = customers.filter((c) => c.customerDeletedAt || c.personDeletedAt);
+    }
+
+    // Filtro por tipo de cliente
+    if (this.customerTypeFilter() !== 'ALL') {
+      customers = customers.filter((c) => c.customerTypeCode === this.customerTypeFilter());
+    }
+
+    // Filtro por tipo de persona
+    if (this.personTypeFilter() !== 'ALL') {
+      customers = customers.filter((c) => c.personType === this.personTypeFilter());
+    }
+
+    // Búsqueda por texto
+    const search = this.searchTerm().toLowerCase();
+    if (search) {
+      customers = customers.filter(
+        (c) =>
+          c.firstName?.toLowerCase().includes(search) ||
+          c.lastName?.toLowerCase().includes(search) ||
+          c.legalName?.toLowerCase().includes(search) ||
+          c.email?.toLowerCase().includes(search) ||
+          c.phone?.toLowerCase().includes(search) ||
+          c.dni?.includes(search) ||
+          c.ruc?.includes(search) ||
+          c.ce?.includes(search) ||
+          c.customerCode?.toLowerCase().includes(search),
+      );
+    }
+
+    return customers;
+  });
+
+  // Computed: total de registros después de filtros
+  protected readonly totalCount = computed(() => this.filteredCustomers().length);
+
+  // Computed: total de páginas
+  protected readonly totalPages = computed(() => Math.ceil(this.totalCount() / this.pageSize()));
+
+  // Computed: datos paginados
+  protected readonly customers = computed(() => {
+    const filtered = this.filteredCustomers();
+    const start = (this.currentPage() - 1) * this.pageSize();
+    const end = start + this.pageSize();
+    return filtered.slice(start, end);
+  });
+
+  // Computed signals for UI
   protected readonly hasActiveFilters = computed(
     () =>
       this.searchTerm() !== '' ||
       this.customerTypeFilter() !== 'ALL' ||
       this.personTypeFilter() !== 'ALL',
   );
-
-  protected readonly showEmptyState = computed(
-    () => !this.loading() && this.customers().length === 0 && !this.error(),
-  );
-
-  protected readonly showTable = computed(() => !this.loading() && this.customers().length > 0);
 
   protected readonly paginationInfo = computed(() => {
     const start = (this.currentPage() - 1) * this.pageSize() + 1;
@@ -95,69 +138,26 @@ export default class CustomersList implements OnInit {
     return range;
   });
 
-  constructor() {
-    // Debounce para búsqueda
-    this.searchSubject.pipe(debounceTime(400), distinctUntilChanged()).subscribe((term) => {
-      this.searchTerm.set(term);
-      this.currentPage.set(1);
-      this.loadCustomers();
-    });
+  // Resource para carga inicial - Reemplaza constructor async
+  protected readonly loadResource = resource({
+    loader: async () => {
+      await this.customersService.ensureCustomersLoaded();
+      return { loaded: true };
+    },
+  });
 
-    effect(() => {
-      this.statusFilter();
-      this.customerTypeFilter();
-      this.personTypeFilter();
-      this.currentPage();
-
-      this.loading.set(true);
-      this.loadCustomers().finally(() => this.loading.set(false));
-    });
-  }
-
-  async ngOnInit() {
-    await this.loadCustomers();
-  }
-
-  private async loadCustomers() {
-    this.loading.set(true);
-    this.error.set(null);
-
-    try {
-      const params: GetCustomersParams = {
-        status: this.statusFilter(),
-        page: this.currentPage(),
-        pageSize: this.pageSize(),
-        search: this.searchTerm() || undefined,
-      };
-
-      if (this.customerTypeFilter() !== 'ALL') {
-        params.customerType = this.customerTypeFilter() as unknown as
-          | 'NUEVO'
-          | 'FRECUENTE'
-          | 'IMPRENTERO_NUEVO'
-          | 'IMPRENTERO_FRECUENTE';
-      }
-
-      if (this.personTypeFilter() !== 'ALL') {
-        params.personType = this.personTypeFilter() as unknown as 'JURIDICA' | 'NATURAL';
-      }
-
-      const response = await this.customersService.getCustomers(params);
-      const camelCasedData = response.data.map((item) => camelCase(item));
-      this.customers.set(camelCasedData);
-      this.totalCount.set(response.count);
-      this.totalPages.set(response.totalPages);
-    } catch (e: unknown) {
-      this.error.set(e instanceof Error ? e.message : 'Error al cargar clientes');
-      this.customers.set([]);
-    } finally {
-      this.loading.set(false);
-    }
-  }
+  // Computed para estados de UI basados en resource
+  protected readonly loading = computed(() => this.loadResource.isLoading());
+  protected readonly error = computed(() => this.loadResource.error()?.message ?? null);
+  protected readonly showEmptyState = computed(
+    () => !this.loading() && this.customers().length === 0 && !this.error(),
+  );
+  protected readonly showTable = computed(() => !this.loading() && this.customers().length > 0);
 
   protected onSearchInput(event: Event) {
     const value = (event.target as HTMLInputElement).value;
-    this.searchSubject.next(value);
+    this.searchTerm.set(value);
+    this.currentPage.set(1);
   }
 
   protected onStatusFilterChange(status: 'ALL' | 'ACTIVE' | 'INACTIVE') {
@@ -192,16 +192,12 @@ export default class CustomersList implements OnInit {
     if (!confirm(`¿Seguro que deseas eliminar a ${customer.firstName} ${customer.lastName}?`))
       return;
 
-    this.loading.set(true);
     try {
       await this.customersService.softDeleteCustomer(customer.id);
       this.deleteSuccess.set(true);
-      await this.loadCustomers();
       setTimeout(() => this.deleteSuccess.set(false), 3000);
     } catch (e: unknown) {
-      this.error.set(e instanceof Error ? e.message : 'Error al eliminar cliente');
-    } finally {
-      this.loading.set(false);
+      console.error('[CustomersList] Error al eliminar:', e);
     }
   }
 
@@ -235,5 +231,20 @@ export default class CustomersList implements OnInit {
     if (customer.ruc) return `RUC: ${customer.ruc}`;
     if (customer.ce) return `CE: ${customer.ce}`;
     return '-';
+  }
+
+  /**
+   * Sincronización manual: Limpia Dexie y recarga desde Supabase
+   */
+  protected async onSync() {
+    this.syncing.set(true);
+    try {
+      await this.customersService.syncCustomers();
+      console.log('[CustomersList] Sincronización completada');
+    } catch (e: unknown) {
+      console.error('[CustomersList] Error al sincronizar:', e);
+    } finally {
+      this.syncing.set(false);
+    }
   }
 }

@@ -3,171 +3,193 @@
     <div class="card bg-base-100 shadow-sm">
       <div class="card-body">
         <h2 class="card-title text-2xl mb-4">Editar Cliente</h2>
-        <form (submit)="onSubmit()" class="space-y-4">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-            <label class="select select-neutral cursor-not-allowed bg-base-200">
-              <span
-                class="icon-[material-symbols--person-search-rounded] h-6 w-6 z-10 shadow-none"
-              ></span>
-              <select class="select shadow-none" disabled>
-                <option value="" disabled>Tipo de persona</option>
-                <option
-                  [value]="'NATURAL'"
-                  [selected]="customerForm.personType().value() === 'NATURAL'"
-                >
-                  Natural
-                </option>
-                <option
-                  [value]="'JURIDICA'"
-                  [selected]="customerForm.personType().value() === 'JURIDICA'"
-                >
-                  Jurídica
-                </option>
-              </select>
-            </label>
 
-            <label class="select select-neutral cursor-pointer">
-              <span
-                class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"
-              ></span>
-              <select class="select grow shadow-none" [formField]="customerForm.customerType">
-                <option value="" disabled>Tipo de cliente</option>
-                <option value="NUEVO">Nuevo</option>
-                <option value="FRECUENTE">Frecuente</option>
-                <option value="IMPRENTERO_NUEVO">Imprentero Nuevo</option>
-                <option value="IMPRENTERO_FRECUENTE">Imprentero Frecuente</option>
-              </select>
-            </label>
+        @if (loading()) {
+          <div class="flex justify-center items-center py-16">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
           </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend text-lg">Datos Personales</legend>
-
-              @if (customerForm.personType().value() === 'NATURAL') {
-                <label class="input input-neutral mb-2">
-                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input class="grow" [formField]="customerForm.firstName" placeholder="Nombres" />
-                </label>
-              } @else {
-                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
-                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input
-                    type="text"
-                    class="grow"
-                    [value]="customerForm.firstName().value()"
-                    placeholder="Nombres"
-                    readonly
-                    tabindex="-1"
-                  />
-                </label>
-              }
-              @if (customerForm.personType().value() === 'NATURAL') {
-                <label class="input input-neutral mb-2">
-                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input class="grow" [formField]="customerForm.lastName" placeholder="Apellidos" />
-                </label>
-              } @else {
-                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
-                  <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
-                  <input
-                    type="text"
-                    class="grow"
-                    [value]="customerForm.lastName().value()"
-                    placeholder="Apellidos"
-                    readonly
-                    tabindex="-1"
-                  />
-                </label>
-              }
-              @if (customerForm.personType().value() === 'JURIDICA') {
-                <label class="input input-neutral mb-2">
-                  <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
-                  <input
-                    class="grow"
-                    [formField]="customerForm.legalName"
-                    placeholder="Razón social"
-                  />
-                </label>
-              } @else {
-                <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
-                  <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
-                  <input
-                    type="text"
-                    class="grow"
-                    [value]="customerForm.legalName().value()"
-                    placeholder="Razón social"
-                    readonly
-                    tabindex="-1"
-                  />
-                </label>
-              }
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--phone-iphone] h-7 w-7"></span>
-                <input
-                  class="grow"
-                  [formField]="customerForm.phone"
-                  placeholder="Teléfono"
-                  [class.input-error]="
-                    customerForm.phone().touched() && customerForm.phone().invalid()
-                  "
-                />
+        } @else if (error()) {
+          <div class="alert alert-error">
+            <span>Error al cargar el cliente: {{ error()?.message }}</span>
+          </div>
+        } @else {
+          <form (submit)="onSubmit($event)" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+              <label class="select select-neutral cursor-not-allowed bg-base-200">
+                <span
+                  class="icon-[material-symbols--person-search-rounded] h-6 w-6 z-10 shadow-none"
+                ></span>
+                <select class="select shadow-none" disabled>
+                  <option value="" disabled>Tipo de persona</option>
+                  <option
+                    [value]="'NATURAL'"
+                    [selected]="customerForm.personType().value() === 'NATURAL'"
+                  >
+                    Natural
+                  </option>
+                  <option
+                    [value]="'JURIDICA'"
+                    [selected]="customerForm.personType().value() === 'JURIDICA'"
+                  >
+                    Jurídica
+                  </option>
+                </select>
               </label>
-              @if (customerForm.phone().touched() && customerForm.phone().invalid()) {
-                <div class="label">
-                  @for (error of customerForm.phone().errors(); track error) {
-                    <span class="label-text-alt text-error">{{ error.message }}</span>
-                  }
+
+              <label class="select select-neutral cursor-pointer">
+                <span
+                  class="icon-[material-symbols--frame-person-rounded] h-6 w-6 z-10 shadow-none"
+                ></span>
+                <select class="select grow shadow-none" [formField]="customerForm.customerType">
+                  <option value="" disabled>Tipo de cliente</option>
+                  <option value="NUEVO">Nuevo</option>
+                  <option value="FRECUENTE">Frecuente</option>
+                  <option value="IMPRENTERO_NUEVO">Imprentero Nuevo</option>
+                  <option value="IMPRENTERO_FRECUENTE">Imprentero Frecuente</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend text-lg">Datos Personales</legend>
+
+                @if (customerForm.personType().value() === 'NATURAL') {
+                  <label class="input input-neutral mb-2">
+                    <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                    <input class="grow" [formField]="customerForm.firstName" placeholder="Nombres" />
+                  </label>
+                } @else {
+                  <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                    <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                    <input
+                      type="text"
+                      class="grow"
+                      [value]="customerForm.firstName().value()"
+                      placeholder="Nombres"
+                      readonly
+                      tabindex="-1"
+                    />
+                  </label>
+                }
+                
+                @if (customerForm.personType().value() === 'NATURAL') {
+                  <label class="input input-neutral mb-2">
+                    <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                    <input class="grow" [formField]="customerForm.lastName" placeholder="Apellidos" />
+                  </label>
+                } @else {
+                  <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                    <span class="icon-[material-symbols--person-edit-rounded] h-7 w-7"></span>
+                    <input
+                      type="text"
+                      class="grow"
+                      [value]="customerForm.lastName().value()"
+                      placeholder="Apellidos"
+                      readonly
+                      tabindex="-1"
+                    />
+                  </label>
+                }
+                
+                @if (customerForm.personType().value() === 'JURIDICA') {
+                  <label class="input input-neutral mb-2">
+                    <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
+                    <input
+                      class="grow"
+                      [formField]="customerForm.legalName"
+                      placeholder="Razón social"
+                    />
+                  </label>
+                } @else {
+                  <label class="input input-neutral mb-2 bg-base-200 cursor-not-allowed">
+                    <span class="icon-[material-symbols--business-center] h-7 w-7"></span>
+                    <input
+                      type="text"
+                      class="grow"
+                      [value]="customerForm.legalName().value()"
+                      placeholder="Razón social"
+                      readonly
+                      tabindex="-1"
+                    />
+                  </label>
+                }
+                
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--phone-iphone] h-7 w-7"></span>
+                  <input
+                    class="grow"
+                    [formField]="customerForm.phone"
+                    placeholder="Teléfono"
+                    [class.input-error]="
+                      customerForm.phone().touched() && customerForm.phone().invalid()
+                    "
+                  />
+                </label>
+                @if (customerForm.phone().touched() && customerForm.phone().invalid()) {
+                  <div class="label">
+                    @for (error of customerForm.phone().errors(); track error) {
+                      <span class="label-text-alt text-error">{{ error.message }}</span>
+                    }
+                  </div>
+                }
+              </fieldset>
+
+              <fieldset class="fieldset">
+                <legend class="fieldset-legend text-lg">Documentos</legend>
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--id-card-rounded] h-7 w-7"></span>
+                  <input class="grow" [formField]="customerForm.dni" placeholder="DNI" />
+                </label>
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--text-ad-rounded] h-7 w-7"></span>
+                  <input
+                    class="grow"
+                    [formField]="customerForm.ce"
+                    placeholder="Carnet extranjería"
+                  />
+                </label>
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--newsmode-rounded] h-7 w-7"></span>
+                  <input class="grow" [formField]="customerForm.ruc" placeholder="RUC" />
+                </label>
+                <label class="input input-neutral mb-2">
+                  <span class="icon-[material-symbols--mail-rounded] h-7 w-7"></span>
+                  <input
+                    class="grow"
+                    [formField]="customerForm.email"
+                    placeholder="Email"
+                    type="email"
+                  />
+                </label>
+                <div class="flex gap-2 mb-2">
+                  <label class="input input-neutral grow">
+                    <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>
+                    <input
+                      type="text"
+                      class="grow"
+                      [value]="customerForm.customerCode().value()"
+                      placeholder="Código de Cliente"
+                      readonly
+                      tabindex="-1"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    class="btn btn-neutral"
+                    (click)="generateCode()"
+                    [disabled]="!autoGeneratedCode()"
+                  >
+                    Generar
+                  </button>
                 </div>
-              }
-            </fieldset>
+              </fieldset>
+            </div>
 
+            <!-- Notes -->
             <fieldset class="fieldset">
-              <legend class="fieldset-legend text-lg">Documentos</legend>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--id-card-rounded] h-7 w-7"></span>
-                <input class="grow" [formField]="customerForm.dni" placeholder="DNI" />
-              </label>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--text-ad-rounded] h-7 w-7"></span>
-                <input
-                  class="grow"
-                  [formField]="customerForm.ce"
-                  placeholder="Carnet extranjería"
-                />
-              </label>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--newsmode-rounded] h-7 w-7"></span>
-                <input class="grow" [formField]="customerForm.ruc" placeholder="RUC" />
-              </label>
-              <label class="input input-neutral mb-2">
-                <span class="icon-[material-symbols--mail-rounded] h-7 w-7"></span>
-                <input
-                  class="grow"
-                  [formField]="customerForm.email"
-                  placeholder="Email"
-                  type="email"
-                />
-              </label>
-              <label class="input input-neutral grow bg-base-200">
-                <span class="icon-[material-symbols--barcode-reader-rounded] h-7 w-7"></span>
-                <input
-                  type="text"
-                  class="grow cursor-not-allowed"
-                  [value]="customerForm.customerCode().value()"
-                  placeholder="Código de Cliente"
-                  readonly
-                  tabindex="-1"
-                />
-              </label>
-            </fieldset>
-          </div>
-
-          <!-- Notes -->
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend text-lg">Notas (claves/valor)</legend>
-            <div class="card bg-base-100 p-4 mb-2">
-              <div>
+              <legend class="fieldset-legend text-lg">Notas (claves/valor)</legend>
+              <div class="card bg-base-100 p-4 mb-2">
                 @for (note of notesList(); track $index) {
                   <div class="flex gap-2 mb-2 items-center">
                     <input
@@ -187,47 +209,47 @@
                     </button>
                   </div>
                 }
+                <button type="button" class="btn btn-success btn-sm mt-2" (click)="addNote()">
+                  Agregar nota
+                </button>
+                <p class="label text-xs mt-1">
+                  Agrega pares clave/valor para información adicional. Se enviarán como JSON.
+                </p>
               </div>
-              <button type="button" class="btn btn-success btn-sm mt-2" (click)="addNote()">
-                Agregar nota
-              </button>
-              <p class="label text-xs mt-1">
-                Agrega pares clave/valor para información adicional. Se enviarán como JSON.
-              </p>
-            </div>
-          </fieldset>
+            </fieldset>
 
-          <!-- Buttons -->
-          <div class="mt-6 flex gap-2">
-            <button
-              type="submit"
-              class="btn btn-neutral flex-1"
-              [disabled]="
-                customerForm.phone().invalid() || customerForm.customerType().invalid() || saving()
-              "
-            >
-              @if (saving()) {
-                <span class="loading loading-spinner"></span>
-                <span>Guardando...</span>
-              } @else {
-                Guardar Cambios
-              }
-            </button>
-            <button
-              type="button"
-              class="btn btn-error"
-              (click)="onDelete()"
-              [disabled]="deleting()"
-            >
-              @if (deleting()) {
-                <span class="loading loading-spinner"></span>
-                <span>Eliminando...</span>
-              } @else {
-                Eliminar
-              }
-            </button>
-          </div>
-        </form>
+            <!-- Buttons -->
+            <div class="mt-6 flex gap-2">
+              <button
+                type="submit"
+                class="btn btn-neutral flex-1"
+                [disabled]="
+                  customerForm.phone().invalid() || customerForm.customerType().invalid() || saving()
+                "
+              >
+                @if (saving()) {
+                  <span class="loading loading-spinner"></span>
+                  <span>Guardando...</span>
+                } @else {
+                  Guardar Cambios
+                }
+              </button>
+              <button
+                type="button"
+                class="btn btn-error"
+                (click)="onDelete()"
+                [disabled]="deleting()"
+              >
+                @if (deleting()) {
+                  <span class="loading loading-spinner"></span>
+                  <span>Eliminando...</span>
+                } @else {
+                  Eliminar
+                }
+              </button>
+            </div>
+          </form>
+        }
       </div>
     </div>
   </div>
