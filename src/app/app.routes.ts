@@ -41,6 +41,10 @@ export const routes: Routes = [
         loadChildren: () => import('@features/sales/sales.routes'),
       },
       {
+        path: 'caja',
+        loadChildren: () => import('@features/cashier/cashier.routes').then((m) => m.cashierRoutes),
+      },
+      {
         path: 'tickets',
         children: [
           {

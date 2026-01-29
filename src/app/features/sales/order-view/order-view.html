@@ -15,6 +15,10 @@
           <i class="icon-[mdi--arrow-left] w-5 h-5"></i>
           Volver
         </button>
+        <button class="btn btn-success" (click)="openPaymentModal()">
+          <i class="icon-[mdi--cash] w-5 h-5"></i>
+          Registrar Pago
+        </button>
         <button class="btn btn-primary" (click)="goToEdit()">
           <i class="icon-[mdi--pencil] w-5 h-5"></i>
           Editar
@@ -111,17 +115,17 @@
           <div class="flex justify-between items-center">
             <span>Subtotal:</span>
             <span class="font-semibold">
-              {{ formatCurrency(order()!.total_amount - order()!.tax_amount) }}
+              {{ formatCurrency(order()!.total_price) }}
             </span>
           </div>
           <div class="flex justify-between items-center">
             <span>IGV:</span>
-            <span class="font-semibold">{{ formatCurrency(order()!.tax_amount) }}</span>
+            <span class="font-semibold">{{ formatCurrency(order()!.igv || 0) }}</span>
           </div>
           <div class="divider my-2"></div>
           <div class="flex justify-between items-center text-xl">
             <span class="font-bold">Total:</span>
-            <span class="font-bold text-primary">{{ formatCurrency(order()!.total_amount) }}</span>
+            <span class="font-bold text-primary">{{ formatCurrency(order()!.final_amount) }}</span>
           </div>
         </div>
       </div>
@@ -145,6 +149,14 @@
         </div>
       </div>
     </div>
+
+    <!-- Payment Modal -->
+    <app-payment-modal
+      [order]="order()!"
+      [isOpen]="showPaymentModal()"
+      (onClose)="closePaymentModal()"
+      (paymentRegistered)="handlePaymentRegistered()"
+    />
   } @else {
     <div class="text-center py-12">
       <i class="icon-[mdi--alert-circle-outline] w-16 h-16 mx-auto mb-4 text-error"></i>

@@ -2,9 +2,11 @@
 -- # POS Module
 -- ###################################################################
 
-DROP TABLE IF EXISTS sales.order_details CASCADE;
 DROP TABLE IF EXISTS sales.order_status CASCADE;
+DROP TABLE IF EXISTS sales.order_details CASCADE;
 DROP TABLE IF EXISTS sales.orders CASCADE;
+DROP TABLE IF EXISTS sales.cash_register_sessions CASCADE;
+DROP TABLE IF EXISTS sales.payments CASCADE;
 
 CREATE TABLE sales.order_status
 (
@@ -72,65 +74,60 @@ ALTER TABLE sales.orders
   ADD CONSTRAINT chk_remaining_balance CHECK (remaining_balance >= 0),
   ADD CONSTRAINT chk_payment_status CHECK (payment_status IN ('PENDIENTE', 'PARCIAL', 'PAGADO'));
 
+  
 CREATE TRIGGER trg_update_orders_timestamp
   BEFORE UPDATE ON sales.orders
   FOR EACH ROW
   EXECUTE FUNCTION core.set_updated_at();
-
-ALTER TABLE sales.orders ENABLE ROW LEVEL SECURITY;
 
 -- Índice para mejorar el rendimiento en consultas por número de orden y estado
 CREATE INDEX idx_orders_order_number_status ON sales.orders (order_number, status_id);
 CREATE INDEX idx_orders_payment_status ON sales.orders (payment_status) WHERE payment_status != 'PAGADO';
 CREATE INDEX idx_orders_customer_status ON sales.orders (customer_id, payment_status);
 
--- ###################################################################
--- # PAYMENTS (Registro de pagos individuales)
--- ###################################################################
-CREATE TABLE IF NOT EXISTS sales.payments (
+ALTER TABLE sales.orders ENABLE ROW LEVEL SECURITY;
+
+
+CREATE TABLE IF NOT EXISTS sales.order_details (
   id UUID PRIMARY KEY,
-  order_id UUID NOT NULL REFERENCES sales.orders(id) ON DELETE CASCADE,
-  cash_register_session_id UUID REFERENCES sales.cash_register_sessions(id),
+  order_id UUID NOT NULL REFERENCES sales.orders(id),
+  item_id UUID REFERENCES inventory.items(id), 
   
-  -- Información del pago
-  amount NUMERIC(15,4) NOT NULL,
-  payment_method TEXT NOT NULL,  -- EFECTIVO, TARJETA, TRANSFERENCIA, YAPE, PLIN
-  payment_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  description TEXT NOT NULL, -- Ej: "Banner 13oz Impreso"
+  quantity DECIMAL(12,2) NOT NULL DEFAULT 1,
+  unit_price NUMERIC(15,4) NOT NULL,
   
-  -- Metadata
-  transaction_reference TEXT,     -- Número de operación, voucher, etc.
-  notes TEXT,
+  -- CAMPOS CRÍTICOS PARA IMPRENTA
+  is_custom_size BOOLEAN DEFAULT FALSE, 
+  width_mm DECIMAL(10,2),
+  height_mm DECIMAL(10,2),
+  area_mm2 NUMERIC(16,4), 
+
+  subtotal NUMERIC(15,4),
   
-  -- Auditoría
-  received_by_id UUID REFERENCES hr.employees(id),
+  attributes JSONB DEFAULT '{}'::jsonb,
+  production_notes TEXT,
+
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
-  deleted_at TIMESTAMPTZ
+  updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-ALTER TABLE sales.payments
-  ADD CONSTRAINT chk_payment_amount CHECK (amount > 0),
-  ADD CONSTRAINT chk_payment_method CHECK (
-    payment_method IN ('EFECTIVO','YAPE','TARJETA_DEBITO','TARJETA_CREDITO','TRANSFERENCIA','DEPOSITO','DOLARES','OTRO')
-  ),
-  ADD CONSTRAINT chk_transaction_reference CHECK (
-    transaction_reference IS NULL OR char_length(transaction_reference) <= 100
-  ),
-  ADD CONSTRAINT chk_notes CHECK (
-    notes IS NULL OR char_length(notes) <= 500
-  );
+ALTER TABLE sales.order_details
+  ADD CONSTRAINT chk_description_length CHECK (char_length(description) <= 200),
+  ADD CONSTRAINT chk_quantity CHECK (quantity > 0),
+  ADD CONSTRAINT chk_unit_price CHECK (unit_price >= 0),
+  ADD CONSTRAINT chk_width_mm CHECK (width_mm IS NULL OR width_mm > 0),
+  ADD CONSTRAINT chk_height_mm CHECK (height_mm IS NULL OR height_mm > 0),
+  ADD CONSTRAINT chk_area_mm2 CHECK (area_mm2 IS NULL OR area_mm2 > 0),
+  ADD CONSTRAINT chk_subtotal CHECK (subtotal >= 0);
 
-CREATE INDEX idx_payments_order ON sales.payments (order_id);
-CREATE INDEX idx_payments_session ON sales.payments (cash_register_session_id);
-CREATE INDEX idx_payments_date ON sales.payments (payment_date);
-CREATE INDEX idx_payments_method ON sales.payments (payment_method);
-
-CREATE TRIGGER trg_update_payments_timestamp
-  BEFORE UPDATE ON sales.payments
+CREATE TRIGGER trg_update_order_details_timestamp
+  BEFORE UPDATE ON sales.order_details
   FOR EACH ROW
   EXECUTE FUNCTION core.set_updated_at();
 
-ALTER TABLE sales.payments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales.order_details ENABLE ROW LEVEL SECURITY;
+
 
 -- ###################################################################
 -- # CASH REGISTER SESSIONS (Cortes de Caja)
@@ -206,80 +203,53 @@ CREATE TRIGGER trg_update_cash_register_sessions_timestamp
 
 ALTER TABLE sales.cash_register_sessions ENABLE ROW LEVEL SECURITY;
 
-CREATE TABLE IF NOT EXISTS sales.order_details (
+-- ###################################################################
+-- # PAYMENTS (Registro de pagos individuales)
+-- ###################################################################
+CREATE TABLE IF NOT EXISTS sales.payments (
   id UUID PRIMARY KEY,
-  order_id UUID NOT NULL REFERENCES sales.orders(id),
-  item_id UUID REFERENCES inventory.items(id), 
+  order_id UUID NOT NULL REFERENCES sales.orders(id) ON DELETE CASCADE,
+  cash_register_session_id UUID REFERENCES sales.cash_register_sessions(id),
   
-  description TEXT NOT NULL, -- Ej: "Banner 13oz Impreso"
-  quantity DECIMAL(12,2) NOT NULL DEFAULT 1,
-  unit_price NUMERIC(15,4) NOT NULL,
+  -- Información del pago
+  amount NUMERIC(15,4) NOT NULL,
+  payment_method TEXT NOT NULL,  -- EFECTIVO, TARJETA, TRANSFERENCIA, YAPE, PLIN
+  payment_date TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   
-  -- CAMPOS CRÍTICOS PARA IMPRENTA
-  is_custom_size BOOLEAN DEFAULT FALSE, 
-  width_mm DECIMAL(10,2),
-  height_mm DECIMAL(10,2),
-  area_mm2 NUMERIC(16,4), 
-
-  subtotal NUMERIC(15,4),
+  -- Metadata
+  transaction_reference TEXT,     -- Número de operación, voucher, etc.
+  notes TEXT,
   
-  attributes JSONB DEFAULT '{}'::jsonb,
-  production_notes TEXT,
-
+  -- Auditoría
+  received_by_id UUID REFERENCES hr.employees(id),
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  deleted_at TIMESTAMPTZ
 );
 
-ALTER TABLE sales.order_details
-  ADD CONSTRAINT chk_description_length CHECK (char_length(description) <= 200),
-  ADD CONSTRAINT chk_quantity CHECK (quantity > 0),
-  ADD CONSTRAINT chk_unit_price CHECK (unit_price >= 0),
-  ADD CONSTRAINT chk_width_mm CHECK (width_mm IS NULL OR width_mm > 0),
-  ADD CONSTRAINT chk_height_mm CHECK (height_mm IS NULL OR height_mm > 0),
-  ADD CONSTRAINT chk_area_mm2 CHECK (area_mm2 IS NULL OR area_mm2 > 0),
-  ADD CONSTRAINT chk_subtotal CHECK (subtotal >= 0);
+ALTER TABLE sales.payments
+  ADD CONSTRAINT chk_payment_amount CHECK (amount > 0),
+  ADD CONSTRAINT chk_payment_method CHECK (
+    payment_method IN ('EFECTIVO','YAPE','TARJETA_DEBITO','TARJETA_CREDITO','TRANSFERENCIA','DEPOSITO','DOLARES','OTRO')
+  ),
+  ADD CONSTRAINT chk_transaction_reference CHECK (
+    transaction_reference IS NULL OR char_length(transaction_reference) <= 100
+  ),
+  ADD CONSTRAINT chk_notes CHECK (
+    notes IS NULL OR char_length(notes) <= 500
+  );
 
-CREATE TRIGGER trg_update_order_details_timestamp
-  BEFORE UPDATE ON sales.order_details
+CREATE INDEX idx_payments_order ON sales.payments (order_id);
+CREATE INDEX idx_payments_session ON sales.payments (cash_register_session_id);
+CREATE INDEX idx_payments_date ON sales.payments (payment_date);
+CREATE INDEX idx_payments_method ON sales.payments (payment_method);
+
+CREATE TRIGGER trg_update_payments_timestamp
+  BEFORE UPDATE ON sales.payments
   FOR EACH ROW
   EXECUTE FUNCTION core.set_updated_at();
 
-ALTER TABLE sales.order_details ENABLE ROW LEVEL SECURITY;
-
--- ###############################################################
--- Production 
--- ###############################################################
-CREATE SCHEMA IF NOT EXISTS production;
-
-DROP TABLE IF EXISTS production.jobs CASCADE;
-CREATE TABLE IF NOT EXISTS production.jobs (
-  id UUID PRIMARY KEY,
-  order_detail_id UUID REFERENCES sales.order_details(id) NOT NULL,
-  machine_id UUID REFERENCES inventory.machines(id) NOT NULL, 
-  
-  employee_id UUID REFERENCES hr.employees(id) NOT NULL,
-  started_at TIMESTAMPTZ NOT NULL,
-  finished_at TIMESTAMPTZ,
-  
-  -- Aquí se registra el consumo real que afectará al Kardex
-  -- material_used_id UUID REFERENCES inventory.items(id) NOT NULL,
-  -- quantity_used DECIMAL(12,3) NOT NULL, -- Ej: 3.20 metros lineales
-  -- waste_quantity DECIMAL(12,3) DEFAULT 0, -- Merma
-
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
--- ALTER TABLE production.jobs
---   ADD CONSTRAINT chk_quantity_used CHECK (quantity_used >= 0),
---   ADD CONSTRAINT chk_waste_quantity CHECK (waste_quantity >= 0);
-
-CREATE TRIGGER trg_update_production_jobs_timestamp
-  BEFORE UPDATE ON production.jobs
-  FOR EACH ROW
-  EXECUTE FUNCTION core.set_updated_at();
-
-ALTER TABLE production.jobs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE sales.payments ENABLE ROW LEVEL SECURITY;
 
 -- ###################################################################
 -- # FUNCIONES RPC PARA OPERACIONES DE POS

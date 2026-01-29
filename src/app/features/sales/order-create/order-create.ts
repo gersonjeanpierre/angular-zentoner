@@ -268,8 +268,13 @@ export default class OrderCreate {
         employee_id: formData.employeeId,
         shop_id: formData.shopId || crypto.randomUUID(), // TODO: Usar shop actual
         status_id: formData.statusId,
-        total_amount: this.totalAmount(),
-        tax_amount: this.igvAmount(),
+        total_price: this.totalAmount(),
+        discount: 0,
+        igv: this.igvAmount(),
+        final_amount: this.finalAmount(),
+        advance: 0,
+        remaining_balance: this.finalAmount(),
+        payment_status: 'PENDIENTE',
       };
 
       const orderId = await this.orderService.createOrder(order, formData.details);

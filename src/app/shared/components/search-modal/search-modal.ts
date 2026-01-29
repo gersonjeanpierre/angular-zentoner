@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output, signal } f
 export interface SearchableItem {
   id: string;
   displayText: string;
+  displayFitText?: string;
   subtitle?: string;
   metadata?: unknown;
 }
@@ -25,6 +26,10 @@ export class SearchModal {
   readonly onSearch = output<string>();
 
   protected searchTerm = signal('');
+
+  // ngOnChanges() {
+  //   console.log('Items changed:', this.items());
+  // }
 
   protected filteredItems = computed(() => {
     const term = this.searchTerm().toLowerCase().trim();

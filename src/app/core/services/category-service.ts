@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { Supabase } from '@core/supabase/supabase';
-import { BehaviorSubject, from, Observable, of } from 'rxjs';
-import { map, tap, shareReplay } from 'rxjs/operators';
+import { BehaviorSubject, from, Observable } from 'rxjs';
+import { map, tap } from 'rxjs/operators';
 
 @Injectable({
   providedIn: 'root',
@@ -120,6 +120,5 @@ export class CategoryService {
   // Limpieza total al cerrar sesión
   clearCache(): void {
     sessionStorage.removeItem(this.STORAGE_KEY);
-    // this.categoriesSubject.next(null);
   }
 }

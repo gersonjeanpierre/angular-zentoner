@@ -1,0 +1,233 @@
+<div class="container mx-auto p-6 max-w-7xl">
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-bold">Ventas del Día</h1>
+      @if (currentSession()) {
+        <p class="text-base-content/70">Sesión #{{ currentSession()!.session_number }}</p>
+      }
+    </div>
+    <button class="btn btn-ghost" (click)="goToDashboard()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Volver
+    </button>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert-error mb-6">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Stats Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-title">Total Ventas</div>
+      <div class="stat-value text-primary">{{ formatCurrency(totalSales()) }}</div>
+      <div class="stat-desc">{{ totalOrders() }} órdenes</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-title">Total Cobrado</div>
+      <div class="stat-value text-success">{{ formatCurrency(totalPaid()) }}</div>
+      <div class="stat-desc">{{ paidOrdersCount() }} pagadas</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-title">Total Pendiente</div>
+      <div class="stat-value text-warning">{{ formatCurrency(totalPending()) }}</div>
+      <div class="stat-desc">{{ pendingOrdersCount() }} pendientes</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-title">Parciales</div>
+      <div class="stat-value text-info text-2xl">{{ partialOrdersCount() }}</div>
+      <div class="stat-desc">Órdenes con pago parcial</div>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="flex gap-2 mb-4">
+    <button
+      class="btn btn-sm"
+      [class.btn-primary]="filterPaymentStatus() === 'ALL'"
+      (click)="setFilter('ALL')"
+    >
+      Todas ({{ totalOrders() }})
+    </button>
+    <button
+      class="btn btn-sm"
+      [class.btn-warning]="filterPaymentStatus() === 'PENDIENTE'"
+      (click)="setFilter('PENDIENTE')"
+    >
+      Pendientes ({{ pendingOrdersCount() }})
+    </button>
+    <button
+      class="btn btn-sm"
+      [class.btn-info]="filterPaymentStatus() === 'PARCIAL'"
+      (click)="setFilter('PARCIAL')"
+    >
+      Parciales ({{ partialOrdersCount() }})
+    </button>
+    <button
+      class="btn btn-sm"
+      [class.btn-success]="filterPaymentStatus() === 'PAGADO'"
+      (click)="setFilter('PAGADO')"
+    >
+      Pagadas ({{ paidOrdersCount() }})
+    </button>
+  </div>
+
+  <!-- Tabla de Órdenes -->
+  <div class="card bg-base-200 shadow-xl">
+    <div class="card-body">
+      @if (loading()) {
+        <div class="flex justify-center py-12">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+      } @else if (filteredOrders().length === 0) {
+        <div class="text-center py-12">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-24 w-24 mx-auto text-base-content/30 mb-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p class="text-xl text-base-content/70">No hay órdenes que mostrar</p>
+        </div>
+      } @else {
+        <div class="overflow-x-auto">
+          <table class="table table-zebra">
+            <thead>
+              <tr>
+                <th>Orden</th>
+                <th>Hora</th>
+                <th>Cliente</th>
+                <th>Total</th>
+                <th>Pagado</th>
+                <th>Saldo</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of filteredOrders(); track order.id) {
+                <tr class="hover">
+                  <td class="font-mono">#{{ order.order_number }}</td>
+                  <td>{{ formatDate(order.created_at!) }}</td>
+                  <td>{{ order.customer_id }}</td>
+                  <td class="font-semibold">{{ formatCurrency(order.final_amount) }}</td>
+                  <td class="text-success">{{ formatCurrency(order.advance || 0) }}</td>
+                  <td class="text-warning">{{ formatCurrency(order.remaining_balance || 0) }}</td>
+                  <td>
+                    <span
+                      class="badge"
+                      [ngClass]="getPaymentStatusBadge(order.payment_status || 'PENDIENTE')"
+                    >
+                      {{ getPaymentStatusLabel(order.payment_status || 'PENDIENTE') }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="flex gap-2">
+                      <button
+                        class="btn btn-sm btn-ghost"
+                        (click)="viewOrder(order.id!)"
+                        title="Ver detalles"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          class="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                          />
+                        </svg>
+                      </button>
+                      @if (order.payment_status !== 'PAGADO') {
+                        <button
+                          class="btn btn-sm btn-success"
+                          (click)="openPaymentModal(order)"
+                          title="Registrar pago"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              stroke-width="2"
+                              d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                            />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- Payment Modal -->
+  @if (selectedOrder()) {
+    <app-payment-modal
+      [order]="selectedOrder()!"
+      [isOpen]="showPaymentModal()"
+      (onClose)="closePaymentModal()"
+      (paymentRegistered)="handlePaymentRegistered()"
+    />
+  }
+</div>

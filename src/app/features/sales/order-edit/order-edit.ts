@@ -112,11 +112,11 @@ export default class OrderEdit {
         employeeName: order.employeeName || order.employee_id,
         shopId: order.shop_id,
         statusId: order.status_id,
-        taxAmount: order.tax_amount,
+        taxAmount: order.igv || 0,
         details: order.details || [],
       });
 
-      this.includeIGV.set(order.tax_amount > 0);
+      this.includeIGV.set((order.igv || 0) > 0);
     } catch (error) {
       console.error('Error al cargar orden:', error);
       alert('Error al cargar la orden');
@@ -299,8 +299,13 @@ export default class OrderEdit {
         employee_id: formData.employeeId,
         shop_id: formData.shopId,
         status_id: formData.statusId,
-        total_amount: this.totalAmount(),
-        tax_amount: this.igvAmount(),
+        total_price: this.totalAmount(),
+        discount: 0,
+        igv: this.igvAmount(),
+        final_amount: this.finalAmount(),
+        advance: 0,
+        remaining_balance: this.finalAmount(),
+        payment_status: 'PENDIENTE',
       };
 
       await this.orderService.updateOrder(orderId, order);
