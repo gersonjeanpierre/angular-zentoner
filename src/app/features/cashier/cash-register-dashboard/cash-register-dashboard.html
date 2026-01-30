@@ -35,16 +35,35 @@
         <div class="flex justify-between items-center mb-4">
           <h2 class="card-title">
             <span class="badge badge-success badge-lg">SESIÓN ABIERTA</span>
-            <span class="ml-2">Sesión #{{ currentSession()!.session_number }}</span>
+            <span class="ml-2">Sesión #{{ currentSession()!.sessionNumber }}</span>
           </h2>
-          <span class="text-base-content/70">{{ currentSession()!.session_type }}</span>
+          <div class="flex gap-2">
+            <span class="badge badge-outline">{{ currentSession()!.sessionType }}</span>
+            <button class="btn btn-ghost btn-sm" (click)="refreshDashboard()">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Información Básica de Sesión -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <div class="stat bg-base-100 rounded-box shadow">
             <div class="stat-title">Balance Inicial</div>
             <div class="stat-value text-primary text-2xl">
-              {{ formatCurrency(currentSession()!.opening_balance) }}
+              {{ formatCurrency(currentSession()!.openingBalance) }}
             </div>
             <div class="stat-desc">Efectivo en caja al abrir</div>
           </div>
@@ -52,9 +71,9 @@
           <div class="stat bg-base-100 rounded-box shadow">
             <div class="stat-title">Abierto Desde</div>
             <div class="stat-value text-2xl">
-              {{ formatDate(currentSession()!.opened_at).split(',')[1] }}
+              {{ openedTime() }}
             </div>
-            <div class="stat-desc">{{ formatDate(currentSession()!.opened_at).split(',')[0] }}</div>
+            <div class="stat-desc">{{ openedDate() }}</div>
           </div>
 
           <div class="stat bg-base-100 rounded-box shadow">
@@ -65,12 +84,188 @@
 
           <div class="stat bg-base-100 rounded-box shadow">
             <div class="stat-title">Total Órdenes</div>
-            <div class="stat-value text-2xl">{{ currentSession()!.total_orders }}</div>
+            <div class="stat-value text-2xl">{{ orderStats()?.totalOrders || 0 }}</div>
             <div class="stat-desc">Órdenes procesadas</div>
           </div>
         </div>
 
-        @if (currentSession()!.opening_notes) {
+        <!-- Flujo de Efectivo -->
+        @if (cashFlow()) {
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3">💵 Flujo de Efectivo</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+              <div class="stat bg-info/10 rounded-box">
+                <div class="stat-title text-info-content">Balance Inicial</div>
+                <div class="stat-value text-info text-xl">
+                  {{ formatCurrency(cashFlow()!.openingBalance) }}
+                </div>
+              </div>
+              <div class="stat bg-success/10 rounded-box">
+                <div class="stat-title text-success-content">Efectivo Ingreso</div>
+                <div class="stat-value text-success text-xl">
+                  {{ formatCurrency(cashFlow()!.cashIn) }}
+                </div>
+              </div>
+              <div class="stat bg-error/10 rounded-box">
+                <div class="stat-title text-error-content">Gastos</div>
+                <div class="stat-value text-error text-xl">
+                  {{ formatCurrency(cashFlow()!.cashOut) }}
+                </div>
+              </div>
+              <div class="stat bg-warning/10 rounded-box">
+                <div class="stat-title text-warning-content">Efectivo Esperado</div>
+                <div class="stat-value text-warning text-xl">
+                  {{ formatCurrency(cashFlow()!.expectedBalance) }}
+                </div>
+              </div>
+              <div class="stat bg-primary/10 rounded-box">
+                <div class="stat-title text-primary-content">Efectivo Actual</div>
+                <div class="stat-value text-primary text-xl">
+                  {{ formatCurrency(cashFlow()!.currentCash) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Sumatorias por Método de Pago -->
+        @if (paymentSummary()) {
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3">💳 Ingresos por Método de Pago</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div class="stat bg-base-100 rounded-box shadow-sm">
+                <div class="stat-title text-xs">Efectivo</div>
+                <div class="stat-value text-lg">
+                  {{ formatCurrency(paymentSummary()!.efectivo) }}
+                </div>
+              </div>
+              <div class="stat bg-base-100 rounded-box shadow-sm">
+                <div class="stat-title text-xs">Yape</div>
+                <div class="stat-value text-lg">{{ formatCurrency(paymentSummary()!.yape) }}</div>
+              </div>
+              <div class="stat bg-base-100 rounded-box shadow-sm">
+                <div class="stat-title text-xs">Tarjetas</div>
+                <div class="stat-value text-lg">
+                  {{
+                    formatCurrency(
+                      paymentSummary()!.tarjetaDebito + paymentSummary()!.tarjetaCredito
+                    )
+                  }}
+                </div>
+              </div>
+              <div class="stat bg-base-100 rounded-box shadow-sm">
+                <div class="stat-title text-xs">Transferencias</div>
+                <div class="stat-value text-lg">
+                  {{ formatCurrency(paymentSummary()!.transferencia + paymentSummary()!.deposito) }}
+                </div>
+              </div>
+              <div class="stat bg-base-100 rounded-box shadow-sm">
+                <div class="stat-title text-xs">Otros</div>
+                <div class="stat-value text-lg">
+                  {{
+                    formatCurrency(
+                      paymentSummary()!.plin + paymentSummary()!.dolares + paymentSummary()!.otro
+                    )
+                  }}
+                </div>
+              </div>
+            </div>
+            <div class="mt-3 p-3 bg-primary/10 rounded-box">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold">Total Recaudado:</span>
+                <span class="text-2xl font-bold text-primary">{{
+                  formatCurrency(paymentSummary()!.totalAmount)
+                }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Resumen de Gastos -->
+        @if (expenseSummary() && expenseSummary()!.totalAmount > 0) {
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3">💰 Gastos de Caja Chica</h3>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              @if (expenseSummary()!.operativo > 0) {
+                <div class="stat bg-base-100 rounded-box shadow-sm">
+                  <div class="stat-title text-xs">Operativo</div>
+                  <div class="stat-value text-lg text-error">
+                    {{ formatCurrency(expenseSummary()!.operativo) }}
+                  </div>
+                </div>
+              }
+              @if (expenseSummary()!.administrativo > 0) {
+                <div class="stat bg-base-100 rounded-box shadow-sm">
+                  <div class="stat-title text-xs">Administrativo</div>
+                  <div class="stat-value text-lg text-error">
+                    {{ formatCurrency(expenseSummary()!.administrativo) }}
+                  </div>
+                </div>
+              }
+              @if (expenseSummary()!.mantenimiento > 0) {
+                <div class="stat bg-base-100 rounded-box shadow-sm">
+                  <div class="stat-title text-xs">Mantenimiento</div>
+                  <div class="stat-value text-lg text-error">
+                    {{ formatCurrency(expenseSummary()!.mantenimiento) }}
+                  </div>
+                </div>
+              }
+              @if (expenseSummary()!.comprasMenores > 0) {
+                <div class="stat bg-base-100 rounded-box shadow-sm">
+                  <div class="stat-title text-xs">Compras Menores</div>
+                  <div class="stat-value text-lg text-error">
+                    {{ formatCurrency(expenseSummary()!.comprasMenores) }}
+                  </div>
+                </div>
+              }
+              @if (expenseSummary()!.otro > 0) {
+                <div class="stat bg-base-100 rounded-box shadow-sm">
+                  <div class="stat-title text-xs">Otros</div>
+                  <div class="stat-value text-lg text-error">
+                    {{ formatCurrency(expenseSummary()!.otro) }}
+                  </div>
+                </div>
+              }
+            </div>
+            <div class="mt-3 p-3 bg-error/10 rounded-box">
+              <div class="flex justify-between items-center">
+                <span class="font-semibold">Total Gastos:</span>
+                <span class="text-2xl font-bold text-error">{{
+                  formatCurrency(expenseSummary()!.totalAmount)
+                }}</span>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Estadísticas de Órdenes -->
+        @if (orderStats()) {
+          <div class="mb-6">
+            <h3 class="text-lg font-semibold mb-3">📊 Estado de Órdenes</h3>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="stat bg-warning/10 rounded-box">
+                <div class="stat-title">Pendientes</div>
+                <div class="stat-value text-warning">{{ orderStats()!.pendiente }}</div>
+              </div>
+              <div class="stat bg-info/10 rounded-box">
+                <div class="stat-title">Parciales</div>
+                <div class="stat-value text-info">{{ orderStats()!.parcial }}</div>
+              </div>
+              <div class="stat bg-success/10 rounded-box">
+                <div class="stat-title">Pagadas</div>
+                <div class="stat-value text-success">{{ orderStats()!.pagado }}</div>
+              </div>
+              <div class="stat bg-primary/10 rounded-box">
+                <div class="stat-title">Total Ventas</div>
+                <div class="stat-value text-primary text-lg">
+                  {{ formatCurrency(orderStats()!.totalSales) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        @if (currentSession()!.openingNotes) {
           <div class="mt-4">
             <div class="alert alert-info">
               <svg
@@ -88,13 +283,30 @@
               </svg>
               <div>
                 <div class="font-bold">Notas de Apertura:</div>
-                <div class="text-sm">{{ currentSession()!.opening_notes }}</div>
+                <div class="text-sm">{{ currentSession()!.openingNotes }}</div>
               </div>
             </div>
           </div>
         }
 
         <div class="card-actions justify-end mt-6 gap-2">
+          <button class="btn btn-ghost" (click)="navigateToExpenses()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            Gastos
+          </button>
           <button class="btn btn-ghost" (click)="navigateToOrders()">
             <svg
               xmlns="http://www.w3.org/2000/svg"

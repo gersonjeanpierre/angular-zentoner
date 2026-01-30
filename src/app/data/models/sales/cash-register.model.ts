@@ -14,47 +14,47 @@ export type SessionStatus = 'ABIERTO' | 'CERRADO';
  */
 export interface CashRegisterSession {
   id: string;
-  shop_id: string;
-  cashier_id: string;
+  shopId: string;
+  cashierId: string;
 
-  session_number: number;
-  session_type: SessionType;
+  sessionNumber: number;
+  sessionType: SessionType;
 
-  opened_at: string;
-  closed_at: string | null;
+  openedAt: string;
+  closedAt: string | null;
 
-  opening_balance: number;
-  closing_balance: number | null;
-  expected_balance: number | null;
+  openingBalance: number;
+  closingBalance: number | null;
+  expectedBalance: number | null;
   difference: number | null;
 
-  cash_total: number;
-  card_total: number;
-  transfer_total: number;
-  digital_wallet_total: number;
-  other_total: number;
+  cashTotal: number;
+  cardTotal: number;
+  transferTotal: number;
+  digitalWalletTotal: number;
+  otherTotal: number;
 
-  total_orders: number;
-  total_payments: number;
+  totalOrders: number;
+  totalPayments: number;
 
   status: SessionStatus;
 
-  opening_notes: string | null;
-  closing_notes: string | null;
+  openingNotes: string | null;
+  closingNotes: string | null;
 
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 /**
  * Payload para abrir una sesión de caja
  */
 export interface OpenSessionPayload {
-  shop_id: string;
-  cashier_id: string;
-  opening_balance: number;
-  session_type?: SessionType;
-  opening_notes?: string;
+  shopId: string; // De metadatos localStorage
+  cashierId: string; // user_id === employee_id
+  openingBalance: number;
+  sessionType?: SessionType;
+  openingNotes?: string;
 }
 
 /**
@@ -62,18 +62,18 @@ export interface OpenSessionPayload {
  */
 export interface OpenSessionResponse {
   success: boolean;
-  session_id: string;
-  opened_at: string;
-  opening_balance: number;
+  sessionId: string;
+  openedAt: string;
+  openingBalance: number;
 }
 
 /**
  * Payload para cerrar una sesión de caja
  */
 export interface CloseSessionPayload {
-  session_id: string;
-  closing_balance: number;
-  closing_notes?: string;
+  sessionId: string;
+  closingBalance: number;
+  closingNotes?: string;
 }
 
 /**
@@ -81,17 +81,143 @@ export interface CloseSessionPayload {
  */
 export interface CloseSessionResponse {
   success: boolean;
-  session_id: string;
-  closed_at: string;
-  opening_balance: number;
-  closing_balance: number;
-  expected_balance: number;
+  sessionId: string;
+  shopId: string;
+  closedAt: string;
+  openingBalance: number;
+  closingBalance: number;
+  expectedBalance: number;
   difference: number;
-  cash_total: number;
-  card_total: number;
-  transfer_total: number;
-  digital_wallet_total: number;
-  other_total: number;
-  total_payments: number;
-  total_orders: number;
+  cashTotal: number;
+  cardTotal: number;
+  transferTotal: number;
+  digitalWalletTotal: number;
+  otherTotal: number;
+  totalExpenses: number;
+  totalPayments: number;
+  totalOrders: number;
+}
+
+/**
+ * Categorías de gastos de caja chica
+ */
+export type ExpenseCategory =
+  | 'OPERATIVO'
+  | 'ADMINISTRATIVO'
+  | 'MANTENIMIENTO'
+  | 'COMPRAS_MENORES'
+  | 'OTRO';
+
+/**
+ * Modelo de Gasto de Caja Chica
+ */
+export interface CashExpense {
+  id: string;
+  cashRegisterSessionId: string;
+  shopId: string;
+  amount: number;
+  category: ExpenseCategory;
+  description: string;
+  receiptNumber: string | null;
+  notes: string | null;
+  authorizedById: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Payload para registrar un gasto de caja chica
+ */
+export interface RegisterExpensePayload {
+  cashRegisterSessionId: string;
+  amount: number;
+  category: ExpenseCategory;
+  description: string;
+  receiptNumber?: string;
+  notes?: string;
+  authorizedById?: string;
+}
+
+/**
+ * Respuesta de la función register_cash_expense RPC
+ */
+export interface RegisterExpenseResponse {
+  success: boolean;
+  expenseId: string;
+  amount: number;
+  category: string;
+  totalExpenses: number;
+  availableCash: number;
+}
+
+/**
+ * Vista de gasto con información del autorizador
+ */
+export interface ExpenseView extends CashExpense {
+  authorizedByName: string;
+}
+
+/**
+ * Resumen de pagos por método
+ */
+export interface PaymentSummary {
+  efectivo: number;
+  tarjetaDebito: number;
+  tarjetaCredito: number;
+  transferencia: number;
+  deposito: number;
+  yape: number;
+  plin: number;
+  dolares: number;
+  otro: number;
+  totalPayments: number;
+  totalAmount: number;
+}
+
+/**
+ * Resumen de gastos por categoría
+ */
+export interface ExpenseSummary {
+  operativo: number;
+  administrativo: number;
+  mantenimiento: number;
+  comprasMenores: number;
+  otro: number;
+  totalExpenses: number;
+  totalAmount: number;
+}
+
+/**
+ * Estadísticas de órdenes
+ */
+export interface OrderStats {
+  totalOrders: number;
+  pendiente: number;
+  parcial: number;
+  pagado: number;
+  totalSales: number;
+  totalCollected: number;
+}
+
+/**
+ * Flujo de efectivo
+ */
+export interface CashFlow {
+  openingBalance: number;
+  cashIn: number;
+  cashOut: number;
+  expectedBalance: number;
+  currentCash: number;
+}
+
+/**
+ * Dashboard completo de sesión
+ */
+export interface SessionDashboard {
+  session: CashRegisterSession;
+  paymentSummary: PaymentSummary;
+  expenseSummary: ExpenseSummary;
+  orderStats: OrderStats;
+  cashFlow: CashFlow;
+  sessionDurationMinutes: number;
 }

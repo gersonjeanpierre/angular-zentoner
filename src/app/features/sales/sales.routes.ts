@@ -9,4 +9,8 @@ export default [
     path: 'ver/:id',
     loadComponent: () => import('./order-view/order-view'),
   },
+  {
+    path: 'editar/:id',
+    loadComponent: () => import('./order-edit/order-edit'),
+  },
 ] satisfies Routes;

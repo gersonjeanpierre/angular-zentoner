@@ -42,7 +42,7 @@ export const routes: Routes = [
       },
       {
         path: 'caja',
-        loadChildren: () => import('@features/cashier/cashier.routes').then((m) => m.cashierRoutes),
+        loadChildren: () => import('@features/cashier/cashier.routes'),
       },
       {
         path: 'tickets',

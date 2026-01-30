@@ -17,6 +17,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 export class AuthService {
   //Services
   private readonly authSupabase = inject(Supabase).client.auth;
+  private readonly supabase = inject(Supabase).client;
   private readonly shopsService = inject(ShopService);
 
   protected readonly shops = toSignal(this.shopsService.dataShops$, { initialValue: [] });
@@ -105,8 +106,17 @@ export class AuthService {
       roles: roles,
       shopName: this.availableShops().filter((shop) => shop.id === user_metadata.shopId)[0]?.name,
       shopId: user_metadata.shopId,
+      role_id: user_metadata.roleId || null,
     };
   }
 
-  getShopName() {}
+  async getShopIdByUser() {
+    const metadata = await this.getUserProfileData();
+    return metadata.shopId;
+  }
+
+  async getUserRoles() {
+    const metadata = await this.getUserProfileData();
+    return metadata.roles;
+  }
 }

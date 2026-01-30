@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { form, FormField, required, min } from '@angular/forms/signals';
 import { CashRegisterService } from '@core/services/cash-register-service';
@@ -17,7 +24,7 @@ interface OpenSessionFormModel {
   templateUrl: './cash-register-open.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class CashRegisterOpen {
+export default class CashRegisterOpen implements OnInit {
   private cashRegisterService = inject(CashRegisterService);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -63,7 +70,11 @@ export default class CashRegisterOpen {
     },
   ];
 
-  async ngOnInit() {
+  ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  private async loadInitialData(): Promise<void> {
     await this.loadUserData();
     await this.checkExistingSession();
   }
@@ -80,17 +91,39 @@ export default class CashRegisterOpen {
 
   private async checkExistingSession() {
     try {
-      await this.cashRegisterService.loadCurrentSession();
-      const session = this.cashRegisterService.currentSession();
+      const user = this.userData();
+      if (!user) return;
 
-      if (session) {
-        this.error.set('Ya tienes una sesión abierta. Debes cerrarla antes de abrir una nueva.');
+      // Obtener shopId directamente de metadatos
+      const shopId = user.shopId;
+      if (!shopId) return;
+
+      // Verificar si ya existe una sesión abierta en este shop
+      const openSession = await this.cashRegisterService.getOpenSessionByShop(shopId);
+
+      if (openSession) {
+        // Verificar si la sesión es del mismo cajero (user_id === employee_id)
+        if (openSession.cashierId === user.id) {
+          this.error.set('Ya tienes una sesión abierta. Debes cerrarla antes de abrir una nueva.');
+        } else {
+          this.error.set(
+            `Este local ya tiene una sesión activa (Sesión #${openSession.sessionNumber}). ` +
+              'Debes esperar a que el cajero actual cierre su sesión.',
+          );
+        }
+
+        // Redirigir después de 3 segundos
         setTimeout(() => {
-          this.router.navigate(['/cashier/dashboard']);
+          this.router.navigate(['/caja/acceso-denegado'], {
+            state: {
+              reason: this.error(),
+              session: openSession,
+            },
+          });
         }, 3000);
       }
     } catch (error) {
-      // No hay sesión abierta, podemos continuar
+      console.log('No hay sesión abierta en este local');
     }
   }
 
@@ -112,13 +145,20 @@ export default class CashRegisterOpen {
         throw new Error('No se pudo obtener la información del usuario');
       }
 
-      // TODO: Obtener shop_id real del usuario
+      // Obtener shopId de metadatos (localStorage)
+      const shopId = user.shopId;
+
+      if (!shopId) {
+        throw new Error('No se encontró tienda asignada en los metadatos del usuario');
+      }
+
+      // Payload simple: shopId de metadata + userId como cashierId
       const payload: OpenSessionPayload = {
-        shop_id: crypto.randomUUID(), // Temporal
-        cashier_id: user.id,
-        opening_balance: formData.opening_balance,
-        session_type: formData.session_type,
-        opening_notes: formData.opening_notes || undefined,
+        shopId: shopId,
+        cashierId: user.id, // user_id === employee_id
+        openingBalance: formData.opening_balance,
+        sessionType: formData.session_type,
+        openingNotes: formData.opening_notes || undefined,
       };
 
       await this.cashRegisterService.openSession(payload);
@@ -126,7 +166,7 @@ export default class CashRegisterOpen {
       this.success.set(true);
 
       setTimeout(() => {
-        this.router.navigate(['/cashier/dashboard']);
+        this.router.navigate(['/caja/dashboard']);
       }, 1500);
     } catch (err: any) {
       console.error('Error al abrir sesión:', err);

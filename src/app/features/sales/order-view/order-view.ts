@@ -77,12 +77,12 @@ export default class OrderView {
   protected goToEdit() {
     const orderId = this.order()?.id;
     if (orderId) {
-      this.router.navigate(['/tickets/editar', orderId]);
+      this.router.navigate(['/ventas/editar', orderId]);
     }
   }
 
   protected goBack() {
-    this.router.navigate(['/tickets']);
+    this.router.navigate(['/ventas']);
   }
 
   protected getStatusClass(statusId: number): string {

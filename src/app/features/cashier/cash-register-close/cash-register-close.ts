@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { form, FormField, required, min } from '@angular/forms/signals';
 import { CashRegisterService } from '@core/services/cash-register-service';
@@ -16,7 +23,7 @@ interface CloseSessionFormModel {
   templateUrl: './cash-register-close.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class CashRegisterClose {
+export default class CashRegisterClose implements OnInit {
   private cashRegisterService = inject(CashRegisterService);
   private router = inject(Router);
 
@@ -51,7 +58,7 @@ export default class CashRegisterClose {
   protected difference = computed(() => {
     const summary = this.sessionSummary();
     if (!summary) return 0;
-    return summary.closing_balance - summary.expected_balance;
+    return summary.closingBalance - summary.expectedBalance;
   });
 
   protected differenceClass = computed(() => {
@@ -61,8 +68,8 @@ export default class CashRegisterClose {
     return 'text-error';
   });
 
-  async ngOnInit() {
-    await this.loadCurrentSession();
+  ngOnInit(): void {
+    this.loadCurrentSession();
   }
 
   private async loadCurrentSession() {
@@ -130,9 +137,9 @@ export default class CashRegisterClose {
       const formData = this.formModel();
 
       const payload: CloseSessionPayload = {
-        session_id: session.id,
-        closing_balance: formData.closing_balance,
-        closing_notes: formData.closing_notes || undefined,
+        sessionId: session.id,
+        closingBalance: formData.closing_balance,
+        closingNotes: formData.closing_notes || undefined,
       };
 
       const response = await this.cashRegisterService.closeSession(payload);

@@ -89,15 +89,27 @@ export default class DailySales {
       this.loading.set(true);
       this.error.set(null);
 
-      const today = new Date().toISOString().split('T')[0];
       const session = this.currentSession();
 
-      // Obtener órdenes del día
-      const response = await this.orderService.getOrders({
-        dateFrom: today,
-        dateTo: today,
-        shopId: session?.shop_id,
+      // Obtener desde la apertura de la sesión hasta ahora
+      const startDate = new Date(session!.openedAt);
+      const endDate = new Date();
+
+      console.log('[DailySales] Cargando ventas desde apertura de sesión:', {
+        session: session?.id,
+        shopId: session?.shopId,
+        dateFrom: startDate.toISOString(),
+        dateTo: endDate.toISOString(),
       });
+
+      // Obtener órdenes desde la apertura de la sesión
+      const response = await this.orderService.getOrders({
+        dateFrom: startDate.toISOString(),
+        dateTo: endDate.toISOString(),
+        shopId: session?.shopId,
+      });
+
+      console.log('[DailySales] Órdenes cargadas:', response);
 
       this.orders.set(response.data);
 
@@ -136,11 +148,11 @@ export default class DailySales {
   }
 
   protected viewOrder(orderId: string) {
-    this.router.navigate(['/sales/order-view', orderId]);
+    this.router.navigate(['/ventas/ver', orderId]);
   }
 
   protected goToDashboard() {
-    this.router.navigate(['/cashier/dashboard']);
+    this.router.navigate(['/caja/dashboard']);
   }
 
   protected formatCurrency(amount: number): string {

@@ -1,8 +1,16 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 import { CashRegisterService } from '@core/services/cash-register-service';
 import { AuthService } from '@core/services/auth-service';
 import { CommonModule } from '@angular/common';
+import { SessionDashboard } from '@data/models/sales/cash-register.model';
 
 @Component({
   selector: 'app-cash-register-dashboard',
@@ -10,7 +18,7 @@ import { CommonModule } from '@angular/common';
   templateUrl: './cash-register-dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export default class CashRegisterDashboard {
+export default class CashRegisterDashboard implements OnInit {
   private cashRegisterService = inject(CashRegisterService);
   private authService = inject(AuthService);
   private router = inject(Router);
@@ -21,10 +29,35 @@ export default class CashRegisterDashboard {
   protected loading = signal(false);
   protected error = signal<string | null>(null);
   protected userData = signal<any>(null);
+  protected dashboardData = signal<SessionDashboard | null>(null);
 
-  async ngOnInit() {
+  // Computed para acceso rápido a los datos del dashboard
+  protected paymentSummary = computed(() => this.dashboardData()?.paymentSummary || null);
+  protected expenseSummary = computed(() => this.dashboardData()?.expenseSummary || null);
+  protected orderStats = computed(() => this.dashboardData()?.orderStats || null);
+  protected cashFlow = computed(() => this.dashboardData()?.cashFlow || null);
+
+  // Computed para fecha y hora de apertura
+  protected openedDate = computed(() => {
+    const session = this.currentSession();
+    if (!session) return '';
+    return this.formatDate(session.openedAt).split(',')[0];
+  });
+
+  protected openedTime = computed(() => {
+    const session = this.currentSession();
+    if (!session) return '';
+    return this.formatDate(session.openedAt).split(',')[1];
+  });
+
+  ngOnInit(): void {
+    this.loadInitialData();
+  }
+
+  private async loadInitialData(): Promise<void> {
     await this.loadUserData();
     await this.loadSession();
+    await this.loadDashboard();
   }
 
   private async loadUserData() {
@@ -47,20 +80,40 @@ export default class CashRegisterDashboard {
     }
   }
 
+  private async loadDashboard() {
+    const session = this.currentSession();
+    if (!session) return;
+
+    try {
+      const dashboard = await this.cashRegisterService.getSessionDashboard(session.id);
+      this.dashboardData.set(dashboard);
+    } catch (err: any) {
+      console.error('Error al cargar dashboard:', err);
+    }
+  }
+
+  async refreshDashboard() {
+    await this.loadDashboard();
+  }
+
   protected navigateToOpen() {
-    this.router.navigate(['/cashier/abrir-sesion']);
+    this.router.navigate(['/caja/abrir-sesion']);
   }
 
   protected navigateToClose() {
-    this.router.navigate(['/cashier/cerrar-sesion']);
+    this.router.navigate(['/caja/cerrar-sesion']);
   }
 
   protected navigateToDailySales() {
-    this.router.navigate(['/cashier/ventas-dia']);
+    this.router.navigate(['/caja/ventas-dia']);
   }
 
   protected navigateToOrders() {
-    this.router.navigate(['/sales/orders-list']);
+    this.router.navigate(['/ventas']);
+  }
+
+  protected navigateToExpenses() {
+    this.router.navigate(['/caja/gastos']);
   }
 
   protected formatCurrency(amount: number): string {
@@ -84,7 +137,7 @@ export default class CashRegisterDashboard {
     const session = this.currentSession();
     if (!session) return '0h 0m';
 
-    const start = new Date(session.opened_at);
+    const start = new Date(session.openedAt);
     const now = new Date();
     const diff = now.getTime() - start.getTime();
 

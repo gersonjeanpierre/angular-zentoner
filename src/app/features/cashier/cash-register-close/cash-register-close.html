@@ -2,7 +2,7 @@
   <div class="mb-6">
     <h1 class="text-3xl font-bold">Cerrar Sesión de Caja</h1>
     @if (currentSession()) {
-      <p class="text-base-content/70">Sesión #{{ currentSession()!.session_number }}</p>
+      <p class="text-base-content/70">Sesión #{{ currentSession()!.sessionNumber }}</p>
     }
   </div>
 
@@ -67,9 +67,9 @@
             <div>
               <div class="font-bold">Sesión Activa</div>
               <div class="text-sm">
-                <p>Abierta: {{ formatDate(currentSession()!.opened_at) }}</p>
-                <p>Balance Inicial: {{ formatCurrency(currentSession()!.opening_balance) }}</p>
-                <p>Tipo: {{ currentSession()!.session_type }}</p>
+                <p>Abierta: {{ formatDate(currentSession()!.openedAt) }}</p>
+                <p>Balance Inicial: {{ formatCurrency(currentSession()!.openingBalance) }}</p>
+                <p>Tipo: {{ currentSession()!.sessionType }}</p>
               </div>
             </div>
           </div>
@@ -193,15 +193,15 @@
             <!-- Información de la Sesión -->
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Sesión</div>
-              <div class="stat-value text-2xl">#{{ sessionSummary()!.session_id.slice(0, 8) }}</div>
-              <div class="stat-desc">{{ formatDate(sessionSummary()!.closed_at) }}</div>
+              <div class="stat-value text-2xl">#{{ sessionSummary()!.sessionId.slice(0, 8) }}</div>
+              <div class="stat-desc">{{ formatDate(sessionSummary()!.closedAt) }}</div>
             </div>
 
             <!-- Balance Inicial -->
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Balance Inicial</div>
               <div class="stat-value text-primary">
-                {{ formatCurrency(sessionSummary()!.opening_balance) }}
+                {{ formatCurrency(sessionSummary()!.openingBalance) }}
               </div>
             </div>
 
@@ -209,28 +209,28 @@
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Efectivo</div>
               <div class="stat-value text-2xl">
-                {{ formatCurrency(sessionSummary()!.cash_total) }}
+                {{ formatCurrency(sessionSummary()!.cashTotal) }}
               </div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Tarjetas</div>
               <div class="stat-value text-2xl">
-                {{ formatCurrency(sessionSummary()!.card_total) }}
+                {{ formatCurrency(sessionSummary()!.cardTotal) }}
               </div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Transferencias</div>
               <div class="stat-value text-2xl">
-                {{ formatCurrency(sessionSummary()!.transfer_total) }}
+                {{ formatCurrency(sessionSummary()!.transferTotal) }}
               </div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Billeteras Digitales</div>
               <div class="stat-value text-2xl">
-                {{ formatCurrency(sessionSummary()!.digital_wallet_total) }}
+                {{ formatCurrency(sessionSummary()!.digitalWalletTotal) }}
               </div>
             </div>
 
@@ -238,7 +238,7 @@
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Balance Esperado</div>
               <div class="stat-value text-info">
-                {{ formatCurrency(sessionSummary()!.expected_balance) }}
+                {{ formatCurrency(sessionSummary()!.expectedBalance) }}
               </div>
               <div class="stat-desc">Inicial + Efectivo recibido</div>
             </div>
@@ -246,7 +246,7 @@
             <!-- Balance Real -->
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Balance Real</div>
-              <div class="stat-value">{{ formatCurrency(sessionSummary()!.closing_balance) }}</div>
+              <div class="stat-value">{{ formatCurrency(sessionSummary()!.closingBalance) }}</div>
               <div class="stat-desc">Efectivo contado</div>
             </div>
 
@@ -270,12 +270,12 @@
             <!-- Totales -->
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Total Órdenes</div>
-              <div class="stat-value text-2xl">{{ sessionSummary()!.total_orders }}</div>
+              <div class="stat-value text-2xl">{{ sessionSummary()!.totalOrders }}</div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Total Pagos</div>
-              <div class="stat-value text-2xl">{{ sessionSummary()!.total_payments }}</div>
+              <div class="stat-value text-2xl">{{ sessionSummary()!.totalPayments }}</div>
             </div>
           </div>
 

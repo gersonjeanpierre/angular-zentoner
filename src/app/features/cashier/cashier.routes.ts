@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { cashierRoleGuard } from '@core/guards/cashier-role-guard';
 
-export const cashierRoutes: Routes = [
+const cashierRoutes: Routes = [
   {
     path: '',
     canActivate: [cashierRoleGuard],
@@ -31,6 +31,18 @@ export const cashierRoutes: Routes = [
         loadComponent: () => import('./daily-sales/daily-sales'),
         title: 'Ventas del Día',
       },
+      {
+        path: 'gastos',
+        loadComponent: () => import('./cash-expenses/cash-expenses'),
+        title: 'Gastos de Caja Chica',
+      },
+      {
+        path: 'acceso-denegado',
+        loadComponent: () => import('./access-denied/access-denied'),
+        title: 'Acceso Denegado',
+      },
     ],
   },
 ];
+
+export default cashierRoutes;

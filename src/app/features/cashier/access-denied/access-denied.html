@@ -1,0 +1,178 @@
+<div
+  class="container mx-auto p-6 max-w-4xl min-h-[calc(100vh-200px)] flex items-center justify-center"
+>
+  <div class="card bg-base-200 shadow-xl w-full max-w-2xl">
+    <div class="card-body text-center">
+      <!-- Icono de Advertencia -->
+      <div class="flex justify-center mb-6">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-24 w-24 text-warning"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      </div>
+
+      <!-- Título -->
+      <h1 class="text-3xl font-bold mb-4">Acceso Denegado</h1>
+
+      <!-- Razón -->
+      <div class="alert alert-warning mb-6">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="stroke-current shrink-0 h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+        <div class="text-left">
+          <div class="font-bold">Motivo:</div>
+          <div>{{ reason() }}</div>
+        </div>
+      </div>
+
+      <!-- Información de Sesión Activa (si existe) -->
+      @if (session()) {
+        <div class="card bg-base-100 shadow mb-6">
+          <div class="card-body">
+            <h2 class="card-title text-lg">Sesión Activa en esta Tienda</h2>
+            <div class="text-left space-y-2">
+              <div class="flex justify-between">
+                <span class="font-semibold">Sesión #:</span>
+                <span>{{ session()!.sessionNumber }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-semibold">Tipo:</span>
+                <span class="badge badge-outline">{{ session()!.sessionType }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="font-semibold">Abierta desde:</span>
+                <span class="text-sm">{{ formatDate(session()!.openedAt) }}</span>
+              </div>
+              <div class="divider my-2"></div>
+              <div class="text-sm text-base-content/70">
+                Esta caja ya está siendo utilizada por otro cajero. Debes esperar a que cierre su
+                sesión o contactar al supervisor para resolver esta situación.
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Instrucciones -->
+      <div class="text-base-content/70 mb-6">
+        <p class="mb-4">Posibles razones para este mensaje:</p>
+        <ul class="text-left space-y-2">
+          <li class="flex items-start gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-info shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Ya tienes una sesión de caja abierta en esta tienda</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-info shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>Otro cajero ya tiene una sesión activa en esta tienda</span>
+          </li>
+          <li class="flex items-start gap-2">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 text-info shrink-0 mt-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>No tienes los permisos necesarios para acceder a esta sección</span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Botones de Acción -->
+      <div class="card-actions justify-center gap-3">
+        <button class="btn btn-primary" (click)="navigateBack()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+            />
+          </svg>
+          Volver al Inicio
+        </button>
+        <button class="btn btn-ghost" (click)="navigateToLogin()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+            />
+          </svg>
+          Cerrar Sesión
+        </button>
+      </div>
+
+      <!-- Ayuda -->
+      <div class="mt-6 text-sm text-base-content/50">
+        Si crees que esto es un error, contacta al administrador del sistema.
+      </div>
+    </div>
+  </div>
+</div>
