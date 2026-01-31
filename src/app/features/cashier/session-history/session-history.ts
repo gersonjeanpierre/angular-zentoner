@@ -16,10 +16,11 @@ import {
   SessionStatus,
   SessionType,
 } from '@data/models/sales/cash-register.model';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 @Component({
   selector: 'app-session-history',
-  imports: [CommonModule],
+  imports: [CommonModule, AlertModal],
   templateUrl: './session-history.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,6 +35,12 @@ export default class SessionHistory implements OnInit {
   protected error = signal<string | null>(null);
   protected currentUserId = signal<string | null>(null);
   protected currentShopId = signal<string | null>(null);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Filtros
   protected statusFilter = signal<SessionStatus | 'ALL'>('ALL');
@@ -91,7 +98,11 @@ export default class SessionHistory implements OnInit {
     try {
       const user = await this.authService.getUserProfileData();
       if (!user || !user.shopId) {
-        this.error.set('No se encontró información de tienda del usuario');
+        this.showAlert(
+          'Error de usuario',
+          'No se encontró información de tienda del usuario',
+          'error',
+        );
         return;
       }
 
@@ -99,7 +110,7 @@ export default class SessionHistory implements OnInit {
       this.currentShopId.set(user.shopId);
     } catch (error) {
       console.error('Error al cargar datos de usuario:', error);
-      this.error.set('Error al cargar datos de usuario');
+      this.showAlert('Error al cargar datos', 'Error al cargar datos de usuario', 'error');
     }
   }
 
@@ -108,7 +119,11 @@ export default class SessionHistory implements OnInit {
     const userId = this.currentUserId();
 
     if (!shopId || !userId) {
-      this.error.set('No hay información de usuario disponible');
+      this.showAlert(
+        'Sin información de usuario',
+        'No hay información de usuario disponible',
+        'warning',
+      );
       return;
     }
 
@@ -124,7 +139,11 @@ export default class SessionHistory implements OnInit {
       this.sessions.set(sessions);
     } catch (err: any) {
       console.error('Error al cargar sesiones:', err);
-      this.error.set(err.message || 'Error al cargar el historial de sesiones');
+      this.showAlert(
+        'Error al cargar historial',
+        err.message || 'Error al cargar el historial de sesiones',
+        'error',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -140,7 +159,7 @@ export default class SessionHistory implements OnInit {
       this.selectedSessionDashboard.set(dashboard);
     } catch (err: any) {
       console.error('Error al cargar detalle de sesión:', err);
-      this.error.set('Error al cargar el detalle de la sesión');
+      this.showAlert('Error al cargar detalle', 'Error al cargar el detalle de la sesión', 'error');
     } finally {
       this.loadingModal.set(false);
     }
@@ -231,5 +250,25 @@ export default class SessionHistory implements OnInit {
   protected getDifferenceClass(difference: number | null): string {
     if (difference === null || difference === 0) return 'text-success';
     return difference > 0 ? 'text-info' : 'text-error';
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

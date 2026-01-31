@@ -280,3 +280,13 @@
     </div>
   </div>
 </div>
+
+<!-- Alert Modal -->
+@if (alertModalOpen()) {
+  <app-alert-modal
+    [title]="alertTitle()"
+    [message]="alertMessage()"
+    [type]="alertType()"
+    (closed)="closeAlert()"
+  />
+}

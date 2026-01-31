@@ -8,10 +8,11 @@ import { Order } from '@data/models/tickets/order-model';
 import { PaymentView } from '@data/models/sales/payment.model';
 import { CommonModule } from '@angular/common';
 import { PaymentModal } from '@shared/components/payment-modal/payment-modal';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 @Component({
   selector: 'app-daily-sales',
-  imports: [CommonModule, PaymentModal],
+  imports: [CommonModule, PaymentModal, AlertModal],
   templateUrl: './daily-sales.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -30,6 +31,12 @@ export default class DailySales {
   protected currentSession = this.cashRegisterService.currentSession;
   protected selectedOrder = signal<Order | null>(null);
   protected showPaymentModal = signal(false);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Filters
   protected filterPaymentStatus = signal<string>('ALL');
@@ -77,7 +84,11 @@ export default class DailySales {
     try {
       const user = await this.authService.getUserProfileData();
       if (!user || !user.shopId) {
-        this.error.set('No se encontró información de tienda del usuario');
+        this.showAlert(
+          'Error de usuario',
+          'No se encontró información de tienda del usuario',
+          'error',
+        );
         return;
       }
 
@@ -85,7 +96,11 @@ export default class DailySales {
       const session = this.currentSession();
 
       if (!session) {
-        this.error.set('No hay sesión activa. Abre una sesión para ver las ventas.');
+        this.showAlert(
+          'Sin sesión activa',
+          'No hay sesión activa. Abre una sesión para ver las ventas.',
+          'warning',
+        );
       }
     } catch (error) {
       console.error('Error al cargar sesión:', error);
@@ -193,5 +208,25 @@ export default class DailySales {
       PAGADO: 'Pagado',
     };
     return labels[status] || status;
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

@@ -9,6 +9,7 @@ import {
   ExpenseCategory,
   ExpenseView,
 } from '@data/models/sales/cash-register.model';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 interface ExpenseFormData {
   amount: number;
@@ -20,7 +21,7 @@ interface ExpenseFormData {
 
 @Component({
   selector: 'app-cash-expenses',
-  imports: [CommonModule, FormField],
+  imports: [CommonModule, FormField, AlertModal],
   templateUrl: './cash-expenses.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -35,6 +36,12 @@ export default class CashExpenses implements OnInit {
   protected submitting = signal(false);
   protected error = signal<string | null>(null);
   protected success = signal<string | null>(null);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Formulario de gastos con Signal Forms
   protected expenseModel = signal<ExpenseFormData>({
@@ -72,7 +79,11 @@ export default class CashExpenses implements OnInit {
     try {
       const user = await this.authService.getUserProfileData();
       if (!user || !user.shopId) {
-        this.error.set('No se encontró información de tienda del usuario');
+        this.showAlert(
+          'Error de usuario',
+          'No se encontró información de tienda del usuario',
+          'error',
+        );
         setTimeout(() => this.router.navigate(['/caja']), 3000);
         return;
       }
@@ -81,7 +92,11 @@ export default class CashExpenses implements OnInit {
       const session = this.currentSession();
 
       if (!session) {
-        this.error.set('No hay sesión activa. Debes abrir una sesión para registrar gastos.');
+        this.showAlert(
+          'Sin sesión activa',
+          'No hay sesión activa. Debes abrir una sesión para registrar gastos.',
+          'warning',
+        );
         setTimeout(() => this.router.navigate(['/caja']), 3000);
       }
     } catch (error) {
@@ -110,13 +125,17 @@ export default class CashExpenses implements OnInit {
 
     const session = this.currentSession();
     if (!session) {
-      this.error.set('No hay sesión activa');
+      this.showAlert('Sin sesión activa', 'No hay sesión activa', 'warning');
       return;
     }
 
     // Validar formulario - verificar que NO haya errores (invalid retorna true si hay errores)
     if (this.expenseForm.amount().invalid() || this.expenseForm.description().invalid()) {
-      this.error.set('Por favor, completa todos los campos requeridos correctamente');
+      this.showAlert(
+        'Campos requeridos',
+        'Por favor, completa todos los campos requeridos correctamente',
+        'warning',
+      );
       return;
     }
 
@@ -140,8 +159,10 @@ export default class CashExpenses implements OnInit {
 
       const response = await this.cashRegisterService.registerExpense(payload);
 
-      this.success.set(
+      this.showAlert(
+        'Gasto registrado',
         `Gasto registrado exitosamente. Efectivo disponible: ${this.formatCurrency(response.availableCash)}`,
+        'success',
       );
 
       // Limpiar formulario
@@ -155,12 +176,13 @@ export default class CashExpenses implements OnInit {
 
       // Recargar lista de gastos
       await this.loadExpenses();
-
-      // Limpiar mensaje de éxito después de 5 segundos
-      setTimeout(() => this.success.set(null), 5000);
     } catch (err: any) {
       console.error('Error al registrar gasto:', err);
-      this.error.set(err.message || 'Error al registrar el gasto');
+      this.showAlert(
+        'Error al registrar gasto',
+        err.message || 'Error al registrar el gasto',
+        'error',
+      );
     } finally {
       this.submitting.set(false);
     }
@@ -193,5 +215,25 @@ export default class CashExpenses implements OnInit {
 
   protected navigateBack() {
     this.router.navigate(['/caja']);
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

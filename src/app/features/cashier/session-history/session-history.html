@@ -587,3 +587,13 @@
     <div class="modal-backdrop" (click)="closeModal()"></div>
   </div>
 }
+
+<!-- Alert Modal -->
+@if (alertModalOpen()) {
+  <app-alert-modal
+    [title]="alertTitle()"
+    [message]="alertMessage()"
+    [type]="alertType()"
+    (closed)="closeAlert()"
+  />
+}

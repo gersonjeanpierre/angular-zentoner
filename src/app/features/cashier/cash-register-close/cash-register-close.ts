@@ -12,6 +12,7 @@ import { CashRegisterService } from '@core/services/cash-register-service';
 import { AuthService } from '@core/services/auth-service';
 import { CloseSessionPayload, CloseSessionResponse } from '@data/models/sales/cash-register.model';
 import { CommonModule } from '@angular/common';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 interface CloseSessionFormModel {
   closingBalance: number;
@@ -20,7 +21,7 @@ interface CloseSessionFormModel {
 
 @Component({
   selector: 'app-cash-register-close',
-  imports: [FormField, CommonModule],
+  imports: [FormField, CommonModule, AlertModal],
   templateUrl: './cash-register-close.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,6 +35,12 @@ export default class CashRegisterClose implements OnInit {
   protected success = signal(false);
   protected sessionSummary = signal<CloseSessionResponse | null>(null);
   protected showSummary = signal(false);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Helper para usar Math en template
   protected Math = Math;
@@ -78,7 +85,11 @@ export default class CashRegisterClose implements OnInit {
     try {
       const user = await this.authService.getUserProfileData();
       if (!user || !user.shopId) {
-        this.error.set('No se encontró información de tienda del usuario');
+        this.showAlert(
+          'Error de usuario',
+          'No se encontró información de tienda del usuario',
+          'error',
+        );
         return;
       }
 
@@ -86,14 +97,14 @@ export default class CashRegisterClose implements OnInit {
       const session = this.currentSession();
 
       if (!session) {
-        this.error.set('No hay sesión activa para cerrar');
+        this.showAlert('Sin sesión activa', 'No hay sesión activa para cerrar', 'warning');
         setTimeout(() => {
           this.router.navigate(['/caja/dashboard']);
         }, 3000);
       }
     } catch (error) {
       console.error('Error al cargar sesión:', error);
-      this.error.set('Error al cargar la sesión actual');
+      this.showAlert('Error al cargar sesión', 'Error al cargar la sesión actual', 'error');
     }
   }
 
@@ -104,7 +115,7 @@ export default class CashRegisterClose implements OnInit {
 
     const session = this.currentSession();
     if (!session) {
-      this.error.set('No hay sesión activa');
+      this.showAlert('Sin sesión activa', 'No hay sesión activa', 'warning');
       return;
     }
 
@@ -165,7 +176,11 @@ export default class CashRegisterClose implements OnInit {
       this.showSummary.set(true);
     } catch (err: any) {
       console.error('Error al obtener resumen:', err);
-      this.error.set(err.message || 'Error al obtener el resumen de la sesión');
+      this.showAlert(
+        'Error al obtener resumen',
+        err.message || 'Error al obtener el resumen de la sesión',
+        'error',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -174,7 +189,7 @@ export default class CashRegisterClose implements OnInit {
   protected async confirmClose() {
     const session = this.currentSession();
     if (!session) {
-      this.error.set('No hay sesión activa');
+      this.showAlert('Sin sesión activa', 'No hay sesión activa', 'warning');
       return;
     }
 
@@ -199,7 +214,11 @@ export default class CashRegisterClose implements OnInit {
       }, 3000);
     } catch (err: any) {
       console.error('Error al cerrar sesión:', err);
-      this.error.set(err.message || 'Error al cerrar la sesión de caja');
+      this.showAlert(
+        'Error al cerrar sesión',
+        err.message || 'Error al cerrar la sesión de caja',
+        'error',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -228,5 +247,25 @@ export default class CashRegisterClose implements OnInit {
       hour: '2-digit',
       minute: '2-digit',
     });
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

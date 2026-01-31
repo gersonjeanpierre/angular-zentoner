@@ -12,6 +12,7 @@ import { CashRegisterService } from '@core/services/cash-register-service';
 import { AuthService } from '@core/services/auth-service';
 import { OpenSessionPayload, SessionType } from '@data/models/sales/cash-register.model';
 import { v7 as uuidv7 } from 'uuid';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 interface OpenSessionFormModel {
   opening_balance: number;
@@ -21,7 +22,7 @@ interface OpenSessionFormModel {
 
 @Component({
   selector: 'app-cash-register-open',
-  imports: [FormField],
+  imports: [FormField, AlertModal],
   templateUrl: './cash-register-open.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -34,6 +35,12 @@ export default class CashRegisterOpen implements OnInit {
   protected error = signal<string | null>(null);
   protected success = signal(false);
   protected userData = signal<any>(null);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Form Model
   protected formModel = signal<OpenSessionFormModel>({
@@ -105,11 +112,17 @@ export default class CashRegisterOpen implements OnInit {
       if (openSession) {
         // Verificar si la sesión es del mismo cajero (user_id === employee_id)
         if (openSession.cashierId === user.id) {
-          this.error.set('Ya tienes una sesión abierta. Debes cerrarla antes de abrir una nueva.');
+          this.showAlert(
+            'Sesión ya abierta',
+            'Ya tienes una sesión abierta. Debes cerrarla antes de abrir una nueva.',
+            'warning',
+          );
         } else {
-          this.error.set(
+          this.showAlert(
+            'Sesión activa',
             `Este local ya tiene una sesión activa (Sesión #${openSession.sessionNumber}). ` +
               'Debes esperar a que el cajero actual cierre su sesión.',
+            'warning',
           );
         }
 
@@ -117,7 +130,7 @@ export default class CashRegisterOpen implements OnInit {
         setTimeout(() => {
           this.router.navigate(['/caja/acceso-denegado'], {
             state: {
-              reason: this.error(),
+              reason: this.alertMessage(),
               session: openSession,
             },
           });
@@ -143,14 +156,24 @@ export default class CashRegisterOpen implements OnInit {
       const user = this.userData();
 
       if (!user) {
-        throw new Error('No se pudo obtener la información del usuario');
+        this.showAlert(
+          'Error de usuario',
+          'No se pudo obtener la información del usuario',
+          'error',
+        );
+        return;
       }
 
       // Obtener shopId de metadatos (localStorage)
       const shopId = user.shopId;
 
       if (!shopId) {
-        throw new Error('No se encontró tienda asignada en los metadatos del usuario');
+        this.showAlert(
+          'Tienda no asignada',
+          'No se encontró tienda asignada en los metadatos del usuario',
+          'error',
+        );
+        return;
       }
 
       // Payload simple: shopId de metadata + userId como cashierId
@@ -172,7 +195,11 @@ export default class CashRegisterOpen implements OnInit {
       }, 1500);
     } catch (err: any) {
       console.error('[Cash Register OPEN Component]Error al abrir sesión:', err);
-      this.error.set(err.message || 'Error al abrir la sesión de caja');
+      this.showAlert(
+        'Error al abrir sesión',
+        err.message || 'Error al abrir la sesión de caja',
+        'error',
+      );
     } finally {
       this.loading.set(false);
     }
@@ -180,5 +207,25 @@ export default class CashRegisterOpen implements OnInit {
 
   protected cancel() {
     this.router.navigate(['/caja/dashboard']);
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

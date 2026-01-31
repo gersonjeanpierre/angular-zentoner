@@ -12,10 +12,11 @@ import { AuthService } from '@core/services/auth-service';
 import { PaymentService } from '@core/services/payment-service';
 import { CommonModule } from '@angular/common';
 import { SessionDashboard } from '@data/models/sales/cash-register.model';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 @Component({
   selector: 'app-cash-register-dashboard',
-  imports: [CommonModule],
+  imports: [CommonModule, AlertModal],
   templateUrl: './cash-register-dashboard.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -33,6 +34,12 @@ export default class CashRegisterDashboard implements OnInit {
   protected userData = signal<any>(null);
   protected dashboardData = signal<SessionDashboard | null>(null);
   protected unassignedPaymentsCount = signal(0);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   // Computed para acceso rápido a los datos del dashboard
   protected paymentSummary = computed(() => this.dashboardData()?.paymentSummary || null);
@@ -188,5 +195,25 @@ export default class CashRegisterDashboard implements OnInit {
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
     return `${hours}h ${minutes}m`;
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }
