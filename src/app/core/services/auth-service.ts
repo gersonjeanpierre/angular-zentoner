@@ -96,8 +96,10 @@ export class AuthService {
     const response =
       user_metadata.first_name && user_metadata.last_name
         ? user_metadata.first_name + ' ' + user_metadata.last_name
-        : 'SuperAdmin';
-    const roles = user_metadata.roleAssignmentResults[0].roles_assigned;
+        : user_metadata.name;
+    const roles = user_metadata.roles
+      ? user_metadata.roles
+      : user_metadata.roleAssignmentResults[0].roles_assigned;
     // console.log('metadata', session);
     return {
       id: session['user'].id,

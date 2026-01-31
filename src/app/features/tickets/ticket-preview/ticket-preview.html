@@ -8,7 +8,9 @@
   <div class="sub-header flex flex-col mb-1">
     <div class="flex flex-col text-[11px]">
       <span>{{ ticketData().socialReason }}</span>
-      <span> RUC: {{ ticketData().ruc }} </span>
+      @if (ticketData().ruc) {
+        <span> RUC: {{ ticketData().ruc }} </span>
+      }
       <span> {{ ticketData().address }} </span>
     </div>
     <div class="mt-2"></div>
@@ -47,18 +49,23 @@
       <span class="font-bold">PRECIO TOTAL:</span>
       <span class="font-bold">S/ {{ ticketData().totalPrice.toFixed(2) }}</span>
     </div>
-    <div class="flex justify-between text-xs">
-      <span class="font-bold">ADELANTO:</span>
-      <span class="font-bold">S/ {{ ticketData().advance.toFixed(2) }}</span>
-    </div>
-    <div class="flex justify-between text-xs">
-      <span class="font-bold">DESCUENTO:</span>
-      <span class="font-bold">S/ {{ ticketData().discount.toFixed(2) }}</span>
-    </div>
-    <div class="flex justify-between text-xs">
-      <span class="font-bold">SALDO PENDIENTE:</span>
-      <span class="font-bold text-error"> S/ {{ getRemainingBalance().toFixed(2) }} </span>
-    </div>
+    @if (ticketData().advance > 0) {
+      <div class="flex justify-between text-xs">
+        <span class="font-bold">ADELANTO:</span>
+        <span class="font-bold">S/ {{ ticketData().advance.toFixed(2) }}</span>
+      </div>
+      <div class="flex justify-between text-xs">
+        <span class="font-bold">SALDO PENDIENTE:</span>
+        <span class="font-bold text-error"> S/ {{ getRemainingBalance().toFixed(2) }} </span>
+      </div>
+    }
+    @if (ticketData().discount > 0) {
+      <div class="flex justify-between text-xs">
+        <span class="font-bold">DESCUENTO:</span>
+        <span class="font-bold">S/ {{ ticketData().discount.toFixed(2) }}</span>
+      </div>
+    }
+
     @if (includeIGV()) {
       <div class="flex justify-between text-xs">
         <span class="font-bold">IGV (18%):</span>
@@ -75,8 +82,8 @@
       </div>
       <div class="text-[12px] text-center mb-1">ID: {{ ticketUuid() }}</div>
     }
-    <div class="footer text-[11px] mt-1">
+    <!-- <div class="footer text-[11px] mt-1">
       Fecha de Impresión: {{ formatDate(printDate() || ticketData().printDate) }}
-    </div>
+    </div> -->
   </div>
 </div>

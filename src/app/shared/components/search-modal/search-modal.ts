@@ -19,11 +19,14 @@ export class SearchModal {
   readonly title = input<string>('Buscar');
   readonly items = input<SearchableItem[]>([]);
   readonly isLoading = input<boolean>(false);
+  readonly isSyncing = input<boolean>(false);
   readonly placeholder = input<string>('Buscar...');
+  readonly showSyncButton = input<boolean>(true);
 
   readonly onClose = output<void>();
   readonly onSelect = output<SearchableItem>();
   readonly onSearch = output<string>();
+  readonly onSync = output<void>();
 
   protected searchTerm = signal('');
 
@@ -58,5 +61,9 @@ export class SearchModal {
   protected handleClose() {
     this.searchTerm.set('');
     this.onClose.emit();
+  }
+
+  protected handleSync() {
+    this.onSync.emit();
   }
 }

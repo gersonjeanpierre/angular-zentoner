@@ -480,20 +480,7 @@ $$;
 
 COMMENT ON FUNCTION sales.get_session_dashboard IS 'Obtiene un dashboard completo con todas las métricas de una sesión de caja';
 
--- =====================================================================
--- Función: Obtener resumen mejorado (alias para compatibilidad)
--- =====================================================================
-CREATE OR REPLACE FUNCTION sales.get_session_summary(
-  p_session_id UUID
-)
-RETURNS JSON
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-BEGIN
-  RETURN sales.get_session_dashboard(p_session_id);
-END;
-$$;
+
 
 COMMENT ON FUNCTION sales.get_session_summary IS 'Alias de get_session_dashboard para compatibilidad con código existente';
 

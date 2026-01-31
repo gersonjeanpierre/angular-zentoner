@@ -1,13 +1,17 @@
-<div class="container mx-auto p-6 max-w-4xl">
+<div class="container mx-auto p-4 md:p-6 max-w-7xl">
+  <!-- Header -->
   <div class="mb-6">
-    <h1 class="text-3xl font-bold">Cerrar Sesión de Caja</h1>
+    <h1 class="text-2xl md:text-3xl font-bold">Cerrar Sesión de Caja</h1>
     @if (currentSession()) {
-      <p class="text-base-content/70">Sesión #{{ currentSession()!.sessionNumber }}</p>
+      <p class="text-sm md:text-base text-base-content/70">
+        Sesión #{{ currentSession()!.sessionNumber }}
+      </p>
     }
   </div>
 
+  <!-- Alertas -->
   @if (error()) {
-    <div class="alert alert-error mb-6">
+    <div class="alert alert-error mb-6 shadow-lg">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="stroke-current shrink-0 h-6 w-6"
@@ -26,7 +30,7 @@
   }
 
   @if (success()) {
-    <div class="alert alert-success mb-6">
+    <div class="alert alert-success mb-6 shadow-lg">
       <svg
         xmlns="http://www.w3.org/2000/svg"
         class="stroke-current shrink-0 h-6 w-6"
@@ -50,7 +54,7 @@
       <div class="card-body">
         @if (currentSession()) {
           <!-- Información de la Sesión -->
-          <div class="alert alert-info mb-4">
+          <div class="alert alert-info mb-4 shadow">
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
@@ -64,47 +68,53 @@
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
               ></path>
             </svg>
-            <div>
-              <div class="font-bold">Sesión Activa</div>
-              <div class="text-sm">
-                <p>Abierta: {{ formatDate(currentSession()!.openedAt) }}</p>
-                <p>Balance Inicial: {{ formatCurrency(currentSession()!.openingBalance) }}</p>
-                <p>Tipo: {{ currentSession()!.sessionType }}</p>
+            <div class="w-full">
+              <div class="font-bold text-base">Sesión Activa</div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 mt-2 text-sm">
+                <p><strong>Abierta:</strong> {{ formatDate(currentSession()!.openedAt) }}</p>
+                <p>
+                  <strong>Balance Inicial:</strong>
+                  {{ formatCurrency(currentSession()!.openingBalance) }}
+                </p>
+                <p><strong>Tipo:</strong> {{ currentSession()!.sessionType }}</p>
               </div>
             </div>
           </div>
 
           <form class="flex flex-col gap-4">
-            <!-- Balance Final -->
+            <!-- Balance Final de Caja Chica -->
             <div class="form-control w-full">
               <label class="label">
-                <span class="label-text font-semibold">Balance Final *</span>
-                <span class="label-text-alt">Efectivo real en caja (S/)</span>
+                <span class="label-text font-semibold text-base"
+                  >Balance Final de Caja Chica *</span
+                >
+                <span class="label-text-alt text-base-content/60">Efectivo en caja (S/)</span>
               </label>
               <input
                 type="number"
                 step="0.01"
-                [formField]="closeSessionForm.closing_balance"
+                [formField]="closeSessionForm.closingBalance"
                 class="input input-bordered w-full input-lg"
                 [class.input-error]="
-                  closeSessionForm.closing_balance().touched() &&
-                  closeSessionForm.closing_balance().invalid()
+                  closeSessionForm.closingBalance().touched() &&
+                  closeSessionForm.closingBalance().invalid()
                 "
                 placeholder="0.00"
               />
               @if (
-                closeSessionForm.closing_balance().touched() &&
-                closeSessionForm.closing_balance().invalid()
+                closeSessionForm.closingBalance().touched() &&
+                closeSessionForm.closingBalance().invalid()
               ) {
                 <div class="label">
-                  @for (error of closeSessionForm.closing_balance().errors(); track error) {
+                  @for (error of closeSessionForm.closingBalance().errors(); track error) {
                     <span class="label-text-alt text-error">{{ error.message }}</span>
                   }
                 </div>
               }
               <div class="label">
-                <span class="label-text-alt"
-                  >Cuenta el efectivo total que tienes en caja ahora</span
+                <span class="label-text-alt text-base-content/60"
+                  >Cuenta el efectivo que queda en la caja chica (NO incluir efectivo de
+                  ventas)</span
                 >
               </div>
             </div>
@@ -113,23 +123,23 @@
             <div class="form-control w-full">
               <label class="label">
                 <span class="label-text font-semibold">Notas de Cierre</span>
-                <span class="label-text-alt">Opcional</span>
+                <span class="label-text-alt text-base-content/60">Opcional</span>
               </label>
               <textarea
-                [formField]="closeSessionForm.closing_notes"
+                [formField]="closeSessionForm.closingNotes"
                 class="textarea textarea-bordered h-24"
                 placeholder="Observaciones, diferencias detectadas, incidentes, etc."
               ></textarea>
               <div class="label">
-                <span class="label-text-alt"
+                <span class="label-text-alt text-base-content/60"
                   >Información adicional sobre el cierre de caja o incidencias durante el
                   turno</span
                 >
               </div>
             </div>
 
-            <!-- Advertencia -->
-            <div class="alert alert-warning">
+            <!-- Advertencia Importante -->
+            <div class="alert alert-warning shadow">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="stroke-current shrink-0 h-6 w-6"
@@ -143,20 +153,30 @@
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                 />
               </svg>
-              <div>
+              <div class="w-full">
                 <div class="font-bold">Importante</div>
-                <div class="text-sm">
-                  Una vez cerrada la sesión, se calculará automáticamente la diferencia entre el
-                  balance esperado y el balance real. No podrás modificar esta sesión después.
+                <div class="text-sm space-y-1">
+                  <p>
+                    <strong>Caja Chica:</strong> Solo cuenta el efectivo que queda de tu balance
+                    inicial menos los gastos.
+                  </p>
+                  <p>
+                    <strong>Efectivo de Ventas:</strong> El efectivo recaudado de las ventas se
+                    envía a caja fuerte y NO se incluye en este balance.
+                  </p>
+                  <p>
+                    <strong>Cierre Definitivo:</strong> Una vez cerrada la sesión, no podrás
+                    modificarla.
+                  </p>
                 </div>
               </div>
             </div>
 
             <!-- Botones -->
-            <div class="flex gap-2 justify-end mt-4">
+            <div class="flex flex-col sm:flex-row gap-2 justify-end mt-4">
               <button
                 type="button"
-                class="btn btn-ghost"
+                class="btn btn-ghost w-full sm:w-auto"
                 (click)="cancel()"
                 [disabled]="loading() || success()"
               >
@@ -164,7 +184,7 @@
               </button>
               <button
                 type="button"
-                class="btn btn-primary"
+                class="btn btn-primary w-full sm:w-auto"
                 (click)="previewClose()"
                 [disabled]="loading() || success() || !isFormValid()"
               >
@@ -186,103 +206,142 @@
     <!-- Resumen de Cierre -->
     <div class="card bg-base-200 shadow-xl">
       <div class="card-body">
-        <h2 class="card-title mb-4">Resumen de Cierre de Caja</h2>
+        <h2 class="card-title text-xl md:text-2xl mb-4">Resumen de Cierre de Caja</h2>
 
         @if (sessionSummary()) {
+          <!-- Información General -->
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <!-- Información de la Sesión -->
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Sesión</div>
-              <div class="stat-value text-2xl">#{{ sessionSummary()!.sessionId.slice(0, 8) }}</div>
+              <div class="stat-value text-lg md:text-2xl">
+                #{{ sessionSummary()!.sessionId!.slice(0, 8) }}
+              </div>
               <div class="stat-desc">{{ formatDate(sessionSummary()!.closedAt) }}</div>
             </div>
 
-            <!-- Balance Inicial -->
             <div class="stat bg-base-100 rounded-box shadow">
+              <div class="stat-title">Duración</div>
+              <div class="stat-value text-lg md:text-2xl">
+                {{ sessionSummary()!.totalOrders }} <span class="text-sm">órdenes</span>
+              </div>
+              <div class="stat-desc">{{ sessionSummary()!.totalPayments }} pagos</div>
+            </div>
+          </div>
+
+          <!-- Sección Caja Chica (Principal) -->
+          <div class="divider">CAJA CHICA</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="stat bg-primary/10 rounded-box shadow">
               <div class="stat-title">Balance Inicial</div>
-              <div class="stat-value text-primary">
-                {{ formatCurrency(sessionSummary()!.openingBalance) }}
+              <div class="stat-value text-primary text-lg md:text-2xl">
+                {{ formatCurrency(sessionSummary()!.pettyCashOpening) }}
               </div>
             </div>
 
-            <!-- Totales por Método -->
+            <div class="stat bg-error/10 rounded-box shadow">
+              <div class="stat-title">Gastos</div>
+              <div class="stat-value text-error text-lg md:text-2xl">
+                {{ formatCurrency(sessionSummary()!.totalExpenses) }}
+              </div>
+            </div>
+
+            <div class="stat bg-info/10 rounded-box shadow">
+              <div class="stat-title">Balance Esperado</div>
+              <div class="stat-value text-info text-lg md:text-2xl">
+                {{ formatCurrency(sessionSummary()!.pettyCashExpected) }}
+              </div>
+              <div class="stat-desc">Inicial - Gastos</div>
+            </div>
+
             <div class="stat bg-base-100 rounded-box shadow">
-              <div class="stat-title">Efectivo</div>
-              <div class="stat-value text-2xl">
-                {{ formatCurrency(sessionSummary()!.cashTotal) }}
+              <div class="stat-title">Balance Real</div>
+              <div class="stat-value text-lg md:text-2xl">
+                {{ formatCurrency(sessionSummary()!.pettyCashClosing) }}
+              </div>
+              <div class="stat-desc">Efectivo contado</div>
+            </div>
+          </div>
+
+          <!-- Diferencia de Caja Chica -->
+          <div class="stat bg-base-100 rounded-box shadow mb-6">
+            <div class="stat-title">Diferencia de Caja Chica</div>
+            <div class="stat-value text-2xl md:text-4xl" [ngClass]="differenceClass()">
+              {{ formatCurrency(difference()) }}
+            </div>
+            <div class="stat-desc">
+              @if (difference() === 0) {
+                ✓ Balance cuadrado
+              } @else if (difference() > 0) {
+                Sobrante en caja
+              } @else {
+                Faltante en caja
+              }
+            </div>
+          </div>
+
+          <!-- Sección Efectivo de Ventas (Informativo) -->
+          <div class="divider">EFECTIVO DE VENTAS (Va a Caja Fuerte)</div>
+          <div class="alert alert-info shadow mb-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              class="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              ></path>
+            </svg>
+            <div class="w-full">
+              <div class="font-bold">Efectivo Recaudado de Ventas</div>
+              <div class="text-2xl font-bold mt-2">
+                {{ formatCurrency(sessionSummary()!.cashFromSales) }}
+              </div>
+              <div class="text-sm mt-1">
+                Este dinero debe ser enviado físicamente a la caja fuerte de la empresa
               </div>
             </div>
+          </div>
 
+          <!-- Otros Métodos de Pago -->
+          <div class="divider">OTROS MÉTODOS DE PAGO</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Tarjetas</div>
-              <div class="stat-value text-2xl">
+              <div class="stat-value text-lg md:text-xl">
                 {{ formatCurrency(sessionSummary()!.cardTotal) }}
               </div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Transferencias</div>
-              <div class="stat-value text-2xl">
+              <div class="stat-value text-lg md:text-xl">
                 {{ formatCurrency(sessionSummary()!.transferTotal) }}
               </div>
             </div>
 
             <div class="stat bg-base-100 rounded-box shadow">
               <div class="stat-title">Billeteras Digitales</div>
-              <div class="stat-value text-2xl">
+              <div class="stat-value text-lg md:text-xl">
                 {{ formatCurrency(sessionSummary()!.digitalWalletTotal) }}
               </div>
             </div>
 
-            <!-- Balance Esperado -->
             <div class="stat bg-base-100 rounded-box shadow">
-              <div class="stat-title">Balance Esperado</div>
-              <div class="stat-value text-info">
-                {{ formatCurrency(sessionSummary()!.expectedBalance) }}
+              <div class="stat-title">Otros</div>
+              <div class="stat-value text-lg md:text-xl">
+                {{ formatCurrency(sessionSummary()!.otherTotal) }}
               </div>
-              <div class="stat-desc">Inicial + Efectivo recibido</div>
-            </div>
-
-            <!-- Balance Real -->
-            <div class="stat bg-base-100 rounded-box shadow">
-              <div class="stat-title">Balance Real</div>
-              <div class="stat-value">{{ formatCurrency(sessionSummary()!.closingBalance) }}</div>
-              <div class="stat-desc">Efectivo contado</div>
-            </div>
-
-            <!-- Diferencia -->
-            <div class="stat bg-base-100 rounded-box shadow col-span-2">
-              <div class="stat-title">Diferencia</div>
-              <div class="stat-value" [ngClass]="differenceClass()">
-                {{ formatCurrency(difference()) }}
-              </div>
-              <div class="stat-desc">
-                @if (difference() === 0) {
-                  ✓ Balance cuadrado
-                } @else if (difference() > 0) {
-                  Sobrante en caja
-                } @else {
-                  Faltante en caja
-                }
-              </div>
-            </div>
-
-            <!-- Totales -->
-            <div class="stat bg-base-100 rounded-box shadow">
-              <div class="stat-title">Total Órdenes</div>
-              <div class="stat-value text-2xl">{{ sessionSummary()!.totalOrders }}</div>
-            </div>
-
-            <div class="stat bg-base-100 rounded-box shadow">
-              <div class="stat-title">Total Pagos</div>
-              <div class="stat-value text-2xl">{{ sessionSummary()!.totalPayments }}</div>
             </div>
           </div>
 
-          <!-- Alertas -->
+          <!-- Alertas de Diferencia -->
           @if (difference() !== 0) {
             <div
-              class="alert"
+              class="alert shadow-lg"
               [class.alert-warning]="difference() > 0"
               [class.alert-error]="difference() < 0"
             >
@@ -300,7 +359,7 @@
                 />
               </svg>
               <div>
-                <div class="font-bold">Diferencia Detectada</div>
+                <div class="font-bold">Diferencia Detectada en Caja Chica</div>
                 <div class="text-sm">
                   Hay una diferencia de {{ formatCurrency(Math.abs(difference())) }}. Por favor,
                   verifica el conteo o registra una nota explicativa.
@@ -308,7 +367,7 @@
               </div>
             </div>
           } @else {
-            <div class="alert alert-success">
+            <div class="alert alert-success shadow-lg">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 class="stroke-current shrink-0 h-6 w-6"
@@ -322,15 +381,15 @@
                   d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>✓ El balance está cuadrado. Puedes confirmar el cierre de caja.</span>
+              <span>✓ La caja chica está cuadrada. Puedes confirmar el cierre de caja.</span>
             </div>
           }
 
           <!-- Botones -->
-          <div class="flex gap-2 justify-end mt-6">
+          <div class="flex flex-col sm:flex-row gap-2 justify-end mt-6">
             <button
               type="button"
-              class="btn btn-ghost"
+              class="btn btn-ghost w-full sm:w-auto"
               (click)="backToForm()"
               [disabled]="loading() || success()"
             >
@@ -338,7 +397,7 @@
             </button>
             <button
               type="button"
-              class="btn btn-warning"
+              class="btn btn-warning w-full sm:w-auto"
               (click)="confirmClose()"
               [disabled]="loading() || success()"
             >

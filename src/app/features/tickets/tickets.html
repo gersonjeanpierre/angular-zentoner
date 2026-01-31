@@ -1,298 +1,384 @@
 <div class="flex flex-col lg:flex-row gap-2 w-full px-2 lg:pl-0 mb-2">
   <link rel="stylesheet" href="./tickets-fix.css" />
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center w-full min-h-screen">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="mt-4 text-base-content/60">Cargando datos...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (error()) {
+    <div class="alert alert-error">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M6 18L18 6M6 6l12 12"
+        />
+      </svg>
+      <span>Error al cargar datos: {{ error() }}</span>
+    </div>
+  }
+
   <!-- Formulario principal -->
-  <div class="w-full">
-    <div class="card bg-base-100 shadow-lg rounded-lg">
-      <div class="card-body">
-        <h2 class="card-title text-2xl mb-4">Crear Orden</h2>
-        <!-- Empleado y Cliente -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend text-lg">Empleado/Diseñador</legend>
-            <div class="join w-full">
-              <label class="input input-neutral cursor-pointer join-item flex-1">
-                <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
-                <input
-                  type="text"
-                  class="grow cursor-pointer bg-base-200"
-                  placeholder="Seleccionar empleado"
-                  [value]="orderForm.employeeName().value()"
-                  readonly
-                  [disabled]="isDesignerFixed()"
-                />
-              </label>
-              <button
-                type="button"
-                class="btn btn-primary join-item"
-                [disabled]="isDesignerFixed()"
-                (click)="openEmployeeModal()"
-              >
-                <span class="icon-[mdi--magnify] h-5 w-5"></span>
-              </button>
-            </div>
-          </fieldset>
-          <fieldset class="fieldset">
-            <legend class="fieldset-legend text-lg">Cliente</legend>
-            <div class="join w-full">
-              <label class="input input-neutral cursor-pointer join-item flex-1">
-                <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
-                <input
-                  type="text"
-                  class="grow cursor-pointer bg-base-200"
-                  placeholder="Seleccionar cliente"
-                  [value]="orderForm.customerName().value()"
-                  readonly
+  @if (!loading() && !error()) {
+    <div class="w-full">
+      <div class="card bg-base-100 shadow-lg rounded-lg">
+        <div class="card-body">
+          <h2 class="card-title text-2xl mb-4">Crear Orden</h2>
+          <!-- Empleado y Cliente -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-2">
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend text-lg">Empleado/Diseñador</legend>
+              <div class="join w-full">
+                <label class="input input-neutral cursor-pointer join-item flex-1">
+                  <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
+                  <input
+                    type="text"
+                    class="grow cursor-pointer bg-base-200"
+                    placeholder="Seleccionar empleado"
+                    [value]="computedEmployeeName()"
+                    readonly
+                    [disabled]="isDesignerRole()"
+                  />
+                </label>
+                <button
+                  type="button"
+                  class="btn btn-primary join-item"
+                  [disabled]="isDesignerRole()"
+                  (click)="openEmployeeModal()"
+                >
+                  <span class="icon-[mdi--magnify] h-5 w-5"></span>
+                </button>
+              </div>
+            </fieldset>
+            <fieldset class="fieldset">
+              <legend class="fieldset-legend text-lg">Cliente</legend>
+              <div class="join w-full">
+                <label class="input input-neutral cursor-pointer join-item flex-1">
+                  <span class="icon-[fluent--person-20-filled] h-7 w-7"></span>
+                  <input
+                    type="text"
+                    class="grow cursor-pointer bg-base-200"
+                    placeholder="Seleccionar cliente"
+                    [value]="orderForm.customerName().value()"
+                    readonly
+                    (click)="openCustomerModal()"
+                  />
+                </label>
+                <button
+                  type="button"
+                  class="btn btn-primary join-item"
                   (click)="openCustomerModal()"
-                />
-              </label>
-              <button type="button" class="btn btn-primary join-item" (click)="openCustomerModal()">
-                <span class="icon-[mdi--magnify] h-5 w-5"></span>
+                >
+                  <span class="icon-[mdi--magnify] h-5 w-5"></span>
+                </button>
+              </div>
+            </fieldset>
+          </div>
+
+          <!-- Items de la Orden -->
+          <div class="form-control w-full">
+            <label class="label">
+              <span class="text-xl font-semibold">Items de la Orden:</span>
+            </label>
+            <!-- Tabla de items -->
+            <div class="w-full overflow-x-auto md:overflow-visible">
+              <div
+                class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-125 md:min-w-0"
+              >
+                <span class="text-left">Categoría</span>
+                <span class="text-left">Tipo</span>
+                <span class="text-left">Tamaño</span>
+                <span class="text-left">Máquina</span>
+                <span class="text-left">Cantidad</span>
+                <span class="text-left">P.Unitario</span>
+                <span class="text-left">Subtotal</span>
+              </div>
+              <div class="space-y-2">
+                @for (item of orderData.items; track $index) {
+                  <div class="grid grid-cols-2 md:grid-cols-7 gap-2 mt-3 mb-3">
+                    <!-- Categoría -->
+                    <input
+                      type="text"
+                      class="input input-bordered input-md cursor-pointer w-full min-w-25"
+                      placeholder="Categoría"
+                      readonly
+                      [value]="item.category"
+                      (focus)="openModalForField($index, 'category')"
+                      (click)="openModalForField($index, 'category')"
+                    />
+                    <!-- Tamaño -->
+                    <input
+                      type="text"
+                      class="input input-bordered input-md cursor-pointer w-full min-w-25"
+                      placeholder="Tipo"
+                      readonly
+                      [value]="item.type"
+                      (focus)="openModalForField($index, 'type')"
+                      (click)="openModalForField($index, 'type')"
+                    />
+                    <!-- Tipo -->
+                    <input
+                      type="text"
+                      class="input input-bordered input-md cursor-pointer w-full min-w-25"
+                      placeholder="Tamaño"
+                      readonly
+                      [value]="item.size"
+                      (focus)="openModalForField($index, 'size')"
+                      (click)="openModalForField($index, 'size')"
+                    />
+                    <!-- Maquina -->
+                    <input
+                      type="text"
+                      class="input input-bordered input-md cursor-pointer w-full min-w-25"
+                      placeholder="Maquina"
+                      readonly
+                      [value]="item.machine"
+                      (focus)="openModalForField($index, 'machine')"
+                      (click)="openModalForField($index, 'machine')"
+                    />
+
+                    <!-- Cantidad -->
+                    <input
+                      type="number"
+                      class="input input-bordered input-md text-center w-full min-w-20"
+                      placeholder="Cantidad"
+                      [value]="item.quantity"
+                      min="1"
+                      (input)="updateOrderItem($index, 'quantity', $event.target.value)"
+                    />
+                    <!-- Precio Unitario -->
+                    <input
+                      type="number"
+                      class="input input-bordered input-md text-center w-full min-w-20"
+                      placeholder="Precio"
+                      [value]="item.price"
+                      min="0"
+                      step="0.01"
+                      (input)="updateOrderItem($index, 'price', $event.target.value)"
+                    />
+                    <!-- Importe -->
+                    <div class="flex lg:justify-end justify-center items-center">
+                      <div class="badge badge-success badge-lg whitespace-nowrap">
+                        S/ {{ item.total.toFixed(2) }}
+                      </div>
+                      <button
+                        (click)="removeOrderItem($index)"
+                        class="btn btn-error w-9 h-9 btn-circle ml-1"
+                        title="Eliminar"
+                      >
+                        <span
+                          class="icon-[material-symbols--delete-forever-rounded] w-6 h-6 bg-rose-100"
+                        ></span>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+              <button (click)="addOrderItem()" class="btn btn-success btn-md mt-2 w-full md:w-auto">
+                <span class="icon-[material-symbols--add-circle-rounded] w-6 h-6"></span>
+                <span class="text-lg">Agregar</span>
               </button>
             </div>
-          </fieldset>
-        </div>
 
-        <!-- Items de la Orden -->
-        <div class="form-control w-full">
-          <label class="label">
-            <span class="text-xl font-semibold">Items de la Orden:</span>
-          </label>
-          <!-- Tabla de items -->
-          <div class="w-full overflow-x-auto md:overflow-visible">
-            <div
-              class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 text-lg mb-1 min-w-125 md:min-w-0"
-            >
-              <span class="text-left">Categoría</span>
-              <span class="text-left">Tipo</span>
-              <span class="text-left">Tamaño</span>
-              <span class="text-left">Máquina</span>
-              <span class="text-left">Cantidad</span>
-              <span class="text-left">P.Unitario</span>
-              <span class="text-left">Subtotal</span>
+            <!-- Checkboxes para controlar Adelanto, Descuento e IGV -->
+            <div class="form-control mt-4">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input
+                  type="checkbox"
+                  [checked]="showAdvance()"
+                  (change)="showAdvance.set($any($event.target).checked); syncTotalsToModel()"
+                  class="checkbox checkbox-secondary"
+                />
+                <span class="label-text font-semibold">Incluir Adelanto</span>
+                <span class="label-text-alt text-base-content/60">(Lo gestionará Caja)</span>
+              </label>
             </div>
-            <div class="space-y-2">
-              @for (item of orderData.items; track $index) {
-                <div class="grid grid-cols-2 md:grid-cols-7 gap-2 mt-3 mb-3">
-                  <!-- Categoría -->
-                  <input
-                    type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
-                    placeholder="Categoría"
-                    readonly
-                    [value]="item.category"
-                    (focus)="openModalForField($index, 'category')"
-                    (click)="openModalForField($index, 'category')"
-                  />
-                  <!-- Tamaño -->
-                  <input
-                    type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
-                    placeholder="Tipo"
-                    readonly
-                    [value]="item.type"
-                    (focus)="openModalForField($index, 'type')"
-                    (click)="openModalForField($index, 'type')"
-                  />
-                  <!-- Tipo -->
-                  <input
-                    type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
-                    placeholder="Tamaño"
-                    readonly
-                    [value]="item.size"
-                    (focus)="openModalForField($index, 'size')"
-                    (click)="openModalForField($index, 'size')"
-                  />
-                  <!-- Maquina -->
-                  <input
-                    type="text"
-                    class="input input-bordered input-md cursor-pointer w-full min-w-25"
-                    placeholder="Maquina"
-                    readonly
-                    [value]="item.machine"
-                    (focus)="openModalForField($index, 'machine')"
-                    (click)="openModalForField($index, 'machine')"
-                  />
 
-                  <!-- Cantidad -->
-                  <input
-                    type="number"
-                    class="input input-bordered input-md text-center w-full min-w-20"
-                    placeholder="Cantidad"
-                    [value]="item.quantity"
-                    min="1"
-                    (input)="updateOrderItem($index, 'quantity', $event.target.value)"
-                  />
-                  <!-- Precio Unitario -->
-                  <input
-                    type="number"
-                    class="input input-bordered input-md text-center w-full min-w-20"
-                    placeholder="Precio"
-                    [value]="item.price"
-                    min="0"
-                    step="0.01"
-                    (input)="updateOrderItem($index, 'price', $event.target.value)"
-                  />
-                  <!-- Importe -->
-                  <div class="flex lg:justify-end justify-center items-center">
-                    <div class="badge badge-success badge-lg whitespace-nowrap">
-                      S/ {{ item.total.toFixed(2) }}
-                    </div>
-                    <button
-                      (click)="removeOrderItem($index)"
-                      class="btn btn-error w-9 h-9 btn-circle ml-1"
-                      title="Eliminar"
-                    >
-                      <span
-                        class="icon-[material-symbols--delete-forever-rounded] w-6 h-6 bg-rose-100"
-                      ></span>
-                    </button>
-                  </div>
+            <div class="form-control mt-2">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input
+                  type="checkbox"
+                  [checked]="showDiscount()"
+                  (change)="showDiscount.set($any($event.target).checked); syncTotalsToModel()"
+                  class="checkbox checkbox-accent"
+                />
+                <span class="label-text font-semibold">Incluir Descuento</span>
+              </label>
+            </div>
+
+            <div class="form-control mt-2">
+              <label class="label cursor-pointer justify-start gap-2">
+                <input
+                  type="checkbox"
+                  [checked]="includeIGV()"
+                  (change)="includeIGV.set($any($event.target).checked); syncTotalsToModel()"
+                  class="checkbox checkbox-primary"
+                />
+                <span class="label-text font-semibold">Incluir IGV (18%)</span>
+              </label>
+            </div>
+
+            <!-- Campos condicionales de Adelanto y Descuento -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              @if (showAdvance()) {
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend text-lg">Adelanto</legend>
+                  <label class="input input-neutral cursor-pointer">
+                    <span class="icon-[streamline-ultimate--money-wallet-open-bold] h-7 w-7"></span>
+                    <input
+                      type="number"
+                      class="grow cursor-pointer"
+                      placeholder="Ingrese adelanto"
+                      [formField]="orderForm.advance"
+                      autocomplete="off"
+                      step="0.01"
+                      (input)="syncTotalsToModel()"
+                    />
+                  </label>
+                </fieldset>
+              }
+
+              @if (showDiscount()) {
+                <fieldset class="fieldset">
+                  <legend class="fieldset-legend text-lg">Descuento</legend>
+                  <label class="input input-neutral cursor-pointer">
+                    <span class="icon-[ic--baseline-discount] h-7 w-7"></span>
+                    <input
+                      type="number"
+                      class="grow cursor-pointer"
+                      placeholder="Ingrese descuento"
+                      [formField]="orderForm.discount"
+                      autocomplete="off"
+                      step="0.01"
+                      (input)="syncTotalsToModel()"
+                    />
+                  </label>
+                </fieldset>
+              }
+            </div>
+
+            <!-- Totales -->
+            <div class="bg-base-200 p-4 rounded-lg space-y-2 mt-4">
+              <div class="flex justify-between text-sm">
+                <span class="font-semibold">Precio Total:</span>
+                <span>S/ {{ orderData.totalPrice.toFixed(2) }}</span>
+              </div>
+              @if (showDiscount() && orderData.discount > 0) {
+                <div class="flex justify-between text-sm text-accent">
+                  <span class="font-semibold">Descuento:</span>
+                  <span>- S/ {{ orderData.discount.toFixed(2) }}</span>
+                </div>
+              }
+              @if (includeIGV()) {
+                <div class="flex justify-between text-md">
+                  <span class="font-semibold">IGV (18%):</span>
+                  <span>S/ {{ orderData.igv.toFixed(2) }}</span>
+                </div>
+              }
+              <div class="flex justify-between text-lg font-bold border-t border-base-300 pt-2">
+                <span>Monto Final:</span>
+                <span class="text-primary">S/ {{ orderData.finalAmount.toFixed(2) }}</span>
+              </div>
+              @if (showAdvance() && orderData.advance > 0) {
+                <div class="flex justify-between text-sm text-secondary">
+                  <span class="font-semibold">Adelanto:</span>
+                  <span>- S/ {{ orderData.advance.toFixed(2) }}</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span class="font-semibold">Saldo Pendiente:</span>
+                  <span class="text-error font-bold">
+                    S/ {{ orderData.remainingBalance.toFixed(2) }}
+                  </span>
                 </div>
               }
             </div>
-            <button (click)="addOrderItem()" class="btn btn-success btn-md mt-2 w-full md:w-auto">
-              <span class="icon-[material-symbols--add-circle-rounded] w-6 h-6"></span>
-              <span class="text-lg">Agregar</span>
-            </button>
-          </div>
 
-          <!-- Adelanto y Descuento mejorados -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend text-lg">Adelanto</legend>
-              <label class="input input-neutral cursor-pointer">
-                <span class="icon-[streamline-ultimate--money-wallet-open-bold] h-7 w-7"></span>
-                <input
-                  type="number"
-                  class="grow cursor-pointer"
-                  placeholder="Ingrese adelanto"
-                  [formField]="orderForm.advance"
-                  autocomplete="off"
-                  step="0.01"
-                  (input)="syncTotalsToModel()"
-                />
-              </label>
-            </fieldset>
-
-            <fieldset class="fieldset">
-              <legend class="fieldset-legend text-lg">Descuento</legend>
-              <label class="input input-neutral cursor-pointer">
-                <span class="icon-[ic--baseline-discount] h-7 w-7"></span>
-                <input
-                  type="number"
-                  class="grow cursor-pointer"
-                  placeholder="Ingrese descuento"
-                  [formField]="orderForm.discount"
-                  autocomplete="off"
-                  step="0.01"
-                  (input)="syncTotalsToModel()"
-                />
-              </label>
-            </fieldset>
-          </div>
-
-          <!-- Checkbox IGV -->
-          <div class="form-control mt-5">
-            <label class="label cursor-pointer justify-start gap-2">
-              <input
-                type="checkbox"
-                [checked]="includeIGV()"
-                (change)="includeIGV.set($any($event.target).checked); syncTotalsToModel()"
-                class="checkbox checkbox-primary"
-              />
-              <span class="label-text font-semibold">Incluir IGV (18%)</span>
-            </label>
-          </div>
-
-          <!-- Totales -->
-          <div class="bg-base-200 p-4 rounded-lg space-y-2 mt-4">
-            <div class="flex justify-between text-sm">
-              <span class="font-semibold">Precio Total:</span>
-              <span>S/ {{ orderData.totalPrice.toFixed(2) }}</span>
+            <!-- Botones de Acción -->
+            <div class="card-actions justify-end mt-4 gap-2">
+              <button class="btn btn-secondary w-full md:w-auto" (click)="generateOrderQR()">
+                <span class="icon-[mdi--qrcode] w-5 h-5"></span>
+                Generar QR
+              </button>
+              <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printOrder()">
+                <span class="icon-[mdi--printer] w-5 h-5"></span>
+                Imprimir Orden
+              </button>
+              <!-- boton generar orden -->
+              <button class="btn btn-primary btn-wid w-full md:w-auto" (click)="saveOrder()">
+                <span class="icon-[mdi--file-document-edit-outline] w-5 h-5"></span>
+                Generar Orden
+              </button>
             </div>
-            <div class="flex justify-between text-sm">
-              <span class="font-semibold">Saldo Pendiente:</span>
-              <span class="text-error font-bold">
-                S/ {{ orderData.remainingBalance.toFixed(2) }}
-              </span>
-            </div>
-            @if (includeIGV()) {
-              <div class="flex justify-between text-md">
-                <span class="font-semibold">IGV (18%):</span>
-                <span>S/ {{ orderData.igv.toFixed(2) }}</span>
-              </div>
-            }
-            <div class="flex justify-between text-lg font-bold border-t border-base-300 pt-2">
-              <span>Monto Final:</span>
-              <span class="text-primary">S/ {{ orderData.finalAmount.toFixed(2) }}</span>
-            </div>
-          </div>
-
-          <!-- Botones de Acción -->
-          <div class="card-actions justify-end mt-4 gap-2">
-            <button class="btn btn-secondary w-full md:w-auto" (click)="generateOrderQR()">
-              <span class="icon-[mdi--qrcode] w-5 h-5"></span>
-              Generar QR
-            </button>
-            <button class="btn btn-primary btn-wide w-full md:w-auto" (click)="printOrder()">
-              <span class="icon-[mdi--printer] w-5 h-5"></span>
-              Imprimir Orden
-            </button>
-            <!-- boton generar orden -->
-            <button class="btn btn-primary btn-wid w-full md:w-auto" (click)="saveOrder()">
-              <span class="icon-[mdi--file-document-edit-outline] w-5 h-5"></span>
-              Generar Orden
-            </button>
           </div>
         </div>
       </div>
     </div>
-  </div>
-  <!-- Vista previa del ticket -->
-  <div class="w-full md:w-[100mm]">
-    <div class="card bg-white shadow-lg rounded-lg">
-      <div class="card-body h-full w-full px-0">
-        <app-ticket-preview
-          [ticketData]="orderData"
-          [printDate]="orderData.printDate"
-          [includeIGV]="includeIGV()"
-          [ticketUuid]="orderUuid()"
-        ></app-ticket-preview>
+    <!-- Vista previa del ticket -->
+    <div class="w-full md:w-[100mm]">
+      <div class="card bg-white shadow-lg rounded-lg">
+        <div class="card-body h-full w-full px-0">
+          <app-ticket-preview
+            [ticketData]="orderData"
+            [printDate]="orderData.printDate"
+            [includeIGV]="includeIGV()"
+            [ticketUuid]="orderUuid()"
+          ></app-ticket-preview>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- Modal de búsqueda reutilizable -->
+    <modal-search
+      [open]="modalOpen()"
+      [list]="modalList()"
+      [title]="modalTitle()"
+      [isCustomSize]="isCustomSize()"
+      (selectItem)="onModalSelect($event)"
+      (closed)="onModalClosed()"
+    />
+
+    <!-- Customer Search Modal -->
+    <app-search-modal
+      [isOpen]="customerModalOpen()"
+      [title]="'Buscar Cliente'"
+      [items]="customerItems()"
+      [isLoading]="loadResource.isLoading()"
+      [isSyncing]="syncingCustomers()"
+      [placeholder]="'Buscar por nombre, DNI, RUC...'"
+      (onClose)="customerModalOpen.set(false)"
+      (onSelect)="handleCustomerSelect($event)"
+      (onSearch)="handleCustomerSearch($event)"
+      (onSync)="syncCustomers()"
+    />
+
+    <!-- Employee Search Modal -->
+    <app-search-modal
+      [isOpen]="employeeModalOpen()"
+      [title]="'Buscar Diseñador'"
+      [items]="employeeItems()"
+      [isLoading]="loadResource.isLoading()"
+      [isSyncing]="syncingEmployees()"
+      [placeholder]="'Buscar por nombre, código...'"
+      (onClose)="employeeModalOpen.set(false)"
+      (onSelect)="handleEmployeeSelect($event)"
+      (onSearch)="handleEmployeeSearch($event)"
+      (onSync)="syncEmployees()"
+    />
+  }
+
+  <!-- Alert Modal -->
+  @if (alertModalOpen()) {
+    <app-alert-modal
+      [title]="alertTitle()"
+      [message]="alertMessage()"
+      [type]="alertType()"
+      (closed)="closeAlert()"
+    />
+  }
 </div>
-<!-- Modal de búsqueda reutilizable -->
-<modal-search
-  [open]="modalOpen()"
-  [list]="modalList()"
-  [title]="modalTitle()"
-  [isCustomSize]="isCustomSize()"
-  (selectItem)="onModalSelect($event)"
-  (closed)="onModalClosed()"
-/>
-
-<!-- Customer Search Modal -->
-<app-search-modal
-  [isOpen]="customerModalOpen()"
-  [title]="'Buscar Cliente'"
-  [items]="customerItems()"
-  [isLoading]="isLoadingCustomers()"
-  [placeholder]="'Buscar por nombre, DNI, RUC...'"
-  (onClose)="customerModalOpen.set(false)"
-  (onSelect)="handleCustomerSelect($event)"
-  (onSearch)="handleCustomerSearch($event)"
-/>
-
-<!-- Employee Search Modal -->
-<app-search-modal
-  [isOpen]="employeeModalOpen()"
-  [title]="'Buscar Diseñador'"
-  [items]="employeeItems()"
-  [isLoading]="isLoadingEmployees()"
-  [placeholder]="'Buscar por nombre, código...'"
-  (onClose)="employeeModalOpen.set(false)"
-  (onSelect)="handleEmployeeSelect($event)"
-  (onSearch)="handleEmployeeSearch($event)"
-/>

@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import { OrderService } from '@core/services/order-service';
 import { PaymentService } from '@core/services/payment-service';
 import { CashRegisterService } from '@core/services/cash-register-service';
+import { AuthService } from '@core/services/auth-service';
 import { Order } from '@data/models/tickets/order-model';
 import { PaymentView } from '@data/models/sales/payment.model';
 import { CommonModule } from '@angular/common';
@@ -18,6 +19,7 @@ export default class DailySales {
   private orderService = inject(OrderService);
   private paymentService = inject(PaymentService);
   private cashRegisterService = inject(CashRegisterService);
+  private authService = inject(AuthService);
   private router = inject(Router);
 
   protected orders = signal<Order[]>([]);
@@ -73,7 +75,13 @@ export default class DailySales {
 
   private async loadCurrentSession() {
     try {
-      await this.cashRegisterService.loadCurrentSession();
+      const user = await this.authService.getUserProfileData();
+      if (!user || !user.shopId) {
+        this.error.set('No se encontró información de tienda del usuario');
+        return;
+      }
+
+      await this.cashRegisterService.loadCurrentSession(user.shopId);
       const session = this.currentSession();
 
       if (!session) {

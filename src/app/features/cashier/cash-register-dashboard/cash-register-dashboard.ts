@@ -9,6 +9,7 @@ import {
 import { Router } from '@angular/router';
 import { CashRegisterService } from '@core/services/cash-register-service';
 import { AuthService } from '@core/services/auth-service';
+import { PaymentService } from '@core/services/payment-service';
 import { CommonModule } from '@angular/common';
 import { SessionDashboard } from '@data/models/sales/cash-register.model';
 
@@ -21,6 +22,7 @@ import { SessionDashboard } from '@data/models/sales/cash-register.model';
 export default class CashRegisterDashboard implements OnInit {
   private cashRegisterService = inject(CashRegisterService);
   private authService = inject(AuthService);
+  private paymentService = inject(PaymentService);
   private router = inject(Router);
 
   protected currentSession = this.cashRegisterService.currentSession;
@@ -30,6 +32,7 @@ export default class CashRegisterDashboard implements OnInit {
   protected error = signal<string | null>(null);
   protected userData = signal<any>(null);
   protected dashboardData = signal<SessionDashboard | null>(null);
+  protected unassignedPaymentsCount = signal(0);
 
   // Computed para acceso rápido a los datos del dashboard
   protected paymentSummary = computed(() => this.dashboardData()?.paymentSummary || null);
@@ -58,6 +61,7 @@ export default class CashRegisterDashboard implements OnInit {
     await this.loadUserData();
     await this.loadSession();
     await this.loadDashboard();
+    await this.checkUnassignedPayments();
   }
 
   private async loadUserData() {
@@ -72,7 +76,13 @@ export default class CashRegisterDashboard implements OnInit {
   private async loadSession() {
     try {
       this.loading.set(true);
-      await this.cashRegisterService.loadCurrentSession();
+      const user = this.userData();
+      if (!user || !user.shopId) {
+        throw new Error('No se encontró información de tienda del usuario');
+      }
+
+      // Cargar sesión filtrando por el shopId del usuario
+      await this.cashRegisterService.loadCurrentSession(user.shopId);
     } catch (err: any) {
       this.error.set(err.message);
     } finally {
@@ -94,6 +104,35 @@ export default class CashRegisterDashboard implements OnInit {
 
   async refreshDashboard() {
     await this.loadDashboard();
+    await this.checkUnassignedPayments();
+  }
+
+  /**
+   * Verificar si hay pagos sin sesión asignada en el período actual
+   */
+  private async checkUnassignedPayments() {
+    const session = this.currentSession();
+    if (!session) return;
+
+    try {
+      const { count, error } = await this.paymentService['supabaseClient']
+        .schema('sales')
+        .from('payments')
+        .select('id', { count: 'exact', head: true })
+        .is('cash_register_session_id', null)
+        .gte('payment_date', session.openedAt)
+        .filter(
+          'payment_date',
+          session.closedAt ? 'lte' : 'gte',
+          session.closedAt || session.openedAt,
+        );
+
+      if (!error) {
+        this.unassignedPaymentsCount.set(count || 0);
+      }
+    } catch (err) {
+      console.error('Error al verificar pagos sin sesión:', err);
+    }
   }
 
   protected navigateToOpen() {
@@ -114,6 +153,10 @@ export default class CashRegisterDashboard implements OnInit {
 
   protected navigateToExpenses() {
     this.router.navigate(['/caja/gastos']);
+  }
+
+  protected navigateToHistory() {
+    this.router.navigate(['/caja/historial']);
   }
 
   protected formatCurrency(amount: number): string {

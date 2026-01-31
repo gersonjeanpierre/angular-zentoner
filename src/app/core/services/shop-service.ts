@@ -15,6 +15,7 @@ export class ShopService {
   public dataShops$: Observable<ShopModel[]> = from(liveQuery(() => dexieDB.shops.toArray()));
 
   async fetchShopsFromSupabase() {
+    console.log('[ShopService] fetchShopsFromSupabase: Iniciando...');
     try {
       const { data, error } = await this.supabase
         .schema('core')
@@ -23,15 +24,20 @@ export class ShopService {
         .is('deleted_at', null);
 
       if (error) {
-        console.error('Error al obtener las tiendas:', error);
+        console.error('[ShopService] Error al obtener las tiendas:', error);
         throw error;
       }
 
       if (data) {
+        console.log('[ShopService] Datos recibidos de Supabase:', data.length, 'shops');
         await dexieDB.shops.bulkPut(data as ShopModel[]);
+        console.log('[ShopService] Shops guardados en Dexie correctamente');
+      } else {
+        console.warn('[ShopService] No se recibieron datos de Supabase');
       }
     } catch (error) {
-      console.error('Error en getShops:', error);
+      console.error('[ShopService] Error en fetchShopsFromSupabase:', error);
+      throw error;
     }
   }
 

@@ -9,12 +9,13 @@ import {
 import { Router } from '@angular/router';
 import { form, FormField, required, min } from '@angular/forms/signals';
 import { CashRegisterService } from '@core/services/cash-register-service';
+import { AuthService } from '@core/services/auth-service';
 import { CloseSessionPayload, CloseSessionResponse } from '@data/models/sales/cash-register.model';
 import { CommonModule } from '@angular/common';
 
 interface CloseSessionFormModel {
-  closing_balance: number;
-  closing_notes: string;
+  closingBalance: number;
+  closingNotes: string;
 }
 
 @Component({
@@ -25,6 +26,7 @@ interface CloseSessionFormModel {
 })
 export default class CashRegisterClose implements OnInit {
   private cashRegisterService = inject(CashRegisterService);
+  private authService = inject(AuthService);
   private router = inject(Router);
 
   protected loading = signal(false);
@@ -40,25 +42,25 @@ export default class CashRegisterClose implements OnInit {
 
   // Form Model
   protected formModel = signal<CloseSessionFormModel>({
-    closing_balance: 0,
-    closing_notes: '',
+    closingBalance: 0,
+    closingNotes: '',
   });
 
   // Form Instance
   protected closeSessionForm = form(this.formModel, (schema) => {
-    required(schema.closing_balance, { message: 'El balance final es requerido' });
-    min(schema.closing_balance, 0, { message: 'El balance no puede ser negativo' });
+    required(schema.closingBalance, { message: 'El balance final es requerido' });
+    min(schema.closingBalance, 0, { message: 'El balance no puede ser negativo' });
   });
 
   // Computed
   protected isFormValid = computed(() => {
-    return !this.closeSessionForm.closing_balance().invalid();
+    return !this.closeSessionForm.closingBalance().invalid();
   });
 
   protected difference = computed(() => {
     const summary = this.sessionSummary();
     if (!summary) return 0;
-    return summary.closingBalance - summary.expectedBalance;
+    return summary.pettyCashDifference;
   });
 
   protected differenceClass = computed(() => {
@@ -74,13 +76,19 @@ export default class CashRegisterClose implements OnInit {
 
   private async loadCurrentSession() {
     try {
-      await this.cashRegisterService.loadCurrentSession();
+      const user = await this.authService.getUserProfileData();
+      if (!user || !user.shopId) {
+        this.error.set('No se encontró información de tienda del usuario');
+        return;
+      }
+
+      await this.cashRegisterService.loadCurrentSession(user.shopId);
       const session = this.currentSession();
 
       if (!session) {
         this.error.set('No hay sesión activa para cerrar');
         setTimeout(() => {
-          this.router.navigate(['/cashier/dashboard']);
+          this.router.navigate(['/caja/dashboard']);
         }, 3000);
       }
     } catch (error) {
@@ -104,16 +112,56 @@ export default class CashRegisterClose implements OnInit {
       this.loading.set(true);
       this.error.set(null);
 
-      const summary = await this.cashRegisterService.getSessionSummary(session.id);
-
-      // Agregar el closing_balance del form al summary
+      const dashboard = await this.cashRegisterService.getSessionDashboard(session.id);
       const formData = this.formModel();
-      const summaryWithClosingBalance = {
-        ...summary,
-        closing_balance: formData.closing_balance,
+
+      // NUEVA LÓGICA: Caja chica NO incluye efectivo de ventas
+      // Balance esperado de caja chica = opening_balance - gastos
+      const pettyCashExpected =
+        session.openingBalance - (dashboard.expenseSummary?.totalAmount ?? 0);
+      const pettyCashDifference = formData.closingBalance - pettyCashExpected;
+
+      const previewSummary: CloseSessionResponse = {
+        success: true,
+        sessionId: session.id,
+        shopId: session.shopId,
+        closedAt: new Date().toISOString(),
+
+        // Caja Chica
+        pettyCashOpening: session.openingBalance,
+        pettyCashClosing: formData.closingBalance,
+        pettyCashExpected: pettyCashExpected,
+        pettyCashDifference: pettyCashDifference,
+        totalExpenses: dashboard.expenseSummary?.totalAmount ?? 0,
+
+        // Efectivo de Ventas (va a caja fuerte)
+        cashFromSales: dashboard.paymentSummary?.efectivo ?? 0,
+
+        // Otros métodos
+        cardTotal:
+          (dashboard.paymentSummary?.tarjetaDebito ?? 0) +
+          (dashboard.paymentSummary?.tarjetaCredito ?? 0),
+        transferTotal:
+          (dashboard.paymentSummary?.transferencia ?? 0) +
+          (dashboard.paymentSummary?.deposito ?? 0),
+        digitalWalletTotal:
+          (dashboard.paymentSummary?.yape ?? 0) + (dashboard.paymentSummary?.plin ?? 0),
+        otherTotal:
+          (dashboard.paymentSummary?.dolares ?? 0) + (dashboard.paymentSummary?.otro ?? 0),
+
+        // Estadísticas
+        totalPayments: dashboard.paymentSummary?.totalPayments ?? 0,
+        totalOrders: dashboard.orderStats?.totalOrders ?? 0,
+
+        // Legacy
+        openingBalance: session.openingBalance,
+        closingBalance: formData.closingBalance,
+        expectedBalance: pettyCashExpected,
+        difference: pettyCashDifference,
+        cashTotal: dashboard.paymentSummary?.efectivo ?? 0,
       };
 
-      this.sessionSummary.set(summaryWithClosingBalance);
+      this.sessionSummary.set(previewSummary);
       this.showSummary.set(true);
     } catch (err: any) {
       console.error('Error al obtener resumen:', err);
@@ -138,8 +186,8 @@ export default class CashRegisterClose implements OnInit {
 
       const payload: CloseSessionPayload = {
         sessionId: session.id,
-        closingBalance: formData.closing_balance,
-        closingNotes: formData.closing_notes || undefined,
+        closingBalance: formData.closingBalance,
+        closingNotes: formData.closingNotes || undefined,
       };
 
       const response = await this.cashRegisterService.closeSession(payload);
@@ -147,7 +195,7 @@ export default class CashRegisterClose implements OnInit {
       this.success.set(true);
 
       setTimeout(() => {
-        this.router.navigate(['/cashier/dashboard']);
+        this.router.navigate(['/caja/dashboard']);
       }, 3000);
     } catch (err: any) {
       console.error('Error al cerrar sesión:', err);
@@ -158,7 +206,7 @@ export default class CashRegisterClose implements OnInit {
   }
 
   protected cancel() {
-    this.router.navigate(['/cashier/dashboard']);
+    this.router.navigate(['/caja/dashboard']);
   }
 
   protected backToForm() {

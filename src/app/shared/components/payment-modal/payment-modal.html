@@ -1,5 +1,5 @@
 @if (isOpen()) {
-  <div class="modal modal-open">
+  <div class="modal modal-open z-40">
     <div class="modal-box max-w-2xl">
       <form (submit)="onSubmit($event)" class="flex flex-col gap-4">
         <div class="flex justify-between items-center mb-2">
@@ -39,16 +39,8 @@
             step="0.01"
             [formField]="paymentForm.amount"
             class="input input-bordered w-full"
-            [class.input-error]="paymentForm.amount().touched() && paymentForm.amount().invalid()"
             placeholder="0.00"
           />
-          @if (paymentForm.amount().touched() && paymentForm.amount().invalid()) {
-            <div class="label">
-              @for (error of paymentForm.amount().errors(); track error) {
-                <span class="label-text-alt text-error">{{ error.message }}</span>
-              }
-            </div>
-          }
         </div>
 
         <!-- Método de pago -->
@@ -89,20 +81,6 @@
           ></textarea>
         </div>
 
-        <!-- Errores -->
-        @if (error()) {
-          <div class="alert alert-error">
-            <span>{{ error() }}</span>
-          </div>
-        }
-
-        <!-- Éxito -->
-        @if (success()) {
-          <div class="alert alert-success">
-            <span>✓ Pago registrado exitosamente</span>
-          </div>
-        }
-
         <!-- Botones -->
         <div class="flex gap-2 justify-end">
           <button
@@ -113,7 +91,7 @@
           >
             Cancelar
           </button>
-          <button type="submit" class="btn btn-primary" [disabled]="loading() || !isFormValid()">
+          <button type="submit" class="btn btn-primary" [disabled]="loading()">
             @if (loading()) {
               <span class="loading loading-spinner"></span>
             }
@@ -124,4 +102,15 @@
     </div>
     <div class="modal-backdrop" (click)="handleClose()"></div>
   </div>
+}
+
+<!-- Alert Modal -->
+@if (showAlert()) {
+  <app-alert-modal
+    [title]="alertTitle()"
+    [message]="alertMessage()"
+    [type]="alertType()"
+    (closed)="handleAlertClose()"
+    class="z-50"
+  />
 }

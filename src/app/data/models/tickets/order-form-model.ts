@@ -15,9 +15,9 @@ import { Order, OrderDetail } from './order-model';
 export interface OrderFormModel {
   // === Información de la Empresa (Estática) ===
   companyName: string;
-  socialReason: string;
-  ruc: string;
-  address: string;
+  address?: string;
+  ruc?: string;
+  socialReason?: string;
 
   // === Referencias (IDs se setean al guardar) ===
   id?: string;

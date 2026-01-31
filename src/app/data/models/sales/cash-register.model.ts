@@ -50,6 +50,7 @@ export interface CashRegisterSession {
  * Payload para abrir una sesión de caja
  */
 export interface OpenSessionPayload {
+  id: string; // UUID v7
   shopId: string; // De metadatos localStorage
   cashierId: string; // user_id === employee_id
   openingBalance: number;
@@ -78,24 +79,40 @@ export interface CloseSessionPayload {
 
 /**
  * Respuesta de la función close_cash_register_session RPC
+ * NUEVA ESTRUCTURA: Separa caja chica de efectivo de ventas
  */
 export interface CloseSessionResponse {
   success: boolean;
   sessionId: string;
   shopId: string;
   closedAt: string;
+
+  // Caja Chica (opening_balance - gastos)
+  pettyCashOpening: number;
+  pettyCashClosing: number;
+  pettyCashExpected: number;
+  pettyCashDifference: number;
+  totalExpenses: number;
+
+  // Efectivo de Ventas (va a caja fuerte, NO se mezcla con caja chica)
+  cashFromSales: number;
+
+  // Otros métodos de pago
+  cardTotal: number;
+  transferTotal: number;
+  digitalWalletTotal: number;
+  otherTotal: number;
+
+  // Estadísticas
+  totalPayments: number;
+  totalOrders: number;
+
+  // Legacy (para retrocompatibilidad)
   openingBalance: number;
   closingBalance: number;
   expectedBalance: number;
   difference: number;
   cashTotal: number;
-  cardTotal: number;
-  transferTotal: number;
-  digitalWalletTotal: number;
-  otherTotal: number;
-  totalExpenses: number;
-  totalPayments: number;
-  totalOrders: number;
 }
 
 /**
@@ -200,9 +217,19 @@ export interface OrderStats {
 }
 
 /**
- * Flujo de efectivo
+ * Flujo de efectivo MEJORADO
+ * Separa caja chica de efectivo de ventas
  */
 export interface CashFlow {
+  // Caja Chica
+  pettyCashOpening: number;
+  pettyCashExpenses: number;
+  pettyCashExpected: number;
+
+  // Efectivo de Ventas (va a caja fuerte)
+  cashFromSales: number;
+
+  // Legacy (para retrocompatibilidad)
   openingBalance: number;
   cashIn: number;
   cashOut: number;

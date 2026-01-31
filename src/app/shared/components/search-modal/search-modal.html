@@ -3,7 +3,25 @@
     <div class="modal-box max-w-2xl">
       <!-- Header -->
       <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-bold">{{ title() }}</h3>
+        <div class="flex items-center gap-3">
+          <h3 class="text-lg font-bold">{{ title() }}</h3>
+          @if (showSyncButton()) {
+            <button
+              class="btn btn-sm btn-primary"
+              (click)="handleSync()"
+              [disabled]="isSyncing()"
+              type="button"
+            >
+              @if (isSyncing()) {
+                <span class="loading loading-spinner loading-xs"></span>
+                Sincronizando...
+              } @else {
+                <i class="icon-[mdi--sync] w-4 h-4"></i>
+                Sync
+              }
+            </button>
+          }
+        </div>
         <button class="btn btn-sm btn-circle btn-ghost" (click)="handleClose()">✕</button>
       </div>
 

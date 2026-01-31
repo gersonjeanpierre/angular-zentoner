@@ -1,0 +1,589 @@
+<div class="container mx-auto p-4 md:p-6 max-w-7xl">
+  <!-- Header -->
+  <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div>
+      <h1 class="text-2xl md:text-3xl font-bold">Historial de Sesiones</h1>
+      <p class="text-sm md:text-base text-base-content/70">
+        Registro completo de tus sesiones de caja
+      </p>
+    </div>
+    <button class="btn btn-ghost w-full sm:w-auto" (click)="navigateBack()">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="h-5 w-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 19l-7-7m0 0l7-7m-7 7h18"
+        />
+      </svg>
+      Volver al Dashboard
+    </button>
+  </div>
+
+  <!-- Error Alert -->
+  @if (error()) {
+    <div class="alert alert-error mb-6 shadow-lg">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        class="stroke-current shrink-0 h-6 w-6"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          stroke-width="2"
+          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+        />
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-figure text-primary">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="inline-block w-8 h-8 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+      </div>
+      <div class="stat-title">Total Sesiones</div>
+      <div class="stat-value text-primary">{{ totalSessions() }}</div>
+      <div class="stat-desc">Sesiones encontradas</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-figure text-success">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="inline-block w-8 h-8 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      </div>
+      <div class="stat-title">Sesiones Abiertas</div>
+      <div class="stat-value text-success">{{ openSessions() }}</div>
+      <div class="stat-desc">Actualmente activas</div>
+    </div>
+
+    <div class="stat bg-base-200 rounded-box shadow">
+      <div class="stat-figure text-base-content/50">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          class="inline-block w-8 h-8 stroke-current"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          />
+        </svg>
+      </div>
+      <div class="stat-title">Sesiones Cerradas</div>
+      <div class="stat-value">{{ closedSessions() }}</div>
+      <div class="stat-desc">Finalizadas correctamente</div>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <div class="card bg-base-200 shadow-xl mb-6">
+    <div class="card-body">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="card-title">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+            />
+          </svg>
+          Filtros
+        </h2>
+        <button class="btn btn-sm btn-ghost" (click)="clearFilters()">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Limpiar
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <!-- Status Filter -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Estado</span>
+          </label>
+          <select
+            class="select select-bordered w-full"
+            [value]="statusFilter()"
+            (change)="setStatusFilter($any($event.target).value)"
+          >
+            <option value="ALL">Todos</option>
+            <option value="ABIERTO">Abiertas</option>
+            <option value="CERRADO">Cerradas</option>
+          </select>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Tipo</span>
+          </label>
+          <select
+            class="select select-bordered w-full"
+            [value]="typeFilter()"
+            (change)="setTypeFilter($any($event.target).value)"
+          >
+            <option value="ALL">Todos</option>
+            <option value="PARCIAL">Parcial</option>
+            <option value="FINAL">Final</option>
+          </select>
+        </div>
+
+        <!-- Date From Filter -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Desde</span>
+          </label>
+          <input
+            type="date"
+            class="input input-bordered w-full"
+            [value]="dateFromFilter()"
+            (change)="setDateFromFilter($event)"
+          />
+        </div>
+
+        <!-- Date To Filter -->
+        <div class="form-control">
+          <label class="label">
+            <span class="label-text">Hasta</span>
+          </label>
+          <input
+            type="date"
+            class="input input-bordered w-full"
+            [value]="dateToFilter()"
+            (change)="setDateToFilter($event)"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sessions List -->
+  @if (loading()) {
+    <div class="flex justify-center items-center h-64">
+      <span class="loading loading-spinner loading-lg"></span>
+    </div>
+  } @else if (filteredSessions().length === 0) {
+    <div class="card bg-base-200 shadow-xl">
+      <div class="card-body text-center py-12">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-16 w-16 mx-auto text-base-content/30 mb-4"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+          />
+        </svg>
+        <p class="text-lg font-semibold mb-2">No hay sesiones</p>
+        <p class="text-base-content/70">No se encontraron sesiones con los filtros seleccionados</p>
+      </div>
+    </div>
+  } @else {
+    <div class="grid grid-cols-1 gap-4">
+      @for (session of filteredSessions(); track session.id) {
+        <div class="card bg-base-200 shadow-lg hover:shadow-xl transition-shadow">
+          <div class="card-body">
+            <!-- Session Header -->
+            <div
+              class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-4"
+            >
+              <div class="flex items-center gap-3">
+                <div class="avatar placeholder">
+                  <div class="bg-primary text-primary-content rounded-full w-12 h-12">
+                    <span class="text-xl">#{{ session.sessionNumber }}</span>
+                  </div>
+                </div>
+                <div>
+                  <h3 class="text-lg font-bold">Sesión #{{ session.sessionNumber }}</h3>
+                  <p class="text-sm text-base-content/70">
+                    {{ formatDateOnly(session.openedAt) }}
+                  </p>
+                </div>
+              </div>
+              <div class="flex gap-2">
+                <span class="badge" [ngClass]="getStatusBadgeClass(session.status)">
+                  {{ session.status }}
+                </span>
+                <span class="badge" [ngClass]="getTypeBadgeClass(session.sessionType)">
+                  {{ session.sessionType }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Session Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div>
+                <p class="text-xs text-base-content/60">Balance Inicial</p>
+                <p class="text-lg font-semibold">
+                  {{ formatCurrency(session.openingBalance) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/60">Balance Final</p>
+                <p class="text-lg font-semibold">
+                  {{ formatCurrency(session.closingBalance) }}
+                </p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/60">Órdenes</p>
+                <p class="text-lg font-semibold">{{ session.totalOrders || 0 }}</p>
+              </div>
+              <div>
+                <p class="text-xs text-base-content/60">Duración</p>
+                <p class="text-lg font-semibold">{{ getSessionDuration(session) }}</p>
+              </div>
+            </div>
+
+            <!-- Session Details Row -->
+            <div
+              class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pt-4 border-t border-base-300"
+            >
+              <div class="text-sm text-base-content/70">
+                <p><strong>Apertura:</strong> {{ formatDate(session.openedAt) }}</p>
+                @if (session.closedAt) {
+                  <p><strong>Cierre:</strong> {{ formatDate(session.closedAt) }}</p>
+                }
+                @if (session.difference !== null) {
+                  <p [ngClass]="getDifferenceClass(session.difference)">
+                    <strong>Diferencia:</strong> {{ formatCurrency(session.difference) }}
+                  </p>
+                }
+              </div>
+              <button
+                class="btn btn-primary btn-sm w-full sm:w-auto"
+                (click)="openSessionDetail(session)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  class="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                  />
+                </svg>
+                Ver Detalle
+              </button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Refresh Button (Fixed at bottom on mobile) -->
+  <div class="fixed bottom-6 right-6 sm:hidden">
+    <button
+      class="btn btn-circle btn-primary shadow-xl"
+      (click)="loadSessions()"
+      [disabled]="loading()"
+    >
+      @if (loading()) {
+        <span class="loading loading-spinner loading-sm"></span>
+      } @else {
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="h-6 w-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+          />
+        </svg>
+      }
+    </button>
+  </div>
+</div>
+
+<!-- Modal de Detalle de Sesión -->
+@if (showModal()) {
+  <div class="modal modal-open">
+    <div class="modal-box max-w-4xl">
+      <!-- Modal Header -->
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-2xl">
+          Detalle de Sesión #{{ selectedSession()!.sessionNumber }}
+        </h3>
+        <button class="btn btn-sm btn-circle btn-ghost" (click)="closeModal()">✕</button>
+      </div>
+
+      @if (loadingModal()) {
+        <div class="flex justify-center items-center h-64">
+          <span class="loading loading-spinner loading-lg"></span>
+        </div>
+      } @else if (selectedSessionDashboard()) {
+        <div class="space-y-6">
+          <!-- Session Info -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="stat bg-base-100 rounded-box shadow">
+              <div class="stat-title">Estado</div>
+              <div class="stat-value text-lg">
+                <span
+                  class="badge badge-lg"
+                  [ngClass]="getStatusBadgeClass(selectedSession()!.status)"
+                >
+                  {{ selectedSession()!.status }}
+                </span>
+              </div>
+              <div class="stat-desc">{{ selectedSession()!.sessionType }}</div>
+            </div>
+
+            <div class="stat bg-base-100 rounded-box shadow">
+              <div class="stat-title">Duración</div>
+              <div class="stat-value text-lg">{{ getSessionDuration(selectedSession()!) }}</div>
+              <div class="stat-desc">{{ selectedSession()!.totalPayments || 0 }} pagos</div>
+            </div>
+          </div>
+
+          <!-- Caja Chica Section -->
+          <div class="divider">CAJA CHICA</div>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="stat bg-primary/10 rounded-box shadow">
+              <div class="stat-title">Balance Inicial</div>
+              <div class="stat-value text-primary text-xl">
+                {{ formatCurrency(selectedSession()!.openingBalance) }}
+              </div>
+            </div>
+
+            <div class="stat bg-error/10 rounded-box shadow">
+              <div class="stat-title">Gastos</div>
+              <div class="stat-value text-error text-xl">
+                {{ formatCurrency(selectedSessionDashboard()!.expenseSummary.totalAmount || 0) }}
+              </div>
+            </div>
+
+            <div class="stat bg-info/10 rounded-box shadow">
+              <div class="stat-title">Balance Esperado</div>
+              <div class="stat-value text-info text-xl">
+                {{ formatCurrency(selectedSession()!.expectedBalance) }}
+              </div>
+            </div>
+
+            <div class="stat bg-base-100 rounded-box shadow">
+              <div class="stat-title">Balance Real</div>
+              <div class="stat-value text-xl">
+                {{ formatCurrency(selectedSession()!.closingBalance) }}
+              </div>
+            </div>
+          </div>
+
+          @if (selectedSession()!.difference !== null) {
+            <div
+              class="alert"
+              [class.alert-success]="selectedSession()!.difference === 0"
+              [class.alert-warning]="selectedSession()!.difference! > 0"
+              [class.alert-error]="selectedSession()!.difference! < 0"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="stroke-current shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div>
+                <div class="font-bold">Diferencia de Caja Chica</div>
+                <div class="text-2xl font-bold">
+                  {{ formatCurrency(selectedSession()!.difference) }}
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Efectivo de Ventas -->
+          <div class="divider">EFECTIVO DE VENTAS (Va a Caja Fuerte)</div>
+          <div class="alert alert-info shadow">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              class="stroke-current shrink-0 w-6 h-6"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <div>
+              <div class="font-bold">Efectivo Recaudado</div>
+              <div class="text-2xl font-bold">
+                {{ formatCurrency(selectedSessionDashboard()!.paymentSummary.efectivo || 0) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div class="divider">MÉTODOS DE PAGO</div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="stat bg-base-100 rounded-box shadow-sm">
+              <div class="stat-title text-xs">Tarjetas</div>
+              <div class="stat-value text-lg">
+                {{ formatCurrency(selectedSession()!.cardTotal || 0) }}
+              </div>
+            </div>
+            <div class="stat bg-base-100 rounded-box shadow-sm">
+              <div class="stat-title text-xs">Transferencias</div>
+              <div class="stat-value text-lg">
+                {{ formatCurrency(selectedSession()!.transferTotal || 0) }}
+              </div>
+            </div>
+            <div class="stat bg-base-100 rounded-box shadow-sm">
+              <div class="stat-title text-xs">Billeteras</div>
+              <div class="stat-value text-lg">
+                {{ formatCurrency(selectedSession()!.digitalWalletTotal || 0) }}
+              </div>
+            </div>
+            <div class="stat bg-base-100 rounded-box shadow-sm">
+              <div class="stat-title text-xs">Otros</div>
+              <div class="stat-value text-lg">
+                {{ formatCurrency(selectedSession()!.otherTotal || 0) }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Order Stats -->
+          <div class="divider">ESTADÍSTICAS DE ÓRDENES</div>
+          <div class="stats stats-vertical lg:stats-horizontal shadow w-full">
+            <div class="stat">
+              <div class="stat-title">Total Órdenes</div>
+              <div class="stat-value text-primary">
+                {{ selectedSessionDashboard()!.orderStats.totalOrders || 0 }}
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Pagadas</div>
+              <div class="stat-value text-success">
+                {{ selectedSessionDashboard()!.orderStats.pagado || 0 }}
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Parciales</div>
+              <div class="stat-value text-warning">
+                {{ selectedSessionDashboard()!.orderStats.parcial || 0 }}
+              </div>
+            </div>
+            <div class="stat">
+              <div class="stat-title">Pendientes</div>
+              <div class="stat-value text-error">
+                {{ selectedSessionDashboard()!.orderStats.pendiente || 0 }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Notes -->
+          @if (selectedSession()!.openingNotes || selectedSession()!.closingNotes) {
+            <div class="divider">NOTAS</div>
+            @if (selectedSession()!.openingNotes) {
+              <div class="alert">
+                <div>
+                  <div class="font-bold">Notas de Apertura</div>
+                  <p class="text-sm">{{ selectedSession()!.openingNotes }}</p>
+                </div>
+              </div>
+            }
+            @if (selectedSession()!.closingNotes) {
+              <div class="alert">
+                <div>
+                  <div class="font-bold">Notas de Cierre</div>
+                  <p class="text-sm">{{ selectedSession()!.closingNotes }}</p>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+
+      <!-- Modal Actions -->
+      <div class="modal-action">
+        <button class="btn" (click)="closeModal()">Cerrar</button>
+      </div>
+    </div>
+    <div class="modal-backdrop" (click)="closeModal()"></div>
+  </div>
+}

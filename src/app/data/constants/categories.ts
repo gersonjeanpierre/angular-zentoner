@@ -12,86 +12,134 @@ export const PRINTING_CATEGORIES: PrintingCategory[] = [
     id: 1,
     name: 'IMPRESIÓN DIGITAL LÁSER',
     itemTypes: [
-      'BOND 90 GR', 'COUCHE BRILLANTE 150 GR', 'COUCHE BRILLANTE 200 GR',
-      'COUCHE BRILLANTE 300GR', 'FOLKOTE 14', 'OPALINA 250GR', 'HILO 250GR',
-      'ADHESIVO', 'A6 VOLANTE 115GR', 'A6 VOLANTE 150GR', 'TARJETA MATE',
-      'TARJETA BRILLO', 'COPIA B/N', 'COPIA COLOR', 'BLANCO Y NEGRO'
+      'ADHESIVO P3',
+      'ADHESIVO P4',
+      'VOLANTE 115g',
+      'VOLANTE 150g',
+      'BOND 90 GR',
+      'CANSON',
+      'COUCHE BRILLANTE 150g',
+      'COUCHE BRILLANTE 200g',
+      'COUCHE BRILLANTE 300g',
+      'COUCHE MATE 150g',
+      'COUCHE MATE 200g',
+      'COUCHE MATE 300g',
+      'FOLKOTE C14',
+      'HILO 250g',
+      'OPALINA 250g',
+      'TARJETA MATE',
+      'TARJETA BRILLO',
     ],
-    allowedSizes: [
-      'A4', 'A3', 'OFICIO', '13"x19"', 'IMPRENTA', 'A5', 'A6'
-    ],
+    allowedSizes: ['A0', 'A1', 'A2', 'A3', 'SA3', 'A4', 'A5', 'A6', '90mmx55mm'],
     compatibleMachines: [
-      'MINOLTA', 'C750', 'B/N1135', 'VP 32', 'VP 33'
-    ]
+      'VP 14',
+      'VP 15',
+      'VP 23',
+      'VP 26',
+      'VP 32',
+      'VP 33',
+      'IPF - 710',
+      'IPF - 750',
+    ],
   },
   {
     id: 2,
     name: 'GIGANTOGRAFÍA Y GRAN FORMATO',
     itemTypes: [
-      'BANNER', 'VINIL TRANSPARENTE BRILLO', 'VINIL TRANSPARENTE MATE',
-      'VINIL ARCLAD BRILLO', 'VINIL ARCLAD MATE', 'CANSON', 'PAPEL SOLVENTE',
-      'LINNER', 'ROLL SCREEN'
+      'BANNER',
+      'VINIL TRANSPARENTE BRILLO',
+      'VINIL TRANSPARENTE MATE',
+      'VINIL ARCLAD BRILLO',
+      'VINIL ARCLAD MATE',
+      'PAPEL SOLVENTE',
+      'LINNER',
+      'ROLL SCREEN',
     ],
     allowedSizes: [], // Custom sizes via modal
-    compatibleMachines: [
-      'GIGANTOGRAFÍA', 'IPF - 710', 'IPF - 750', 'FUTURA 01'
-    ]
+    compatibleMachines: ['FUTURA 01'],
   },
   {
     id: 3,
     name: 'IMPRESIÓN DTF (TEXTIL Y MERCH)',
 
     itemTypes: [
-      'POLO', 'POLERA', 'GORRA VISERA BLANCA', 'GORRA VISERA COLOR',
-      'BOLSA NOTEX', 'BOLSA TOCUYO' // Usualmente se usa DTF para estampar esto
+      'POLO',
+      'POLERA',
+      'GORRA VISERA BLANCA',
+      'GORRA VISERA COLOR',
+      'BOLSA NOTEX',
+      'BOLSA TOCUYO', // Usualmente se usa DTF para estampar esto
     ],
     allowedSizes: [
-      '27x21 DTF MERCHANDISING', '27x0.5 DTF MERCHANDISING',
-      '55x1 DTF TEXTIL', '55x10 DTF TEXTIL'
+      '27x21 DTF MERCHANDISING',
+      '27x0.5 DTF MERCHANDISING',
+      '55x1 DTF TEXTIL',
+      '55x10 DTF TEXTIL',
     ],
-    compatibleMachines: [
-      'DTF MERCHANDISING', 'DTF TEXTIL'
-    ]
+    compatibleMachines: ['DTF MERCHANDISING', 'DTF TEXTIL'],
   },
   {
     id: 4,
     name: 'ARTÍCULOS PUBLICITARIOS / SUBLIMACIÓN',
     itemTypes: [
-      'TAZA', 'TAZA MAGICA', 'TAZA CORAZON', 'TAZA ASA DE COLOR',
-      'LLAVERO ACRILICO', 'LLAVERO ENMIC', 'PORTA RETRATO', 'LAPICERO',
-      'MOUSEPAD', 'ROMPECABEZAS', 'TOMATODO', 'TERMO'
+      'TAZA',
+      'TAZA MAGICA',
+      'TAZA CORAZON',
+      'TAZA ASA DE COLOR',
+      'LLAVERO ACRILICO',
+      'LLAVERO ENMIC',
+      'PORTA RETRATO',
+      'LAPICERO',
+      'MOUSEPAD',
+      'ROMPECABEZAS',
+      'TOMATODO',
+      'TERMO',
     ],
     allowedSizes: [
-      'Unitario' // Aquí deberías agregar un tamaño "UNIDAD" o "ESTÁNDAR" a tu lista ITEM_SIZE
+      'UND', // Aquí deberías agregar un tamaño "UNIDAD" o "ESTÁNDAR" a tu lista ITEM_SIZE
     ],
-    compatibleMachines: [
-      'SUBLIMADORA', 'UV', '3D', 'HORNO'
-    ]
+    compatibleMachines: ['SUBLIMADORA', 'UV', 'DTF MERCHANDISING'],
   },
   {
     id: 5,
     name: 'ACABADOS Y SERVICIOS POST-IMPRESIÓN',
     itemTypes: [
-      'CORTE', 'EMPASTADO', 'ANILLADO', 'ESPIRALADO', 'PERFORADO',
-      'PLASTIFICADO MATE', 'PLASTIFICADO BRILLO', 'ENMICADO A4',
-      'ENMICADO A3', 'LAMINADO MATE', 'LAMINADO BRILLO', 'TROQUELADO',
-      'OJALES'
+      'CORTE',
+      'EMPASTADO',
+      'ANILLADO',
+      'ESPIRALADO',
+      'PERFORADO',
+      'PLASTIFICADO MATE',
+      'PLASTIFICADO BRILLO',
+      'ENMICADO A4',
+      'ENMICADO A3',
+      'LAMINADO MATE',
+      'LAMINADO BRILLO',
+      'TROQUELADO',
+      'OJALES',
     ],
-    allowedSizes: [
-      'A4', 'A3', 'A2', 'A1', 'A0' // Los acabados suelen depender del tamaño del pliego
-    ],
+    allowedSizes: ['A0', 'A1', 'A2', 'A3', 'SA3', 'A4', 'PERSONALIZADO', 'N/A'],
     compatibleMachines: [
-      'PLASTIFICADORA', 'ENMICADORA', 'LAMINADORA', 'TROQUELADORA', 'GUILLOTINA'
-    ]
+      'PLASTIFICADORA',
+      'ENMICADORA',
+      'LAMINADORA',
+      'TROQUELADORA',
+      'GUILLOTINA',
+      'MANUAL',
+    ],
   },
   {
     id: 6,
     name: 'SERVICIOS Y ADMINISTRATIVOS',
     itemTypes: [
-      'DISEÑO', 'ESCANEO A4', 'ESCANEO A3', 'TRANSPORTE',
-      'SALDOS - DEUDAS', 'ENLISTADO DE NOMBRES'
+      'DISEÑO',
+      'ESCANEO A4',
+      'ESCANEO A3',
+      'TRANSPORTE',
+      'SALDOS - DEUDAS',
+      'ENLISTADO DE NOMBRES',
     ],
     allowedSizes: ['N/A'],
-    compatibleMachines: ['SERV. INTERNO', 'SERV. EXTERNO']
-  }
+    compatibleMachines: ['SERV. INTERNO', 'SERV. EXTERNO'],
+  },
 ];

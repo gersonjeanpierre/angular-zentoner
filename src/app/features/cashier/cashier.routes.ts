@@ -37,6 +37,11 @@ const cashierRoutes: Routes = [
         title: 'Gastos de Caja Chica',
       },
       {
+        path: 'historial',
+        loadComponent: () => import('./session-history/session-history'),
+        title: 'Historial de Sesiones',
+      },
+      {
         path: 'acceso-denegado',
         loadComponent: () => import('./access-denied/access-denied'),
         title: 'Acceso Denegado',

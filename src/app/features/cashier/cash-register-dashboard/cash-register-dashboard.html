@@ -30,7 +30,7 @@
   }
   @if (isSessionActive()) {
     <!-- Sesión Activa -->
-    <div class="card bg-base-200 shadow-xl mb-6">
+    <div class="card bg-base-100 shadow-xl mb-6">
       <div class="card-body">
         <div class="flex justify-between items-center mb-4">
           <h2 class="card-title">
@@ -57,6 +57,33 @@
             </button>
           </div>
         </div>
+
+        <!-- Advertencia de pagos sin sesión -->
+        @if (unassignedPaymentsCount() > 0) {
+          <div class="alert alert-warning mb-6">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="stroke-current shrink-0 h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+            <div>
+              <h3 class="font-bold">Pagos sin Sesión Detectados</h3>
+              <div class="text-xs">
+                Se encontraron {{ unassignedPaymentsCount() }} pago(s) registrado(s) sin sesión de
+                caja asociada durante este período. Estos pagos están incluidos en el dashboard
+                actual pero deberían tener una sesión asignada.
+              </div>
+            </div>
+          </div>
+        }
 
         <!-- Información Básica de Sesión -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -89,39 +116,76 @@
           </div>
         </div>
 
-        <!-- Flujo de Efectivo -->
+        <!-- Flujo de Efectivo MEJORADO -->
         @if (cashFlow()) {
           <div class="mb-6">
-            <h3 class="text-lg font-semibold mb-3">💵 Flujo de Efectivo</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-              <div class="stat bg-info/10 rounded-box">
-                <div class="stat-title text-info-content">Balance Inicial</div>
-                <div class="stat-value text-info text-xl">
-                  {{ formatCurrency(cashFlow()!.openingBalance) }}
-                </div>
+            <h3 class="text-lg font-semibold mb-3">💰 Estado de Caja</h3>
+
+            <!-- Caja Chica (Principal) -->
+            <div class="alert alert-info shadow mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                class="stroke-current shrink-0 w-6 h-6"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                ></path>
+              </svg>
+              <div class="w-full">
+                <div class="font-bold text-base">Caja Chica</div>
+                <div class="text-sm">Balance inicial menos gastos de caja chica</div>
               </div>
-              <div class="stat bg-success/10 rounded-box">
-                <div class="stat-title text-success-content">Efectivo Ingreso</div>
-                <div class="stat-value text-success text-xl">
-                  {{ formatCurrency(cashFlow()!.cashIn) }}
-                </div>
-              </div>
-              <div class="stat bg-error/10 rounded-box">
-                <div class="stat-title text-error-content">Gastos</div>
-                <div class="stat-value text-error text-xl">
-                  {{ formatCurrency(cashFlow()!.cashOut) }}
-                </div>
-              </div>
-              <div class="stat bg-warning/10 rounded-box">
-                <div class="stat-title text-warning-content">Efectivo Esperado</div>
-                <div class="stat-value text-warning text-xl">
-                  {{ formatCurrency(cashFlow()!.expectedBalance) }}
-                </div>
-              </div>
-              <div class="stat bg-primary/10 rounded-box">
-                <div class="stat-title text-primary-content">Efectivo Actual</div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+              <div class="stat bg-primary/10 rounded-box shadow">
+                <div class="stat-title">Balance Inicial</div>
                 <div class="stat-value text-primary text-xl">
-                  {{ formatCurrency(cashFlow()!.currentCash) }}
+                  {{ formatCurrency(cashFlow()!.pettyCashOpening) }}
+                </div>
+              </div>
+              <div class="stat bg-error/10 rounded-box shadow">
+                <div class="stat-title">Gastos</div>
+                <div class="stat-value text-error text-xl">
+                  {{ formatCurrency(cashFlow()!.pettyCashExpenses) }}
+                </div>
+              </div>
+              <div class="stat bg-success/10 rounded-box shadow">
+                <div class="stat-title">Balance Esperado</div>
+                <div class="stat-value text-success text-xl">
+                  {{ formatCurrency(cashFlow()!.pettyCashExpected) }}
+                </div>
+                <div class="stat-desc">Inicial - Gastos</div>
+              </div>
+            </div>
+
+            <!-- Efectivo de Ventas (Informativo) -->
+            <div class="alert alert-warning shadow">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="stroke-current shrink-0 h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div class="w-full">
+                <div class="font-bold">Efectivo de Ventas (Va a Caja Fuerte)</div>
+                <div class="text-2xl font-bold mt-2">
+                  {{ formatCurrency(cashFlow()!.cashFromSales) }}
+                </div>
+                <div class="text-sm mt-1">
+                  Este dinero debe ser enviado físicamente a la caja fuerte de la empresa
                 </div>
               </div>
             </div>
@@ -289,7 +353,7 @@
           </div>
         }
 
-        <div class="card-actions justify-end mt-6 gap-2">
+        <div class="card-actions justify-end mt-6 gap-2 flex-wrap">
           <button class="btn btn-ghost" (click)="navigateToExpenses()">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -306,6 +370,23 @@
               />
             </svg>
             Gastos
+          </button>
+          <button class="btn btn-ghost" (click)="navigateToHistory()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Historial
           </button>
           <button class="btn btn-ghost" (click)="navigateToOrders()">
             <svg
@@ -363,7 +444,7 @@
     </div>
   } @else {
     <!-- No hay sesión activa -->
-    <div class="card bg-base-200 shadow-xl">
+    <div class="card bg-base-100 shadow-xl">
       <div class="card-body text-center">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -402,6 +483,23 @@
               />
             </svg>
             Abrir Nueva Sesión
+          </button>
+          <button class="btn btn-neutral btn-lg" (click)="navigateToHistory()">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Historial
           </button>
         </div>
       </div>

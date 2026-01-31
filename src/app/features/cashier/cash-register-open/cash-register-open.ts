@@ -11,6 +11,7 @@ import { form, FormField, required, min } from '@angular/forms/signals';
 import { CashRegisterService } from '@core/services/cash-register-service';
 import { AuthService } from '@core/services/auth-service';
 import { OpenSessionPayload, SessionType } from '@data/models/sales/cash-register.model';
+import { v7 as uuidv7 } from 'uuid';
 
 interface OpenSessionFormModel {
   opening_balance: number;
@@ -154,6 +155,7 @@ export default class CashRegisterOpen implements OnInit {
 
       // Payload simple: shopId de metadata + userId como cashierId
       const payload: OpenSessionPayload = {
+        id: uuidv7(),
         shopId: shopId,
         cashierId: user.id, // user_id === employee_id
         openingBalance: formData.opening_balance,
@@ -169,7 +171,7 @@ export default class CashRegisterOpen implements OnInit {
         this.router.navigate(['/caja/dashboard']);
       }, 1500);
     } catch (err: any) {
-      console.error('Error al abrir sesión:', err);
+      console.error('[Cash Register OPEN Component]Error al abrir sesión:', err);
       this.error.set(err.message || 'Error al abrir la sesión de caja');
     } finally {
       this.loading.set(false);
@@ -177,6 +179,6 @@ export default class CashRegisterOpen implements OnInit {
   }
 
   protected cancel() {
-    this.router.navigate(['/cashier/dashboard']);
+    this.router.navigate(['/caja/dashboard']);
   }
 }

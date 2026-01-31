@@ -22,7 +22,7 @@ export class PaymentService {
       p_order_id: payload.order_id,
       p_amount: payload.amount,
       p_payment_method: payload.payment_method,
-      p_cash_register_session_id: payload.cash_register_session_id || null,
+      p_cash_register_session_id: payload.cash_register_session_id,
       p_transaction_reference: payload.transaction_reference || null,
       p_notes: payload.notes || null,
       p_received_by_id: payload.received_by_id || null,

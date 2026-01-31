@@ -30,6 +30,7 @@ export class CashRegisterService {
    */
   async openSession(payload: OpenSessionPayload): Promise<OpenSessionResponse> {
     const { data, error } = await this.supabase.schema('sales').rpc('open_cash_register_session', {
+      p_id: payload.id,
       p_shop_id: payload.shopId,
       p_cashier_id: payload.cashierId,
       p_opening_balance: payload.openingBalance,
@@ -44,8 +45,8 @@ export class CashRegisterService {
 
     const response = camelcaseKeys(data, { deep: true }) as OpenSessionResponse;
 
-    // Cargar la sesión completa después de abrirla
-    await this.loadCurrentSession(response.sessionId);
+    // Cargar la sesión completa después de abrirla, filtrando por shop
+    await this.loadCurrentSession(payload.shopId, response.sessionId);
 
     return response;
   }
@@ -73,16 +74,18 @@ export class CashRegisterService {
   }
 
   /**
-   * Cargar sesión actual del cajero
-   * Si se proporciona sessionId, carga esa sesión específica
-   * Si no, busca la sesión ABIERTA del cajero actual
+   * Cargar sesión actual del cajero en una tienda específica
+   * shopId es OBLIGATORIO para evitar ver sesiones de otras tiendas
+   * Si se proporciona sessionId, carga esa sesión específica validando que pertenezca al shop
+   * Si no, busca la sesión ABIERTA en el shop del cajero actual
    */
-  async loadCurrentSession(sessionId?: string): Promise<void> {
+  async loadCurrentSession(shopId: string, sessionId?: string): Promise<void> {
     try {
       let query = this.supabase
         .schema('sales')
         .from('cash_register_sessions')
         .select('*')
+        .eq('shop_id', shopId)
         .eq('status', 'ABIERTO');
 
       if (sessionId) {
@@ -98,16 +101,16 @@ export class CashRegisterService {
         throw error;
       }
 
-      // Si no hay datos, no hay sesión activa
+      // Si no hay datos, no hay sesión activa en este shop
       if (!data || data.length === 0) {
-        console.log('[CashRegisterService] No hay sesión abierta');
+        console.log(`[CashRegisterService] No hay sesión abierta en shop: ${shopId}`);
         this.currentSession.set(null);
         return;
       }
-      console.log('[CashRegisterService] Sesión abierta encontrada:', data);
+      console.log(`[CashRegisterService] Sesión abierta encontrada en shop ${shopId}:`, data);
       const session = camelcaseKeys(data[0], { deep: true }) as CashRegisterSession;
       this.currentSession.set(session);
-      console.log('[CashRegisterService] Sesión cargada:', session.id);
+      console.log(`[CashRegisterService] Sesión cargada: ${session.id} (shop: ${shopId})`);
     } catch (error) {
       console.error('[CashRegisterService] Error en loadCurrentSession:', error);
       this.currentSession.set(null);
@@ -182,8 +185,9 @@ export class CashRegisterService {
 
   /**
    * Verificar si hay una sesión abierta
+   * Si se proporciona shopId, filtra por tienda específica
    */
-  async hasOpenSession(cashierId?: string): Promise<boolean> {
+  async hasOpenSession(cashierId?: string, shopId?: string): Promise<boolean> {
     let query = this.supabase
       .schema('sales')
       .from('cash_register_sessions')
@@ -192,6 +196,10 @@ export class CashRegisterService {
 
     if (cashierId) {
       query = query.eq('cashier_id', cashierId);
+    }
+
+    if (shopId) {
+      query = query.eq('shop_id', shopId);
     }
 
     const { count, error } = await query;
@@ -240,9 +248,13 @@ export class CashRegisterService {
   }
 
   /**
-   * Verificar acceso al dashboard de caja
+   * Verificar acceso al dashboard de caja para una tienda específica
+   * REGLAS:
+   * 1. Si NO hay sesión abierta en el shop -> PUEDE ACCEDER (para abrir nueva sesión)
+   * 2. Si HAY sesión Y es del mismo cajero -> PUEDE ACCEDER (su propia sesión)
+   * 3. Si HAY sesión Y es de otro cajero -> NO PUEDE ACCEDER (sesión ocupada)
+   *
    * NOTA: employee_id === user_id (confirmado en edge function create-employee)
-   * Usa SOLO shopId de metadatos para validar sesiones
    */
   async checkDashboardAccess(
     userId: string,
@@ -257,16 +269,13 @@ export class CashRegisterService {
         `[CashRegisterService] Verificando acceso - userId: ${userId}, shopId: ${shopId}`,
       );
 
-      // employee_id === user_id (según edge function)
-      const employeeId = userId;
-
-      // Buscar sesión abierta en este shop
+      // Buscar sesión abierta SOLO en este shop específico
       const openSession = await this.getOpenSessionByShop(shopId);
 
+      // CASO 1: No hay sesión abierta en este shop -> Permitir acceso para abrir nueva
       if (!openSession) {
-        // No hay sesión abierta en este shop
         console.log(
-          '[CashRegisterService] No hay sesión abierta, acceso permitido para abrir nueva',
+          `[CashRegisterService] No hay sesión abierta en shop ${shopId}, acceso permitido`,
         );
         return {
           canAccess: true,
@@ -274,26 +283,28 @@ export class CashRegisterService {
         };
       }
 
-      // Hay una sesión abierta, verificar si es del mismo cajero
-      if (openSession.cashierId === employeeId) {
-        // Es su propia sesión, puede acceder
-        console.log('[CashRegisterService] Sesión pertenece al cajero actual, acceso permitido');
+      // CASO 2: Hay sesión del mismo cajero -> Permitir acceso
+      const isSameCashier = openSession.cashierId === userId;
+      if (isSameCashier) {
+        console.log(
+          `[CashRegisterService] Sesión ${openSession.id} pertenece al cajero actual, acceso permitido`,
+        );
         return {
           canAccess: true,
           session: openSession,
         };
-      } else {
-        // La sesión es de otro cajero, no puede acceder
-        console.warn(
-          `[CashRegisterService] Sesión pertenece a otro cajero. ` +
-            `Session cashier: ${openSession.cashierId}, Current user: ${employeeId}`,
-        );
-        return {
-          canAccess: false,
-          reason: 'Ya hay una sesión abierta por otro cajero en esta tienda',
-          session: openSession,
-        };
       }
+
+      // CASO 3: Hay sesión de otro cajero -> Denegar acceso
+      console.warn(
+        `[CashRegisterService] Sesión ${openSession.id} pertenece a otro cajero ` +
+          `(${openSession.cashierId}), acceso denegado`,
+      );
+      return {
+        canAccess: false,
+        reason: 'Ya hay una sesión abierta por otro cajero en esta tienda',
+        session: openSession,
+      };
     } catch (error) {
       console.error('[CashRegisterService] Error en checkDashboardAccess:', error);
       return {

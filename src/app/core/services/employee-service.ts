@@ -166,4 +166,14 @@ export class EmployeeService {
 
     return employee;
   }
+
+  /**
+   * Sincroniza empleados desde Supabase: limpia caché y recarga datos
+   */
+  async syncEmployees(): Promise<void> {
+    console.log('[EmployeeService] Iniciando sincronización...');
+    await dexieDB.employees.clear();
+    await this.fetchEmployeesFromSupabase();
+    console.log('[EmployeeService] Sincronización completada');
+  }
 }

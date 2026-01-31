@@ -70,7 +70,14 @@ export default class CashExpenses implements OnInit {
 
   private async loadSession() {
     try {
-      await this.cashRegisterService.loadCurrentSession();
+      const user = await this.authService.getUserProfileData();
+      if (!user || !user.shopId) {
+        this.error.set('No se encontró información de tienda del usuario');
+        setTimeout(() => this.router.navigate(['/caja']), 3000);
+        return;
+      }
+
+      await this.cashRegisterService.loadCurrentSession(user.shopId);
       const session = this.currentSession();
 
       if (!session) {

@@ -5,7 +5,9 @@ import {
   HostListener,
   signal,
   inject,
+  resource,
 } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { form, FormField } from '@angular/forms/signals';
 import {
   OrderFormModel,
@@ -18,6 +20,7 @@ import {
 import { TicketPreview } from './ticket-preview/ticket-preview';
 import { ModalSearch } from './modal-search/modal-search';
 import { SearchModal, SearchableItem } from '@shared/components/search-modal/search-modal';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 import { ITEM_MACHINE, ITEM_SIZE, ITEM_TYPE } from '@data/constants';
 import { v7 as uuidv7 } from 'uuid';
 import { PRINTING_CATEGORIES } from '@data/constants/categories';
@@ -27,24 +30,29 @@ import { OrderService } from '@core/services/order-service';
 import { AuthService } from '@core/services/auth-service';
 import { splitNamesForDisplayFitText } from '@shared/utils/functions/split-names';
 import { ShopService } from '@core/services/shop-service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-tickets',
-  imports: [FormField, TicketPreview, ModalSearch, SearchModal],
+  imports: [FormField, TicketPreview, ModalSearch, SearchModal, AlertModal],
   templateUrl: './tickets.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class Tickets {
   // Services
-  private customerService = inject(CustomerService);
-  private employeeService = inject(EmployeeService);
-  private orderService = inject(OrderService);
-  private authService = inject(AuthService);
+  private readonly customerService = inject(CustomerService);
+  private readonly employeeService = inject(EmployeeService);
+  private readonly orderService = inject(OrderService);
+  private readonly authService = inject(AuthService);
+  private readonly shopService = inject(ShopService);
+  private readonly router = inject(Router);
 
   // Constants
   protected readonly sizes: string[] = ITEM_SIZE;
   protected readonly types: string[] = ITEM_TYPE;
   protected readonly machines: string[] = ITEM_MACHINE;
+  protected readonly category = PRINTING_CATEGORIES;
+  protected readonly categories = this.category.map((c) => c.name);
 
   // Modal state para selección de campos de items
   protected modalOpen = signal(false);
@@ -61,25 +69,132 @@ export default class Tickets {
   protected employeeModalOpen = signal(false);
   protected customerItems = signal<SearchableItem[]>([]);
   protected employeeItems = signal<SearchableItem[]>([]);
-  protected isLoadingCustomers = signal(false);
-  protected isLoadingEmployees = signal(false);
+  protected syncingCustomers = signal(false);
+  protected syncingEmployees = signal(false);
   protected selectedCustomerId = signal<string>('');
   protected selectedEmployeeId = signal<string>('');
 
-  protected isDesignerFixed = signal(false);
+  // Alert Modal state
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
-  protected category = PRINTING_CATEGORIES;
+  // Observables reactivos de Dexie - se actualizan automáticamente
+  private readonly allCustomers = toSignal(this.customerService.dataCustomers$, {
+    initialValue: [],
+  });
 
-  protected categories = this.category.map((c) => c.name);
+  private readonly allEmployees = toSignal(this.employeeService.dataEmployees$, {
+    initialValue: [],
+  });
+
+  private readonly allShops = toSignal(this.shopService.dataShops$, {
+    initialValue: [],
+  });
+
+  // Computed: mapea customers de Dexie a SearchableItems
+  protected readonly customersSearchable = computed((): SearchableItem[] => {
+    return this.allCustomers()
+      .filter((c) => !c.customerDeletedAt && !c.personDeletedAt)
+      .map((customer) => ({
+        id: customer.id,
+        displayText: customer.legalName || `${customer.firstName} ${customer.lastName}`,
+        subtitle:
+          customer.phone || customer.email || customer.dni || customer.ruc || 'Sin contacto',
+        displayFitText: splitNamesForDisplayFitText(customer.firstName!, customer.lastName!),
+        metadata: customer,
+      }));
+  });
+
+  // Computed: mapea employees de Dexie a SearchableItems
+  protected readonly employeesSearchable = computed((): SearchableItem[] => {
+    return this.allEmployees().map((employee) => ({
+      id: employee.employeeId,
+      displayText: `${employee.firstName} ${employee.lastName}`,
+      metadata: employee,
+    }));
+  });
+
+  protected readonly shopList = computed(() => {
+    const shops = this.allShops();
+    return shops.map((shop) => ({
+      id: shop.id,
+      name: shop.name,
+      address: shop.address,
+    }));
+  });
+
+  // Resource para carga inicial de datos
+  protected readonly loadResource = resource({
+    loader: async () => {
+      await Promise.all([
+        this.customerService.ensureCustomersLoaded(),
+        this.employeeService.ensureEmployeesLoaded(),
+      ]);
+      return { loaded: true };
+    },
+  });
+
+  // Resource para cargar el perfil del usuario de forma declarativa
+  protected readonly userProfileResource = resource({
+    loader: async () => {
+      return await this.authService.getUserProfileData();
+    },
+  });
+
+  // Computed signals para estados de UI basados en resource
+  protected readonly loading = computed(() => this.userProfileResource.isLoading());
+  protected readonly error = computed(() => this.userProfileResource.error()?.message ?? null);
+
+  // Computed: userProfile del resource
+  protected readonly userProfile = computed(() => this.userProfileResource.value());
+
+  // Computed: address reactivo basado en shops y userProfile
+  protected readonly computedAddress = computed(() => {
+    const profile = this.userProfile();
+    const shops = this.allShops();
+
+    if (!profile || shops.length === 0) return '';
+
+    const userShop = shops.find((shop) => shop.id === profile.shopId) || shops[0];
+    return userShop?.address ?? '';
+  });
+
+  // Computed: determina si el usuario es diseñador (role 4)
+  protected readonly isDesignerRole = computed(() => {
+    const profile = this.userProfile();
+    console.log('--- User Profile ---', profile);
+    console.log('--> Is DESIGNER:', profile?.roles.includes(4) ?? false);
+    return profile?.roles.includes(4) ?? false;
+  });
+
+  // Computed: nombre del empleado - auto-asigna si es diseñador
+  protected readonly computedEmployeeName = computed(() => {
+    if (this.isDesignerRole()) {
+      const profile = this.userProfile();
+
+      return profile?.name ?? '';
+    }
+    return this.orderFormModel().employeeName;
+  });
+
+  // Computed: ID del empleado - auto-asigna si es diseñador
+  protected readonly computedEmployeeId = computed(() => {
+    if (this.isDesignerRole()) {
+      const profile = this.userProfile();
+      console.log('<--<- User Profile ---', profile);
+      return profile?.id ?? '';
+    }
+    return this.selectedEmployeeId();
+  });
 
   // === Form Model ===
   // Modelo de formulario para crear órdenes (alineado con sales.orders)
   protected orderFormModel = signal<OrderFormModel>({
     // Información de empresa (estática)
     companyName: 'LASER COLOR VELOZ',
-    address: 'JR. ORBEGOSO 243 PISO 1 STAND 243',
-    socialReason: 'ASESORIAS GLOBALES EMPRESARIALES E.I.R.L.',
-    ruc: '20607873411',
+    address: '', // Se llenará reactivamente desde computedAddress
 
     // Referencias
     orderNumber: 777,
@@ -105,8 +220,10 @@ export default class Tickets {
   // Signal Form instance
   protected orderForm = form(this.orderFormModel);
 
-  // IGV checkbox
-  includeIGV = signal(true);
+  // Checkboxes para controlar qué campos mostrar/calcular
+  protected includeIGV = signal(true);
+  protected showAdvance = signal(false);
+  protected showDiscount = signal(false);
 
   // === Computed Totals (Alineados con sales.orders schema) ===
 
@@ -128,7 +245,7 @@ export default class Tickets {
     if (!this.includeIGV()) return 0;
 
     const totalPrice = this.totalPrice();
-    const discount = this.orderForm.discount().value();
+    const discount = this.showDiscount() ? this.orderForm.discount().value() : 0;
     return (totalPrice - discount) * 0.18;
   });
 
@@ -144,7 +261,7 @@ export default class Tickets {
    */
   protected remainingBalance = computed(() => {
     const finalAmount = this.finalAmount();
-    const advance = this.orderForm.advance().value();
+    const advance = this.showAdvance() ? this.orderForm.advance().value() : 0;
     return finalAmount - advance;
   });
 
@@ -155,7 +272,7 @@ export default class Tickets {
    */
   protected finalAmount = computed(() => {
     const totalPrice = this.totalPrice();
-    const discount = this.orderForm.discount().value();
+    const discount = this.showDiscount() ? this.orderForm.discount().value() : 0;
     const igv = this.igvAmount();
     return totalPrice - discount + igv;
   });
@@ -167,7 +284,7 @@ export default class Tickets {
    */
   protected paymentStatus = computed((): 'PENDIENTE' | 'PARCIAL' | 'PAGADO' => {
     const remaining = this.remainingBalance();
-    const advance = this.orderForm.advance().value();
+    const advance = this.showAdvance() ? this.orderForm.advance().value() : 0;
 
     if (remaining <= 0) return 'PAGADO';
     if (advance > 0) return 'PARCIAL';
@@ -184,36 +301,13 @@ export default class Tickets {
   protected get orderData(): OrderFormModel {
     return {
       ...this.orderFormModel(),
+      address: this.computedAddress(),
+      employeeName: this.computedEmployeeName(),
       totalPrice: this.totalPrice(),
       igv: this.igvAmount(),
       remainingBalance: this.remainingBalance(),
       finalAmount: this.finalAmount(),
     };
-  }
-
-  ngOnInit() {
-    this.initUser();
-    this.syncTotalsToModel();
-  }
-
-  /**
-   * Inicializa el usuario actual
-   * Si es diseñador (role 4), lo fija automáticamente en el formulario
-   */
-  private async initUser() {
-    try {
-      const userProfile = await this.authService.getUserProfileData();
-
-      // Si el usuario es diseñador, fijarlo automáticamente
-      if (userProfile.roles.includes(4)) {
-        console.log('Diseñador fijo asignado:', userProfile);
-        this.isDesignerFixed.set(true);
-        this.selectedEmployeeId.set(userProfile.id);
-        this.orderForm.employeeName().value.set(userProfile.name);
-      }
-    } catch (error) {
-      console.error('Error obteniendo perfil de usuario:', error);
-    }
   }
 
   /**
@@ -232,6 +326,7 @@ export default class Tickets {
   protected syncTotalsToModel(): void {
     this.orderFormModel.update((data) => ({
       ...data,
+      address: this.computedAddress(), // Sincroniza address reactivo
       totalPrice: this.totalPrice(),
       igv: this.igvAmount(),
       remainingBalance: this.remainingBalance(),
@@ -365,21 +460,26 @@ export default class Tickets {
     const items = [...this.orderForm.items().value()];
     const item = items[index];
 
-    if (
-      field === 'size' ||
-      field === 'type' ||
-      field === 'machine' ||
-      field === 'category' ||
-      field === 'description'
-    ) {
-      item[field] = value as string;
-    } else if (field === 'quantity' || field === 'price') {
-      const numValue = typeof value === 'string' ? parseFloat(value) || 0 : value;
-      item[field] = numValue;
-      // Recalcular subtotal usando el helper
-      item.total = OrderItemValidator.calculateSubtotal(item);
-    } else if (field === 'total') {
-      item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
+    // Actualizar campo según tipo
+    switch (field) {
+      case 'size':
+      case 'type':
+      case 'machine':
+      case 'category':
+      case 'description':
+        item[field] = value as string;
+        break;
+
+      case 'quantity':
+      case 'price':
+        item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
+        // Recalcular subtotal usando el helper
+        item.total = OrderItemValidator.calculateSubtotal(item);
+        break;
+
+      case 'total':
+        item[field] = typeof value === 'string' ? parseFloat(value) || 0 : value;
+        break;
     }
 
     this.orderForm.items().value.set(items);
@@ -402,6 +502,259 @@ export default class Tickets {
   protected updateDiscount(value: number): void {
     this.orderForm.discount().value.set(value || 0);
     this.syncTotalsToModel();
+  }
+
+  /**
+   * Formatea fecha para visualización en español
+   * @param date - Fecha a formatear
+   * @returns Fecha formateada (dd/mm/yyyy hh:mm)
+   */
+  protected formatDate(date: Date): string {
+    return date.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  }
+
+  /**
+   * Abre modal de búsqueda de clientes
+   * Los datos se cargan automáticamente desde Dexie
+   */
+  protected openCustomerModal() {
+    this.customerItems.set(this.customersSearchable());
+    this.customerModalOpen.set(true);
+  }
+
+  /**
+   * Maneja la búsqueda de clientes en tiempo real (filtrado local)
+   */
+  protected handleCustomerSearch(searchTerm: string) {
+    if (!searchTerm.trim()) {
+      this.customerItems.set(this.customersSearchable());
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = this.customersSearchable().filter(
+      (item) =>
+        item.displayText.toLowerCase().includes(term) ||
+        item.subtitle?.toLowerCase().includes(term),
+    );
+    this.customerItems.set(filtered);
+  }
+
+  /**
+   * Maneja la selección de un cliente del modal
+   * @param item - Item seleccionado con datos del cliente
+   */
+  protected handleCustomerSelect(item: SearchableItem) {
+    this.selectedCustomerId.set(item.id);
+    this.orderForm.customerName().value.set(item.displayText);
+    // Auto-asignar empleado si el usuario es diseñador
+    if (this.isDesignerRole()) {
+      const profile = this.userProfile();
+      this.selectedEmployeeId.set(profile?.id ?? '');
+    }
+    this.customerModalOpen.set(false);
+  }
+
+  /**
+   * Abre modal de búsqueda de empleados/diseñadores
+   * Los datos se cargan automáticamente desde Dexie
+   * Bloqueado si el usuario es diseñador (role 4)
+   */
+  protected openEmployeeModal() {
+    if (this.isDesignerRole()) return;
+    this.employeeItems.set(this.employeesSearchable());
+    this.employeeModalOpen.set(true);
+  }
+
+  /**
+   * Maneja la búsqueda de empleados en tiempo real (filtrado local)
+   */
+  protected handleEmployeeSearch(searchTerm: string) {
+    if (!searchTerm.trim()) {
+      this.employeeItems.set(this.employeesSearchable());
+      return;
+    }
+
+    const term = searchTerm.toLowerCase();
+    const filtered = this.employeesSearchable().filter((item) =>
+      item.displayText.toLowerCase().includes(term),
+    );
+    this.employeeItems.set(filtered);
+  }
+
+  /**
+   * Maneja la selección de un empleado del modal
+   * @param item - Item seleccionado con datos del empleado
+   */
+  protected handleEmployeeSelect(item: SearchableItem) {
+    this.selectedEmployeeId.set(item.id);
+    this.orderForm.employeeName().value.set(item.displayText);
+    this.employeeModalOpen.set(false);
+  }
+
+  /**
+   * Sincroniza clientes desde Supabase: limpia caché y recarga datos
+   */
+  protected async syncCustomers() {
+    this.syncingCustomers.set(true);
+    try {
+      await this.customerService.syncCustomers();
+      this.customerItems.set(this.customersSearchable());
+      console.log('[Tickets] Clientes sincronizados');
+    } catch (error) {
+      console.error('[Tickets] Error al sincronizar clientes:', error);
+    } finally {
+      this.syncingCustomers.set(false);
+    }
+  }
+
+  /**
+   * Sincroniza empleados desde Supabase: limpia caché y recarga datos
+   */
+  protected async syncEmployees() {
+    this.syncingEmployees.set(true);
+    try {
+      await this.employeeService.syncEmployees();
+      this.employeeItems.set(this.employeesSearchable());
+      console.log('[Tickets] Empleados sincronizados');
+    } catch (error) {
+      console.error('[Tickets] Error al sincronizar empleados:', error);
+    } finally {
+      this.syncingEmployees.set(false);
+    }
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
+  }
+
+  /**
+   * Valida que la orden tenga todos los datos requeridos
+   * @returns true si la orden es válida, false en caso contrario
+   */
+  private validateOrder(): boolean {
+    if (!this.selectedCustomerId()) {
+      this.showAlert('Cliente requerido', 'Debe seleccionar un cliente', 'warning');
+      return false;
+    }
+
+    if (!this.selectedEmployeeId()) {
+      this.showAlert('Empleado requerido', 'Debe seleccionar un empleado/diseñador', 'warning');
+      return false;
+    }
+
+    const items = this.orderData.items;
+
+    if (items.length === 0) {
+      this.showAlert('Items requeridos', 'Debe agregar al menos un item a la orden', 'warning');
+      return false;
+    }
+
+    // Validar cada item usando el validator
+    const hasInvalidItems = items.some((item) => {
+      const validation = OrderItemValidator.validate(item);
+      return !validation.hasValidQuantity || !validation.hasValidPrice;
+    });
+
+    if (hasInvalidItems) {
+      this.showAlert(
+        'Items inválidos',
+        'Todos los items deben tener cantidad y precio válidos (mayores a 0)',
+        'warning',
+      );
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Guarda la orden en la base de datos
+   *
+   * Flujo:
+   * 1. Valida datos requeridos (cliente, empleado, items)
+   * 2. Transforma OrderFormModel → Order + OrderDetail[]
+   * 3. Inserta en sales.orders y sales.order_details
+   * 4. Genera QR con el UUID de la orden creada
+   *
+   * @throws Error si falla la validación o inserción en BD
+   */
+  protected async saveOrder(): Promise<void> {
+    // === Validaciones ===
+    if (!this.validateOrder()) return;
+
+    // === Transformación y Persistencia ===
+
+    try {
+      // Obtener shop_id de la sesión del usuario autenticado
+      const { shopId } = await this.authService.getUserProfileData();
+
+      // Sincronizar totales calculados antes de guardar
+      this.syncTotalsToModel();
+
+      const items = this.orderData.items;
+
+      // Transformar OrderFormModel → Order (según schema sales.orders)
+      const order: Order = OrderTransformer.toOrder(
+        this.orderData,
+        this.selectedCustomerId(),
+        this.computedEmployeeId(), // Usa el computed que considera si es diseñador
+        shopId,
+        1, // status_id = 1 (PENDIENTE)
+      );
+
+      // Transformar OrderItemModel[] → OrderDetail[] (según schema sales.order_details)
+      const orderDetails: OrderDetail[] = OrderTransformer.toOrderDetails(items);
+
+      // Insertar en base de datos
+      const orderId = await this.orderService.createOrder(order, orderDetails);
+
+      // Generar QR con el UUID de la orden
+      this.orderUuid.set(orderId);
+
+      console.log('[Tickets] Orden guardada exitosamente:', orderId);
+      this.showAlert(
+        'Orden guardada',
+        `La orden ha sido guardada exitosamente con ID: ${orderId}`,
+        'success',
+      );
+      setTimeout(() => {
+        this.router.navigate(['/ventas']);
+      }, 2000);
+      // TODO: Opcional - Limpiar formulario o navegar a vista de órdenes
+      // this.resetForm();
+      // this.router.navigate(['/orders', orderId]);
+    } catch (error) {
+      console.error('[Tickets] Error al guardar orden:', error);
+      this.showAlert(
+        'Error al guardar',
+        'No se pudo guardar la orden. Por favor intente nuevamente.',
+        'error',
+      );
+      throw error;
+    }
   }
 
   /**
@@ -484,213 +837,5 @@ export default class Tickets {
     printWindow.document.fonts.ready.then(() => {
       printWindow.focus();
     });
-  }
-
-  /**
-   * Formatea fecha para visualización en español
-   * @param date - Fecha a formatear
-   * @returns Fecha formateada (dd/mm/yyyy hh:mm)
-   */
-  protected formatDate(date: Date): string {
-    return date.toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
-
-  /**
-   * Abre modal de búsqueda de clientes
-   * Carga automáticamente la lista de clientes activos
-   */
-  protected async openCustomerModal() {
-    this.customerModalOpen.set(true);
-    await this.loadCustomers();
-  }
-
-  /**
-   * Carga lista de clientes desde Supabase
-   * @param searchTerm - Término de búsqueda opcional
-   */
-  protected async loadCustomers(searchTerm?: string) {
-    this.isLoadingCustomers.set(true);
-    try {
-      const response = await this.customerService.getCustomers({
-        status: 'ACTIVE',
-        search: searchTerm,
-        pageSize: 50,
-      });
-
-      const items: SearchableItem[] = response.data.map((customer) => ({
-        id: customer.id,
-        displayText: customer.legalName || `${customer.firstName} ${customer.lastName}`,
-        subtitle:
-          customer.phone || customer.email || customer.dni || customer.ruc || 'Sin contacto',
-        displayFitText: splitNamesForDisplayFitText(customer.firstName!, customer.lastName!),
-        metadata: customer,
-      }));
-
-      this.customerItems.set(items);
-    } catch (error) {
-      console.error('Error al cargar clientes:', error);
-    } finally {
-      this.isLoadingCustomers.set(false);
-    }
-  }
-
-  /**
-   * Maneja la búsqueda de clientes en tiempo real
-   * @param searchTerm - Término de búsqueda
-   */
-  protected handleCustomerSearch(searchTerm: string) {
-    this.loadCustomers(searchTerm);
-  }
-
-  /**
-   * Maneja la selección de un cliente del modal
-   * @param item - Item seleccionado con datos del cliente
-   */
-  protected handleCustomerSelect(item: SearchableItem) {
-    this.selectedCustomerId.set(item.id);
-    this.orderForm.customerName().value.set(item.displayText);
-    this.customerModalOpen.set(false);
-  }
-
-  /**
-   * Abre modal de búsqueda de empleados/diseñadores
-   * Carga automáticamente la lista de empleados
-   */
-  protected async openEmployeeModal() {
-    if (this.isDesignerFixed()) return;
-    this.employeeModalOpen.set(true);
-    await this.loadEmployees();
-  }
-
-  /**
-   * Carga lista de empleados desde Supabase
-   * @param searchTerm - Término de búsqueda opcional
-   */
-  protected async loadEmployees(searchTerm?: string) {
-    this.isLoadingEmployees.set(true);
-    try {
-      const response = await this.employeeService.getEmployees({
-        search: searchTerm,
-        pageSize: 50,
-      });
-
-      const items: SearchableItem[] = response.data.map((employee) => ({
-        id: employee.employeeId,
-        displayText: `${employee.firstName} ${employee.lastName}`,
-        metadata: employee,
-      }));
-
-      this.employeeItems.set(items);
-    } catch (error) {
-      console.error('Error al cargar empleados:', error);
-    } finally {
-      this.isLoadingEmployees.set(false);
-    }
-  }
-
-  /**
-   * Maneja la búsqueda de empleados en tiempo real
-   * @param searchTerm - Término de búsqueda
-   */
-  protected handleEmployeeSearch(searchTerm: string) {
-    this.loadEmployees(searchTerm);
-  }
-
-  /**
-   * Maneja la selección de un empleado del modal
-   * @param item - Item seleccionado con datos del empleado
-   */
-  protected handleEmployeeSelect(item: SearchableItem) {
-    this.selectedEmployeeId.set(item.id);
-    this.orderForm.employeeName().value.set(item.displayText);
-    this.employeeModalOpen.set(false);
-  }
-
-  /**
-   * Guarda la orden en la base de datos
-   *
-   * Flujo:
-   * 1. Valida datos requeridos (cliente, empleado, items)
-   * 2. Transforma OrderFormModel → Order + OrderDetail[]
-   * 3. Inserta en sales.orders y sales.order_details
-   * 4. Genera QR con el UUID de la orden creada
-   *
-   * @throws Error si falla la validación o inserción en BD
-   */
-  protected async saveOrder(): Promise<void> {
-    // === Validaciones ===
-
-    if (!this.selectedCustomerId()) {
-      alert('⚠️ Debe seleccionar un cliente');
-      return;
-    }
-
-    if (!this.selectedEmployeeId()) {
-      alert('⚠️ Debe seleccionar un empleado/diseñador');
-      return;
-    }
-
-    const items = this.orderData.items;
-
-    if (items.length === 0) {
-      alert('⚠️ Debe agregar al menos un item a la orden');
-      return;
-    }
-
-    // Validar cada item usando el validator
-    const invalidItems = items.filter((item) => {
-      const validation = OrderItemValidator.validate(item);
-      return !validation.hasValidQuantity || !validation.hasValidPrice;
-    });
-
-    if (invalidItems.length > 0) {
-      alert('⚠️ Todos los items deben tener cantidad y precio válidos (mayores a 0)');
-      return;
-    }
-
-    // === Transformación y Persistencia ===
-
-    try {
-      // TODO: Obtener shop_id de la sesión del usuario autenticado
-      // Por ahora usamos un UUID temporal
-      const shopId = (await this.authService.getUserProfileData()).shopId;
-
-      // Sincronizar totales calculados antes de guardar
-      this.syncTotalsToModel();
-
-      // Transformar OrderFormModel → Order (según schema sales.orders)
-      const order: Order = OrderTransformer.toOrder(
-        this.orderData,
-        this.selectedCustomerId(),
-        this.selectedEmployeeId(),
-        shopId,
-        1, // status_id = 1 (PENDIENTE)
-      );
-
-      // Transformar OrderItemModel[] → OrderDetail[] (según schema sales.order_details)
-      const orderDetails: OrderDetail[] = OrderTransformer.toOrderDetails(items);
-
-      // Insertar en base de datos
-      const orderId = await this.orderService.createOrder(order, orderDetails);
-
-      // Generar QR con el UUID de la orden
-      this.orderUuid.set(orderId);
-
-      alert(`✅ Orden guardada exitosamente\\nID: ${orderId}`);
-
-      // TODO: Opcional - Limpiar formulario o navegar a vista de órdenes
-      // this.resetForm();
-      // this.router.navigate(['/orders', orderId]);
-    } catch (error) {
-      console.error('❌ Error al guardar orden:', error);
-      alert('❌ Error al guardar la orden. Por favor intente nuevamente.');
-      throw error;
-    }
   }
 }
