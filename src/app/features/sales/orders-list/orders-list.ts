@@ -2,16 +2,23 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { OrderService, GetOrdersParams } from '@core/services/order-service';
 import { Router } from '@angular/router';
 import { Order } from '@data/models/tickets/order-model';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 @Component({
   selector: 'app-orders-list',
-  imports: [],
+  imports: [AlertModal],
   templateUrl: './orders-list.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export default class OrdersList {
   private orderService = inject(OrderService);
   private router = inject(Router);
+
+  // AlertModal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   protected orders = signal<Order[]>([]);
   protected isLoading = signal(false);
@@ -37,6 +44,11 @@ export default class OrdersList {
       this.orderStatuses.set(statuses);
     } catch (error) {
       console.error('Error al cargar estados:', error);
+      this.showAlert(
+        'Error al cargar estados',
+        'No se pudieron cargar los estados de órdenes',
+        'error',
+      );
     }
   }
 
@@ -58,6 +70,7 @@ export default class OrdersList {
       this.totalCount.set(response.count);
     } catch (error) {
       console.error('Error al cargar órdenes:', error);
+      this.showAlert('Error al cargar órdenes', 'No se pudieron cargar las órdenes', 'error');
     } finally {
       this.isLoading.set(false);
     }
@@ -120,5 +133,25 @@ export default class OrdersList {
 
   protected getStatusName(statusId: number): string {
     return this.orderStatuses().find((s) => s.id === statusId)?.name || 'N/A';
+  }
+
+  /**
+   * Muestra una alerta modal
+   * @param title - Título de la alerta
+   * @param message - Mensaje de la alerta
+   * @param type - Tipo de alerta (info, success, warning, error)
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

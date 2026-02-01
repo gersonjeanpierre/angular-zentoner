@@ -157,6 +157,16 @@
       (onClose)="closePaymentModal()"
       (paymentRegistered)="handlePaymentRegistered()"
     />
+
+    <!-- Alert Modal -->
+    @if (alertModalOpen()) {
+      <app-alert-modal
+        [title]="alertTitle()"
+        [message]="alertMessage()"
+        [type]="alertType()"
+        (closed)="closeAlert()"
+      />
+    }
   } @else {
     <div class="text-center py-12">
       <i class="icon-[mdi--alert-circle-outline] w-16 h-16 mx-auto mb-4 text-error"></i>

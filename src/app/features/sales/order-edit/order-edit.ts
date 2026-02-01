@@ -8,6 +8,7 @@ import { EmployeeService } from '@core/services/employee-service';
 import { SearchModal, SearchableItem } from '@shared/components/search-modal/search-modal';
 import { CustomerView } from '@data/models/customer/customer.model';
 import { EmployeeView } from '@data/models/employee/employee.model';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 interface OrderFormData {
   customerId: string;
@@ -22,7 +23,7 @@ interface OrderFormData {
 
 @Component({
   selector: 'app-order-edit',
-  imports: [SearchModal],
+  imports: [SearchModal, AlertModal],
   templateUrl: './order-edit.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -58,6 +59,12 @@ export default class OrderEdit {
   protected employeeItems = signal<SearchableItem[]>([]);
   protected isLoadingCustomers = signal(false);
   protected isLoadingEmployees = signal(false);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   protected currentDetail = signal<Partial<OrderDetail>>({
     description: '',
@@ -100,8 +107,10 @@ export default class OrderEdit {
       const order = await this.orderService.getOrderById(orderId);
 
       if (!order) {
-        alert('Orden no encontrada');
-        this.router.navigate(['/tickets']);
+        this.showAlert('Orden no encontrada', 'La orden solicitada no existe', 'error');
+        setTimeout(() => {
+          this.router.navigate(['/tickets']);
+        }, 2000);
         return;
       }
 
@@ -119,8 +128,10 @@ export default class OrderEdit {
       this.includeIGV.set((order.igv || 0) > 0);
     } catch (error) {
       console.error('Error al cargar orden:', error);
-      alert('Error al cargar la orden');
-      this.router.navigate(['/tickets']);
+      this.showAlert('Error al cargar orden', 'Error al cargar la orden', 'error');
+      setTimeout(() => {
+        this.router.navigate(['/tickets']);
+      }, 2000);
     } finally {
       this.isLoading.set(false);
     }
@@ -206,7 +217,7 @@ export default class OrderEdit {
     const detail = this.currentDetail();
 
     if (!detail.description || detail.quantity! <= 0 || detail.unit_price! <= 0) {
-      alert('Complete todos los campos del detalle');
+      this.showAlert('Campos requeridos', 'Complete todos los campos del detalle', 'warning');
       return;
     }
 
@@ -289,7 +300,7 @@ export default class OrderEdit {
     if (!orderId) return;
 
     if (!formData.customerId || !formData.employeeId) {
-      alert('Complete todos los campos requeridos');
+      this.showAlert('Campos requeridos', 'Complete todos los campos requeridos', 'warning');
       return;
     }
 
@@ -310,11 +321,13 @@ export default class OrderEdit {
 
       await this.orderService.updateOrder(orderId, order);
 
-      alert('Orden actualizada exitosamente');
-      this.router.navigate(['/tickets/ver', orderId]);
+      this.showAlert('Orden actualizada', 'Orden actualizada exitosamente', 'success');
+      setTimeout(() => {
+        this.router.navigate(['/tickets/ver', orderId]);
+      }, 1500);
     } catch (error) {
       console.error('Error al actualizar orden:', error);
-      alert('Error al actualizar la orden');
+      this.showAlert('Error al actualizar', 'Error al actualizar la orden', 'error');
     }
   }
 
@@ -325,5 +338,22 @@ export default class OrderEdit {
     } else {
       this.router.navigate(['/tickets']);
     }
+  }
+
+  /**
+   * Muestra una alerta modal
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

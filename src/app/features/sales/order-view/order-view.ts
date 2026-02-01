@@ -4,10 +4,11 @@ import { OrderService, OrderWithDetails } from '@core/services/order-service';
 import { PaymentService } from '@core/services/payment-service';
 import { PaymentView } from '@data/models/sales/payment.model';
 import { PaymentModal } from '@shared/components/payment-modal/payment-modal';
+import { AlertModal, AlertType } from '@shared/components/alert-modal/alert-modal';
 
 @Component({
   selector: 'app-order-view',
-  imports: [PaymentModal],
+  imports: [PaymentModal, AlertModal],
   templateUrl: './order-view.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -25,6 +26,12 @@ export default class OrderView {
   protected payments = signal<PaymentView[]>([]);
   protected isLoadingPayments = signal(false);
   protected showPaymentModal = signal(false);
+
+  // Alert Modal signals
+  protected alertModalOpen = signal(false);
+  protected alertTitle = signal('');
+  protected alertMessage = signal('');
+  protected alertType = signal<AlertType>('info');
 
   constructor() {
     this.loadOrder();
@@ -45,7 +52,7 @@ export default class OrderView {
       await this.loadPayments(orderId);
     } catch (error) {
       console.error('Error al cargar orden:', error);
-      alert('Error al cargar la orden');
+      this.showAlert('Error al cargar orden', 'Error al cargar la orden', 'error');
     } finally {
       this.isLoading.set(false);
     }
@@ -67,10 +74,10 @@ export default class OrderView {
     try {
       await this.orderService.updateOrderStatus(order.id, newStatusId);
       this.order.set({ ...order, status_id: newStatusId });
-      alert('Estado actualizado exitosamente');
+      this.showAlert('Estado actualizado', 'Estado actualizado exitosamente', 'success');
     } catch (error) {
       console.error('Error al actualizar estado:', error);
-      alert('Error al actualizar el estado');
+      this.showAlert('Error al actualizar', 'Error al actualizar el estado', 'error');
     }
   }
 
@@ -166,5 +173,22 @@ export default class OrderView {
       PAGADO: 'badge-success',
     };
     return badges[status] || 'badge-ghost';
+  }
+
+  /**
+   * Muestra una alerta modal
+   */
+  private showAlert(title: string, message: string, type: AlertType = 'info'): void {
+    this.alertTitle.set(title);
+    this.alertMessage.set(message);
+    this.alertType.set(type);
+    this.alertModalOpen.set(true);
+  }
+
+  /**
+   * Cierra el modal de alerta
+   */
+  protected closeAlert(): void {
+    this.alertModalOpen.set(false);
   }
 }

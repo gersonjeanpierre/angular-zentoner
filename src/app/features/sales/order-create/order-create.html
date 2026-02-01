@@ -247,4 +247,14 @@
     (onSelect)="handleEmployeeSelect($event)"
     (onSearch)="handleEmployeeSearch($event)"
   />
+
+  <!-- Alert Modal -->
+  @if (alertModalOpen()) {
+    <app-alert-modal
+      [title]="alertTitle()"
+      [message]="alertMessage()"
+      [type]="alertType()"
+      (closed)="closeAlert()"
+    />
+  }
 </div>
