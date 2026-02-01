@@ -426,7 +426,16 @@ COMMENT ON FUNCTION sales.close_cash_register_session IS
 -- =====================================================================
 
 
-
+DROP FUNCTION IF EXISTS sales.register_cash_expense(
+  UUID,
+  UUID,
+  NUMERIC,
+  TEXT,
+  TEXT,
+  TEXT,
+  TEXT,
+  UUID
+);
 CREATE OR REPLACE FUNCTION sales.register_cash_expense(
   p_session_id UUID,
   p_shop_id UUID,
@@ -628,3 +637,45 @@ BEGIN
   ORDER BY p.payment_date DESC;
 END;
 $$;
+
+
+-- =====================================================================
+-- Función: Obtener historial de gastos de una sesión
+-- =====================================================================
+DROP FUNCTION IF EXISTS sales.get_session_expenses(UUID) CASCADE;
+CREATE OR REPLACE FUNCTION sales.get_session_expenses(
+  p_session_id UUID
+)
+RETURNS TABLE (
+  expense_id UUID,
+  amount NUMERIC,
+  category TEXT,
+  description TEXT,
+  receipt_number TEXT,
+  notes TEXT,
+  authorized_by_name TEXT,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    e.id,
+    e.amount,
+    e.category,
+    e.description,
+    e.receipt_number,
+    e.notes,
+    COALESCE(p.first_name || ' ' || p.last_name, 'Sin autorizar') AS authorized_by_name,
+    e.created_at
+  FROM sales.cash_expenses e
+  LEFT JOIN hr.employees emp ON e.authorized_by_id = emp.id
+  LEFT JOIN core.persons p ON emp.id = p.id
+  WHERE e.cash_register_session_id = p_session_id
+  ORDER BY e.created_at DESC;
+END;
+$$;
+
+COMMENT ON FUNCTION sales.get_session_expenses IS 'Obtiene el historial de gastos de caja chica de una sesión';

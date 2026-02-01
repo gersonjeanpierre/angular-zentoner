@@ -320,7 +320,8 @@ export class CashRegisterService {
    */
   async registerExpense(payload: RegisterExpensePayload): Promise<RegisterExpenseResponse> {
     const { data, error } = await this.supabase.schema('sales').rpc('register_cash_expense', {
-      p_cash_register_session_id: payload.cashRegisterSessionId,
+      p_session_id: payload.cashRegisterSessionId,
+      p_shop_id: payload.shopId,
       p_amount: payload.amount,
       p_category: payload.category,
       p_description: payload.description,

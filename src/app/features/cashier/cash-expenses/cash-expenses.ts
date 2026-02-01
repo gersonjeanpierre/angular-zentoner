@@ -149,6 +149,7 @@ export default class CashExpenses implements OnInit {
 
       const payload: RegisterExpensePayload = {
         cashRegisterSessionId: session.id,
+        shopId: session.shopId,
         amount: formData.amount,
         category: formData.category,
         description: formData.description,

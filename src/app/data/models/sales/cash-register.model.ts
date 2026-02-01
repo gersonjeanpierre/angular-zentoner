@@ -147,6 +147,7 @@ export interface CashExpense {
  */
 export interface RegisterExpensePayload {
   cashRegisterSessionId: string;
+  shopId: string; // Requerido por la función SQL register_cash_expense
   amount: number;
   category: ExpenseCategory;
   description: string;
